@@ -4,6 +4,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { StatusCodes } from 'http-status-codes';
 import healthRoutes from 'src/modules/health/health-routes';
+import identityRoutes from 'src/modules/identity/identity-routes';
 import administratorPlugin from 'src/plugins/administrator';
 import authenticationPlugin from 'src/plugins/authentication';
 import databasePlugin from 'src/plugins/database';
@@ -113,6 +114,7 @@ async function startServer(): Promise<void> {
     fastify.setErrorHandler(handleGlobalError);
 
     await fastify.register(healthRoutes, { prefix: '/v1/health' });
+    await fastify.register(identityRoutes, { prefix: '/v1/identity' });
 
     fastify.setNotFoundHandler(handleNotFound);
 
