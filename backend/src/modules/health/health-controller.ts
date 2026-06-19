@@ -1,6 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import { GOOGLE_AI_BASE_URL } from 'src/plugins/google-ai';
 
 /**
  * @function checkAppHealth
@@ -20,36 +19,12 @@ function checkAppHealth(request: FastifyRequest, reply: FastifyReply): void {
  */
 async function checkGoogleAIHealth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-        const res = await fetch(`${GOOGLE_AI_BASE_URL}/models/${request.server.variables.GOOGLE_AI_MODEL}:generateContent`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': request.server.variables.GOOGLE_AI_API_KEY
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: 'user',
-                        parts: [{ text: 'ping' }]
-                    }
-                ]
-            })
-        });
+        await request.server.ai.ping();
 
-        if (res.ok) {
-            return await reply.status(StatusCodes.NO_CONTENT).send();
-        } else {
-            const errorBody = await res.text();
-            return await reply.status(StatusCodes.SERVICE_UNAVAILABLE).send({
-                data: {
-                    status: res.status,
-                    reason: res.statusText,
-                    details: errorBody
-                }
-            });
-        }
+        return await reply.status(StatusCodes.NO_CONTENT).send();
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
+
         return await reply.status(StatusCodes.SERVICE_UNAVAILABLE).send({
             data: {
                 status: 'unhealthy',
