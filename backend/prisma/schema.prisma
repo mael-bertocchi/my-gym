@@ -70,11 +70,15 @@ enum AiContentStatus {
   FAILED
 }
 
+/// The single administrator account that owns all data in this personal app.
 model User {
-  id         String     @id @default(uuid())
-  name       String?
-  email      String?    @unique
-  weightUnit WeightUnit @default(KG) @map("weight_unit")
+  id              String     @id @default(uuid())
+  email           String     @unique
+  passwordHash    String     @map("password_hash")
+  firstname       String
+  lastname        String
+  isAdministrator Boolean    @default(false) @map("is_administrator")
+  weightUnit      WeightUnit @default(KG) @map("weight_unit")
 
   exercises     Exercise[]
   machineBrands MachineBrand[]

@@ -14,7 +14,12 @@ export const variables = Type.Object({
     CORS_ORIGINS: Type.String(),
     DATABASE_URL: Type.String({ minLength: 1 }),
     GOOGLE_AI_API_KEY: Type.String({ minLength: 1 }),
-    GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' })
+    GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' }),
+    ADMINISTRATOR_EMAIL: Type.String({ format: 'email' }),
+    ADMINISTRATOR_PASSWORD: Type.String({ minLength: 8 }),
+    JWT_SECRET: Type.String({ minLength: 32 }),
+    JWT_ACCESS_EXPIRY: Type.String({ minLength: 1 }),
+    JWT_REFRESH_EXPIRY: Type.String({ minLength: 1 })
 });
 
 /**
