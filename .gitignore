@@ -27,3 +27,8 @@ yarn-error.log*
 # Expo / React Native
 .expo/
 web-build/
+
+# Claude Code / AI artifacts
+CLAUDE.md
+INITIAL_PROMPT.md
+docs/superpowers/

@@ -1,6 +1,10 @@
 {
   "name": "my-gym",
-  "description": "A personal, single-user workout tracker (monorepo).",
+  "description": "A personal, single-user workout tracker.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mael-bertocchi/my-gym"
+  },
   "version": "0.0.1",
   "private": true,
   "workspaces": [
