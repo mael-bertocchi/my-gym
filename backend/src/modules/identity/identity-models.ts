@@ -1,4 +1,5 @@
 import type { RequestGenericInterface } from 'fastify';
+import { WeightUnit } from 'prisma/generated/prisma/client';
 import { z } from 'zod';
 
 /**
@@ -37,7 +38,8 @@ export type RefreshBody = z.infer<typeof RefreshSchema>;
 export const UpdateProfileSchema = z.object({
     firstname: z.string().min(1).max(80).optional(),
     lastname: z.string().min(1).max(80).optional(),
-    password: z.string().min(8).max(200).optional()
+    password: z.string().min(8).max(200).optional(),
+    weightUnit: z.enum(WeightUnit).optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
 });

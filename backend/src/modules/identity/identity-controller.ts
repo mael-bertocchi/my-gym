@@ -81,7 +81,7 @@ async function me(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 
 /**
  * @function updateMe
- * @description Updates the authenticated user's name and/or password.
+ * @description Updates the authenticated user's name, password, and/or weight-unit preference.
  *
  * @returns {Promise<void>} Resolves when the updated profile is sent.
  */
@@ -96,6 +96,9 @@ async function updateMe(request: FastifyRequest<UpdateProfileRequest>, reply: Fa
     }
     if (request.body.password !== undefined) {
         data.passwordHash = await argon2.hash(request.body.password);
+    }
+    if (request.body.weightUnit !== undefined) {
+        data.weightUnit = request.body.weightUnit;
     }
 
     const user = await request.server.prisma.user.update({

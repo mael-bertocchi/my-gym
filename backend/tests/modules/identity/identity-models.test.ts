@@ -34,6 +34,17 @@ describe('UpdateProfileSchema', () => {
         expect(UpdateProfileSchema.safeParse({ password: 'short' }).success).toBe(false);
     });
 
+    it('accepts a weightUnit update', () => {
+        const result = UpdateProfileSchema.safeParse({ weightUnit: 'LBS' });
+
+        expect(result.success).toBe(true);
+        expect(result.data?.weightUnit).toBe('LBS');
+    });
+
+    it('rejects an unknown weightUnit', () => {
+        expect(UpdateProfileSchema.safeParse({ weightUnit: 'STONE' }).success).toBe(false);
+    });
+
     it('rejects an empty update', () => {
         expect(UpdateProfileSchema.safeParse({}).success).toBe(false);
     });
