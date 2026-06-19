@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "es2022",
+    "lib": ["es2022"],
+
+    /* Modules */
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    /* Interop Constraints */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "removeComments": true,
+
+    /* Strictness */
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+
+    /* Output */
+    "outDir": "dist",
+    "rootDir": ".",
+
+    /* Paths */
+    "paths": {
+      "src/*": ["./src/*"],
+      "prisma/generated/*": ["./prisma/generated/*"]
+    }
+  },
+  "include": ["src", "prisma/generated", "tests", "vitest.config.ts"]
+}
