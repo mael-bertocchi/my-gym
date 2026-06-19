@@ -10,6 +10,7 @@ import gymLocationsRoutes from 'src/modules/gym-locations/gym-locations-routes';
 import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
 import machineBrandsRoutes from 'src/modules/machine-brands/machine-brands-routes';
+import setsRoutes from 'src/modules/sets/sets-routes';
 import workoutExercisesRoutes from 'src/modules/workout-exercises/workout-exercises-routes';
 import workoutsRoutes from 'src/modules/workouts/workouts-routes';
 import administratorPlugin from 'src/plugins/administrator';
@@ -127,6 +128,7 @@ async function startServer(): Promise<void> {
     await fastify.register(healthRoutes, { prefix: '/v1/health' });
     await fastify.register(identityRoutes, { prefix: '/v1/identity' });
     await fastify.register(machineBrandsRoutes, { prefix: '/v1/machine-brands' });
+    await fastify.register(setsRoutes, { prefix: '/v1/sets' });
     await fastify.register(workoutExercisesRoutes, { prefix: '/v1/workout-exercises' });
     await fastify.register(workoutsRoutes, { prefix: '/v1/workouts' });
 
