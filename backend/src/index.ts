@@ -5,6 +5,7 @@ import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompi
 import { StatusCodes } from 'http-status-codes';
 import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
+import machineBrandsRoutes from 'src/modules/machine-brands/machine-brands-routes';
 import administratorPlugin from 'src/plugins/administrator';
 import authenticationPlugin from 'src/plugins/authentication';
 import databasePlugin from 'src/plugins/database';
@@ -115,6 +116,7 @@ async function startServer(): Promise<void> {
 
     await fastify.register(healthRoutes, { prefix: '/v1/health' });
     await fastify.register(identityRoutes, { prefix: '/v1/identity' });
+    await fastify.register(machineBrandsRoutes, { prefix: '/v1/machine-brands' });
 
     fastify.setNotFoundHandler(handleNotFound);
 
