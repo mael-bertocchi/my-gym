@@ -1,0 +1,13 @@
+{
+  "name": "my-gym",
+  "description": "A personal, single-user workout tracker (monorepo).",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

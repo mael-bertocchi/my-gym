@@ -1,0 +1,6 @@
+{
+  "name": "@my-gym/frontend",
+  "description": "The React Native (Expo) frontend for my-gym. Scaffolded in a later phase.",
+  "version": "0.0.1",
+  "private": true
+}
