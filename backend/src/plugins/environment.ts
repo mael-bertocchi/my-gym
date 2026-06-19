@@ -13,8 +13,8 @@ export const variables = Type.Object({
     PORT: Type.Number(),
     CORS_ORIGINS: Type.String(),
     DATABASE_URL: Type.String({ minLength: 1 }),
-    AZURE_AI_ENDPOINT: Type.String({ format: 'uri' }),
-    AZURE_AI_API_KEY: Type.String({ minLength: 1 })
+    GOOGLE_AI_API_KEY: Type.String({ minLength: 1 }),
+    GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' })
 });
 
 /**

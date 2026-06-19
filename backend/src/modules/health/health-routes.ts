@@ -7,5 +7,5 @@ import healthController from 'src/modules/health/health-controller';
  */
 export default function (fastify: FastifyInstance): void {
     fastify.get('/', healthController.checkAppHealth);
-    fastify.get('/azure-ai', healthController.checkAzureAIHealth);
+    fastify.get('/google-ai', healthController.checkGoogleAIHealth);
 }

@@ -1,6 +1,6 @@
 import type { PrismaClient } from 'prisma/generated/prisma/client';
-import type { AzureAI } from 'src/plugins/azure-ai';
 import type { Variables } from 'src/plugins/environment';
+import type { GoogleAI } from 'src/plugins/google-ai';
 import 'fastify';
 
 /**
@@ -15,6 +15,6 @@ declare module 'fastify' {
     interface FastifyInstance {
         variables: Variables;
         prisma: PrismaClient;
-        ai: AzureAI;
+        ai: GoogleAI;
     }
 }

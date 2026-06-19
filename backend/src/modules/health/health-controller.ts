@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
+import { GOOGLE_AI_BASE_URL } from 'src/plugins/google-ai';
 
 /**
  * @function checkAppHealth
@@ -14,23 +15,22 @@ function checkAppHealth(request: FastifyRequest, reply: FastifyReply): void {
 }
 
 /**
- * @function checkAzureAIHealth
- * @description Verifies Azure AI Foundry connection and availability
+ * @function checkGoogleAIHealth
+ * @description Verifies Google AI Studio (Gemini) connection and availability
  */
-async function checkAzureAIHealth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+async function checkGoogleAIHealth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-        const res = await fetch(`${request.server.variables.AZURE_AI_ENDPOINT}`, {
+        const res = await fetch(`${GOOGLE_AI_BASE_URL}/models/${request.server.variables.GOOGLE_AI_MODEL}:generateContent`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'api-key': request.server.variables.AZURE_AI_API_KEY
+                'x-goog-api-key': request.server.variables.GOOGLE_AI_API_KEY
             },
             body: JSON.stringify({
-                temperature: 0.5,
-                messages: [
+                contents: [
                     {
                         role: 'user',
-                        content: 'ping'
+                        parts: [{ text: 'ping' }]
                     }
                 ]
             })
@@ -61,5 +61,5 @@ async function checkAzureAIHealth(request: FastifyRequest, reply: FastifyReply):
 
 export default {
     checkAppHealth,
-    checkAzureAIHealth
+    checkGoogleAIHealth
 };

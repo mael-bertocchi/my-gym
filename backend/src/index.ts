@@ -4,9 +4,9 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { StatusCodes } from 'http-status-codes';
 import healthRoutes from 'src/modules/health/health-routes';
-import azureAIPlugin from 'src/plugins/azure-ai';
 import databasePlugin from 'src/plugins/database';
 import environmentPlugin from 'src/plugins/environment';
+import googleAIPlugin from 'src/plugins/google-ai';
 import securityPlugin from 'src/plugins/security';
 import type { RequestErrorResponse } from 'src/shared/models';
 import { RequestError } from 'src/shared/models';
@@ -104,7 +104,7 @@ async function startServer(): Promise<void> {
     await fastify.register(environmentPlugin);
     await fastify.register(securityPlugin);
     await fastify.register(databasePlugin);
-    await fastify.register(azureAIPlugin);
+    await fastify.register(googleAIPlugin);
 
     fastify.setErrorHandler(handleGlobalError);
 

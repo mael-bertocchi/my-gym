@@ -13,7 +13,7 @@ stops before domain routes and the Expo frontend.
 
 - **Backend:** Fastify 5 + TypeScript (ESM), conventions mirrored from `JetAviation/Vector/Backend`.
 - **Database:** PostgreSQL via Prisma 7 with the `@prisma/adapter-pg` driver adapter.
-- **AI:** Azure AI Foundry (chat completions + streaming) via a `fastify.ai` plugin.
+- **AI:** Google AI Studio (Gemini) — generateContent + streaming — via a `fastify.ai` plugin.
 - **Validation:** Zod 4 + `fastify-type-provider-zod`. **Env:** `@fastify/env` + TypeBox.
 - **Tests:** Vitest.
 
@@ -64,7 +64,7 @@ Owner: **`User`** owns `Exercise`, `MachineBrand`, `GymBrand`, `Workout`, `Bodyw
 
 ## AI integration (later phase)
 
-- `src/plugins/azure-ai.ts` exposes `fastify.ai` with `chat<T>()` (JSON mode) and `stream()` (SSE + tool calls).
+- `src/plugins/google-ai.ts` exposes `fastify.ai` with `chat<T>()` (JSON mode) and `stream()` (SSE + function calls).
 - **Onboarding:** on exercise/variant creation, call `ai.chat` to populate `formSummary`,
   `instructions`, `equipmentTips`; set `aiContentStatus` accordingly (generate async; default `PENDING`).
 - **Assistant:** an endpoint that reads a user's workout history (grouped by `ExerciseVariant`) and
@@ -76,8 +76,8 @@ Owner: **`User`** owns `Exercise`, `MachineBrand`, `GymBrand`, `Workout`, `Bodyw
 backend/
 ├─ src/
 │  ├─ index.ts            # bootstrap: plugins, error/404 handlers, route registration
-│  ├─ modules/health/     # health + Azure AI readiness checks (canonical module example)
-│  ├─ plugins/            # environment, database, security, azure-ai
+│  ├─ modules/health/     # health + Gemini readiness checks (canonical module example)
+│  ├─ plugins/            # environment, database, security, google-ai
 │  ├─ shared/             # RequestError, pagination, reusable Zod schemas
 │  └─ types/fastify.d.ts  # instance augmentation (prisma, ai, variables)
 ├─ prisma/schema.prisma   # datasource URL supplied by prisma.config.ts
