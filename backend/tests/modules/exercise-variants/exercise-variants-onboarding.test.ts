@@ -1,4 +1,5 @@
-import { buildOnboardingPrompt, OnboardingResultSchema } from 'src/modules/exercise-variants/exercise-variants-onboarding';
+import { buildOnboardingPrompt } from 'src/assets/prompts/onboarding';
+import { OnboardingResultSchema } from 'src/modules/exercise-variants/exercise-variants-onboarding';
 import { describe, expect, it } from 'vitest';
 
 describe('buildOnboardingPrompt', () => {
