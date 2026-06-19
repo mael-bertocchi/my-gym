@@ -3,6 +3,7 @@ import Fastify from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { StatusCodes } from 'http-status-codes';
+import exerciseVariantsRoutes from 'src/modules/exercise-variants/exercise-variants-routes';
 import exercisesRoutes from 'src/modules/exercises/exercises-routes';
 import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
@@ -115,6 +116,7 @@ async function startServer(): Promise<void> {
 
     fastify.setErrorHandler(handleGlobalError);
 
+    await fastify.register(exerciseVariantsRoutes, { prefix: '/v1/exercise-variants' });
     await fastify.register(exercisesRoutes, { prefix: '/v1/exercises' });
     await fastify.register(healthRoutes, { prefix: '/v1/health' });
     await fastify.register(identityRoutes, { prefix: '/v1/identity' });
