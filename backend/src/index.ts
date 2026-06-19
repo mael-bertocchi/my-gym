@@ -5,6 +5,7 @@ import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompi
 import { StatusCodes } from 'http-status-codes';
 import exerciseVariantsRoutes from 'src/modules/exercise-variants/exercise-variants-routes';
 import exercisesRoutes from 'src/modules/exercises/exercises-routes';
+import gymBrandsRoutes from 'src/modules/gym-brands/gym-brands-routes';
 import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
 import machineBrandsRoutes from 'src/modules/machine-brands/machine-brands-routes';
@@ -118,6 +119,7 @@ async function startServer(): Promise<void> {
 
     await fastify.register(exerciseVariantsRoutes, { prefix: '/v1/exercise-variants' });
     await fastify.register(exercisesRoutes, { prefix: '/v1/exercises' });
+    await fastify.register(gymBrandsRoutes, { prefix: '/v1/gym-brands' });
     await fastify.register(healthRoutes, { prefix: '/v1/health' });
     await fastify.register(identityRoutes, { prefix: '/v1/identity' });
     await fastify.register(machineBrandsRoutes, { prefix: '/v1/machine-brands' });
