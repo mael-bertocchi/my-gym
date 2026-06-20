@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import type { ReactElement } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -53,6 +54,7 @@ function RootNavigator(): ReactElement {
 export default function RootLayout(): ReactElement {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
+            <StatusBar style="light" />
             <SafeAreaProvider>
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>

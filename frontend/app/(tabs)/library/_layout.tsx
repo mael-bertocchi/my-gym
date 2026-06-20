@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 import type { ReactElement } from 'react';
 import { Stack, router } from 'expo-router';
 import { Text } from '@/components';
+import { darkHeaderOptions } from '@/theme/navigation';
 
 /**
  * @function GearButton
@@ -20,5 +21,5 @@ function GearButton(): ReactElement {
  * @returns {ReactElement} The Library stack layout.
  */
 export default function LibraryLayout(): ReactElement {
-    return <Stack screenOptions={{ title: 'Library', headerRight: () => <GearButton /> }} />;
+    return <Stack screenOptions={{ ...darkHeaderOptions, title: 'Library', headerRight: () => <GearButton /> }} />;
 }
