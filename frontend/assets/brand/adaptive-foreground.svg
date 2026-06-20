@@ -1,0 +1,22 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="my-gym adaptive icon foreground">
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6FC0FF"/>
+      <stop offset="1" stop-color="#2E97EE"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#AEDCFF"/>
+      <stop offset="1" stop-color="#6FC0FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- mark scaled into the Android adaptive safe zone; background comes from adaptiveIcon.backgroundColor -->
+  <g transform="translate(512 512) scale(0.82) translate(-512 -512)">
+    <circle cx="512" cy="512" r="300" fill="none" stroke="url(#mark)" stroke-width="116"
+            stroke-linecap="round" pathLength="100" stroke-dasharray="78 22"
+            transform="rotate(40 512 512)"/>
+    <rect x="482" y="434" width="46" height="156" rx="20" fill="url(#mark)"/>
+    <rect x="712" y="434" width="46" height="156" rx="20" fill="url(#mark)"/>
+    <rect x="505" y="489" width="230" height="44" rx="22" fill="url(#handle)"/>
+  </g>
+</svg>
