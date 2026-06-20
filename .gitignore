@@ -19,16 +19,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS / editor
+# Editor
 .DS_Store
 .vscode/
 .idea/
 
-# Expo / React Native
+# React Native
 .expo/
 web-build/
 
-# Claude Code / AI artifacts
+# AI artifacts
 CLAUDE.md
 INITIAL_PROMPT.md
 docs/superpowers/

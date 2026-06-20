@@ -7,6 +7,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
     name: 'my-gym',
     slug: 'my-gym',
+    owner: 'mael-bertocchi',
     scheme: 'mygym',
     version: '0.0.1',
     orientation: 'portrait',
@@ -14,7 +15,13 @@ const config: ExpoConfig = {
     newArchEnabled: true,
     ios: {
         bundleIdentifier: 'fr.maelbertocchi.mygym',
-        supportsTablet: false
+        supportsTablet: false,
+        config: {
+            usesNonExemptEncryption: false
+        }
+    },
+    android: {
+        package: 'fr.maelbertocchi.mygym'
     },
     splash: {
         backgroundColor: '#0B0E13',
@@ -27,6 +34,11 @@ const config: ExpoConfig = {
     ],
     experiments: {
         typedRoutes: true
+    },
+    extra: {
+        eas: {
+            projectId: '83975846-633c-4816-ba56-33a2245d1368'
+        }
     }
 };
 
