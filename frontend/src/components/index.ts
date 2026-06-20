@@ -17,3 +17,5 @@ export * from './error-state';
 export * from './undo-toast';
 export * from './sheet';
 export * from './screen';
+export * from './global-primary-button';
+export * from './in-progress-strip';
