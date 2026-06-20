@@ -1,27 +1,40 @@
-import { StyleSheet, View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import type { ReactElement } from 'react';
-import { router } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { GlobalPrimaryButton } from '@/components';
+import { Tabs, router } from 'expo-router';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { GlassTabBar, GlobalPrimaryButton } from '@/components';
 
 const styles = StyleSheet.create({
-    floating: { position: 'absolute', left: 0, right: 0, bottom: 96, alignItems: 'center' }
+    capsule: { position: 'absolute', left: 0, right: 0, bottom: 112, alignItems: 'center' }
 });
 
 /**
- * @function TabsLayout
- * @description Native bottom-tabs shell (History + Library) with the persistent Start capsule floated above the tab bar; the capsule opens the new-workout flow.
+ * @function renderTabBar
+ * @description Renders the floating Start capsule above the custom glass tab bar; both persist across tabs.
  *
- * @returns {ReactElement} The tabs group layout.
+ * @param {BottomTabBarProps} props The navigator's tab-bar props.
+ * @returns {ReactElement} The combined bottom chrome.
+ */
+function renderTabBar(props: BottomTabBarProps): ReactElement {
+    return (
+        <>
+            <View style={styles.capsule} pointerEvents="box-none"><GlobalPrimaryButton isLive={false} onPress={() => { router.push('/workout/new'); }} /></View>
+            <GlassTabBar {...props} />
+        </>
+    );
+}
+
+/**
+ * @function TabsLayout
+ * @description Bottom-tabs shell (History + Library) using the cross-platform GlassTabBar with the floating Start capsule above it.
+ *
+ * @returns {ReactElement} The tabs layout.
  */
 export default function TabsLayout(): ReactElement {
     return (
-        <>
-            <NativeTabs minimizeBehavior="onScrollDown">
-                <NativeTabs.Trigger name="history"><Icon sf="clock.arrow.circlepath" /><Label>History</Label></NativeTabs.Trigger>
-                <NativeTabs.Trigger name="library"><Icon sf="square.stack.3d.up.fill" /><Label>Library</Label></NativeTabs.Trigger>
-            </NativeTabs>
-            <View style={styles.floating} pointerEvents="box-none"><GlobalPrimaryButton isLive={false} onPress={() => { router.push('/workout/new'); }} /></View>
-        </>
+        <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+            <Tabs.Screen name="history" />
+            <Tabs.Screen name="library" />
+        </Tabs>
     );
 }

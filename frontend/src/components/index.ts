@@ -12,6 +12,7 @@ export * from './numeric-field';
 export * from './list-item';
 export * from './tag';
 export * from './glass-surface';
+export * from './glass-tab-bar';
 export * from './empty-state';
 export * from './error-state';
 export * from './undo-toast';
