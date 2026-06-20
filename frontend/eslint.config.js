@@ -4,14 +4,20 @@ const typescriptEslint = require('@typescript-eslint/eslint-plugin');
 
 /**
  * @constant eslintConfig
- * @description Flat ESLint config: Expo base + a JSDoc description requirement (accepting the CLAUDE.md `@description`-tag hybrid style) + explicit return types + a ban on `as` assertions. The jsdoc TypeScript preset is intentionally NOT used — it bans the typed `@param`/`@returns` that CLAUDE.md mandates.
+ * @description Flat ESLint config: Expo base + a JSDoc description requirement (accepting the CLAUDE.md `@description`-tag hybrid style) applied to every file, plus explicit return types and a ban on `as` assertions scoped to TS files only. The TS rules cannot apply to `.mjs`/`.js` sources because Expo lints those with the non-TS espree parser, which rejects TS syntax. The jsdoc TypeScript preset is intentionally NOT used — it bans the typed `@param`/`@returns` that CLAUDE.md mandates.
  */
 module.exports = [
     ...expoConfig,
     {
-        plugins: { jsdoc, '@typescript-eslint': typescriptEslint },
+        plugins: { jsdoc },
         rules: {
-            'jsdoc/require-description': ['error', { descriptionStyle: 'any' }],
+            'jsdoc/require-description': ['error', { descriptionStyle: 'any' }]
+        }
+    },
+    {
+        files: ['**/*.ts', '**/*.tsx'],
+        plugins: { '@typescript-eslint': typescriptEslint },
+        rules: {
             '@typescript-eslint/explicit-function-return-type': 'error',
             '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }]
         }

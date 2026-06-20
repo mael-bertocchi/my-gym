@@ -10,7 +10,6 @@ const config: ExpoConfig = {
     owner: 'mael-bertocchi',
     scheme: 'mygym',
     version: '0.0.1',
-    icon: './assets/icon.png',
     orientation: 'portrait',
     userInterfaceStyle: 'dark',
     newArchEnabled: true,
@@ -22,16 +21,11 @@ const config: ExpoConfig = {
         }
     },
     android: {
-        package: 'fr.maelbertocchi.mygym',
-        adaptiveIcon: {
-            foregroundImage: './assets/adaptive-icon.png',
-            backgroundColor: '#0B0E13'
-        }
+        package: 'fr.maelbertocchi.mygym'
     },
     plugins: [
         'expo-router',
-        'expo-secure-store',
-        ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 200, resizeMode: 'contain', backgroundColor: '#0B0E13' }]
+        'expo-secure-store'
     ],
     experiments: {
         typedRoutes: true
