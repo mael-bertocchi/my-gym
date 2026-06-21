@@ -84,7 +84,7 @@ export default function ExerciseDetailScreen(): ReactElement {
 
     const footer: ReactElement = (
         <View>
-            {hiddenId !== null ? <UndoToast message="Variant deleted" onUndo={undoDelete} onExpire={expireDelete} /> : null}
+            {hiddenId !== null ? <UndoToast key={hiddenId} message="Variant deleted" onUndo={undoDelete} onExpire={expireDelete} /> : null}
             <View style={hiddenId !== null ? styles.toast : undefined} />
             <GlassSurface style={styles.pill}><Button label="Add variant" variant="ghost" onPress={() => { router.push({ pathname: '/library/exercises/[exerciseId]/add-variant', params: { exerciseId } }); }} /></GlassSurface>
         </View>
