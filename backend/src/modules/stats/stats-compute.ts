@@ -32,6 +32,16 @@ export interface SessionStats {
 }
 
 /**
+ * @interface RepPR
+ * @description The heaviest external load lifted for a given rep count across all of a variant's sessions.
+ */
+export interface RepPR {
+    reps: number; /*!< Rep count */
+    weightKg: number; /*!< Heaviest load lifted for that rep count */
+    estimated1RM: number; /*!< Epley estimated 1RM for that load and rep count */
+}
+
+/**
  * @interface VariantStatsSummary
  * @description Bests across all sessions.
  */
@@ -40,6 +50,7 @@ export interface VariantStatsSummary {
     maxWeightKg: Maybe<number>; /*!< Heaviest load across sessions */
     bestEstimated1RM: Maybe<number>; /*!< Best estimated 1RM across sessions */
     bestTotalVolume: Maybe<number>; /*!< Highest session volume */
+    repPRs: RepPR[]; /*!< Heaviest load per rep count, ascending by reps */
 }
 
 /**
@@ -60,6 +71,33 @@ export interface VariantStats {
  */
 function round(value: number): number {
     return Math.round(value * 10) / 10;
+}
+
+/**
+ * @function computeRepPRs
+ * @description Finds the heaviest weighted load lifted for each rep count across all sessions.
+ *
+ * @param {RawSession[]} sessions The variant's sessions.
+ * @returns {RepPR[]} One entry per rep count, ascending by reps.
+ */
+function computeRepPRs(sessions: RawSession[]): RepPR[] {
+    const heaviestByReps = new Map<number, number>();
+
+    for (const session of sessions) {
+        for (const set of session.sets) {
+            if (set.weightKg === null || set.reps === null) {
+                continue;
+            }
+            const current = heaviestByReps.get(set.reps);
+            if (current === undefined || set.weightKg > current) {
+                heaviestByReps.set(set.reps, set.weightKg);
+            }
+        }
+    }
+
+    return [...heaviestByReps.entries()]
+        .map(([reps, weightKg]) => ({ reps, weightKg, estimated1RM: round(weightKg * (1 + reps / 30)) }))
+        .sort((left, right) => left.reps - right.reps);
 }
 
 /**
@@ -134,7 +172,8 @@ export function computeVariantStats(sessions: RawSession[]): VariantStats {
             sessionCount: sessionStats.length,
             maxWeightKg,
             bestEstimated1RM,
-            bestTotalVolume
+            bestTotalVolume,
+            repPRs: computeRepPRs(sessions)
         }
     };
 }
