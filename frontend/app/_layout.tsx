@@ -9,6 +9,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/modules/identity/identity-provider';
 import { useAuth } from '@/modules/identity/identity-hook';
 import { createQueryClient } from '@/lib/query-client';
+import { ActiveWorkoutProvider } from '@/modules/workouts/active-workout-provider';
+import { sheetScreenOptions } from '@/theme/navigation';
 
 void SplashScreen.preventAutoHideAsync();
 const queryClient = createQueryClient();
@@ -35,6 +37,7 @@ function RootNavigator(): ReactElement {
             <Stack.Protected guard={status === 'signedIn'}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="workout/[workoutId]" options={{ presentation: 'fullScreenModal' }} />
+                <Stack.Screen name="workout/add-exercise" options={sheetScreenOptions([0.7, 1.0])} />
                 <Stack.Screen name="settings/index" options={{ presentation: 'modal' }} />
                 <Stack.Screen name="showcase" />
             </Stack.Protected>
@@ -58,7 +61,9 @@ export default function RootLayout(): ReactElement {
             <SafeAreaProvider>
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
-                        <RootNavigator />
+                        <ActiveWorkoutProvider>
+                            <RootNavigator />
+                        </ActiveWorkoutProvider>
                     </AuthProvider>
                 </QueryClientProvider>
             </SafeAreaProvider>
