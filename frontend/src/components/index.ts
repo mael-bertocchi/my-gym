@@ -24,3 +24,7 @@ export * from './shimmer';
 export * from './variant-card';
 export * from './equipment-grid';
 export * from './rest-timer-strip';
+export * from './reps-field';
+export * from './set-row';
+export * from './exercise-log-card';
+export * from './workout-header';
