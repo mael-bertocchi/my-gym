@@ -1,32 +1,56 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ReactElement } from 'react';
-import { Tabs, router } from 'expo-router';
+import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { GlassTabBar, GlobalPrimaryButton } from '@/components';
+import { GlassTabBar, GlobalPrimaryButton, InProgressStrip } from '@/components';
+import { useActiveWorkout } from '@/modules/workouts/active-workout-hook';
 
 const styles = StyleSheet.create({
+    strip: { position: 'absolute', left: 0, right: 0, bottom: 168, alignItems: 'center' },
     capsule: { position: 'absolute', left: 0, right: 0, bottom: 112, alignItems: 'center' }
 });
 
 /**
- * @function renderTabBar
- * @description Renders the floating Start capsule above the custom glass tab bar; both persist across tabs.
+ * @function BottomChrome
+ * @description Renders the live strip (when a workout is live), the Start/Resume capsule, and the glass tab bar.
  *
  * @param {BottomTabBarProps} props The navigator's tab-bar props.
  * @returns {ReactElement} The combined bottom chrome.
  */
-function renderTabBar(props: BottomTabBarProps): ReactElement {
+function BottomChrome(props: BottomTabBarProps): ReactElement {
+    const { isLive, session, resume, start } = useActiveWorkout();
+
+    const onPrimary = (): void => {
+        if (isLive) {
+            resume();
+            return;
+        }
+        void start();
+    };
+
     return (
         <>
-            <View style={styles.capsule} pointerEvents="box-none"><GlobalPrimaryButton isLive={false} onPress={() => { router.push('/workout/new'); }} /></View>
+            {isLive && session !== null ? <View style={styles.strip} pointerEvents="box-none"><InProgressStrip startedAt={session.startedAt} onPress={resume} /></View> : null}
+            <View style={styles.capsule} pointerEvents="box-none"><GlobalPrimaryButton isLive={isLive} onPress={onPrimary} /></View>
             <GlassTabBar {...props} />
         </>
     );
 }
 
 /**
+ * @function renderTabBar
+ * @description Adapter passing the navigator props into BottomChrome (so it can call hooks).
+ *
+ * @param {BottomTabBarProps} props The navigator's tab-bar props.
+ * @returns {ReactElement} The bottom chrome element.
+ */
+function renderTabBar(props: BottomTabBarProps): ReactElement {
+    return <BottomChrome {...props} />;
+}
+
+/**
  * @function TabsLayout
- * @description Bottom-tabs shell (History + Library) using the cross-platform GlassTabBar with the floating Start capsule above it.
+ * @description Bottom-tabs shell (History + Library) using the cross-platform GlassTabBar with the floating Start/Resume capsule and live strip above it.
  *
  * @returns {ReactElement} The tabs layout.
  */
