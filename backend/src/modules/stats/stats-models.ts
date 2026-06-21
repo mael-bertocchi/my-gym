@@ -52,3 +52,25 @@ export interface OverviewRequest extends RequestGenericInterface {
         bucket?: OverviewBucketUnit; /*!< Calendar granularity; defaults to 'week' */
     };
 }
+
+/**
+ * @constant MusclesQuerySchema
+ * @description Zod schema for the muscle-breakdown query string (optional date range).
+ */
+export const MusclesQuerySchema = z.object({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional()
+});
+
+/**
+ * @interface MusclesRequest
+ * @description Fastify request generic for the per-muscle breakdown endpoint.
+ *
+ * @extends RequestGenericInterface
+ */
+export interface MusclesRequest extends RequestGenericInterface {
+    Querystring: {
+        from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
+        to?: Date; /*!< Optional inclusive end of the range (coerced from ISO) */
+    };
+}

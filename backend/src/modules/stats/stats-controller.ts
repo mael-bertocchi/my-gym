@@ -2,9 +2,56 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import type { Prisma } from 'prisma/generated/prisma/client';
 import { computeVariantStats } from 'src/modules/stats/stats-compute';
-import type { OverviewRequest, VariantStatsRequest } from 'src/modules/stats/stats-models';
+import type { MusclesRequest, OverviewRequest, VariantStatsRequest } from 'src/modules/stats/stats-models';
+import { computeMuscleBreakdown } from 'src/modules/stats/stats-muscles';
 import { computeOverview } from 'src/modules/stats/stats-overview';
 import { RequestError } from 'src/shared/models';
+
+/**
+ * @function getMuscles
+ * @description Returns the user's working-set volume and set credit aggregated per muscle.
+ *
+ * @returns {Promise<void>} Resolves when the breakdown is sent.
+ */
+async function getMuscles(request: FastifyRequest<MusclesRequest>, reply: FastifyReply): Promise<void> {
+    const where: Prisma.WorkoutWhereInput = { userId: request.user.id };
+
+    if (request.query.from !== undefined || request.query.to !== undefined) {
+        where.startedAt = { gte: request.query.from, lte: request.query.to };
+    }
+
+    const workouts = await request.server.prisma.workout.findMany({
+        where,
+        select: {
+            entries: {
+                select: {
+                    exerciseVariant: {
+                        select: {
+                            exercise: {
+                                select: { primaryMuscle: true, secondaryMuscles: true }
+                            }
+                        }
+                    },
+                    sets: {
+                        where: { setType: 'WORKING' },
+                        select: { weightKg: true, reps: true }
+                    }
+                }
+            }
+        }
+    });
+
+    const entries = workouts.flatMap((workout) => workout.entries.map((entry) => ({
+        primaryMuscle: entry.exerciseVariant.exercise.primaryMuscle,
+        secondaryMuscles: entry.exerciseVariant.exercise.secondaryMuscles,
+        sets: entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        }))
+    })));
+
+    reply.status(StatusCodes.OK).send({ data: { muscles: computeMuscleBreakdown(entries) } });
+}
 
 /**
  * @function getVariantStats
@@ -108,6 +155,7 @@ async function getOverview(request: FastifyRequest<OverviewRequest>, reply: Fast
 }
 
 export default {
+    getMuscles,
     getOverview,
     getVariantStats
 };
