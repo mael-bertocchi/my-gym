@@ -20,3 +20,4 @@ export * from './sheet';
 export * from './screen';
 export * from './global-primary-button';
 export * from './in-progress-strip';
+export * from './shimmer';
