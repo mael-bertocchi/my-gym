@@ -21,3 +21,4 @@ export * from './screen';
 export * from './global-primary-button';
 export * from './in-progress-strip';
 export * from './shimmer';
+export * from './variant-card';
