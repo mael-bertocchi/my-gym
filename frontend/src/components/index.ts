@@ -22,3 +22,4 @@ export * from './global-primary-button';
 export * from './in-progress-strip';
 export * from './shimmer';
 export * from './variant-card';
+export * from './equipment-grid';
