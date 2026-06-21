@@ -25,7 +25,8 @@ const config: ExpoConfig = {
     },
     plugins: [
         'expo-router',
-        'expo-secure-store'
+        'expo-secure-store',
+        'expo-notifications'
     ],
     experiments: {
         typedRoutes: true

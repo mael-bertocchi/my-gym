@@ -23,3 +23,4 @@ export * from './in-progress-strip';
 export * from './shimmer';
 export * from './variant-card';
 export * from './equipment-grid';
+export * from './rest-timer-strip';

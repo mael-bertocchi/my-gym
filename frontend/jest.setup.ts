@@ -20,3 +20,13 @@ jest.mock('expo-glass-effect', () => ({
 
 jest.mock('expo-blur', () => ({ BlurView: 'BlurView' }));
 jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), ImpactFeedbackStyle: { Medium: 'medium' } }));
+
+jest.mock('expo-notifications', () => ({
+    getPermissionsAsync: jest.fn(async () => ({ granted: true })),
+    requestPermissionsAsync: jest.fn(async () => ({ granted: true })),
+    setNotificationChannelAsync: jest.fn(async () => undefined),
+    scheduleNotificationAsync: jest.fn(async () => 'notif-id'),
+    cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+    AndroidImportance: { DEFAULT: 3 },
+    SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' }
+}));
