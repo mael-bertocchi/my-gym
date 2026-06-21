@@ -1,3 +1,4 @@
+import { round } from 'src/shared/math';
 import type { Maybe } from 'src/shared/models';
 
 /**
@@ -60,17 +61,6 @@ export interface VariantStatsSummary {
 export interface VariantStats {
     sessions: SessionStats[]; /*!< Per-session stats, in input order */
     summary: VariantStatsSummary; /*!< Bests across all sessions */
-}
-
-/**
- * @function round
- * @description Rounds a number to one decimal place.
- *
- * @param {number} value The value to round.
- * @returns {number} The value rounded to one decimal.
- */
-function round(value: number): number {
-    return Math.round(value * 10) / 10;
 }
 
 /**

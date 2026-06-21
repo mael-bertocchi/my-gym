@@ -1,4 +1,5 @@
 import type { RawSet } from 'src/modules/stats/stats-compute';
+import { round } from 'src/shared/math';
 import type { Maybe } from 'src/shared/models';
 
 /**
@@ -49,17 +50,6 @@ export interface OverviewSummary {
 export interface Overview {
     buckets: OverviewBucket[]; /*!< Active buckets only (no gap-filling), ascending by start */
     summary: OverviewSummary; /*!< Totals across the whole range */
-}
-
-/**
- * @function round
- * @description Rounds a number to one decimal place.
- *
- * @param {number} value The value to round.
- * @returns {number} The value rounded to one decimal.
- */
-function round(value: number): number {
-    return Math.round(value * 10) / 10;
 }
 
 /**

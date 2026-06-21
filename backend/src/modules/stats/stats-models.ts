@@ -25,7 +25,7 @@ export interface VariantStatsRequest extends RequestGenericInterface {
     Querystring: {
         gymLocationId?: string; /*!< Optional gym-location filter */
         from?: Date; /*!< Optional inclusive start of the date range (coerced from an ISO string) */
-        to?: Date; /*!< Optional inclusive end of the date range (coerced from an ISO string) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
     };
 }
 
@@ -48,7 +48,7 @@ export const OverviewQuerySchema = z.object({
 export interface OverviewRequest extends RequestGenericInterface {
     Querystring: {
         from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
-        to?: Date; /*!< Optional inclusive end of the range (coerced from ISO) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
         bucket?: OverviewBucketUnit; /*!< Calendar granularity; defaults to 'week' */
     };
 }
@@ -71,6 +71,6 @@ export const MusclesQuerySchema = z.object({
 export interface MusclesRequest extends RequestGenericInterface {
     Querystring: {
         from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
-        to?: Date; /*!< Optional inclusive end of the range (coerced from ISO) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
     };
 }

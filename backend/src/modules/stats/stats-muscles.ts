@@ -1,5 +1,6 @@
 import type { MuscleGroup } from 'prisma/generated/prisma/client';
 import type { RawSet } from 'src/modules/stats/stats-compute';
+import { round } from 'src/shared/math';
 
 /**
  * @constant SECONDARY_MUSCLE_WEIGHT
@@ -25,17 +26,6 @@ export interface MuscleVolume {
     muscle: MuscleGroup; /*!< The muscle */
     sets: number; /*!< Weighted set credit (primary 1.0, each secondary 0.5) */
     volume: number; /*!< Weighted weight x reps credited to the muscle */
-}
-
-/**
- * @function round
- * @description Rounds a number to one decimal place.
- *
- * @param {number} value The value to round.
- * @returns {number} The value rounded to one decimal.
- */
-function round(value: number): number {
-    return Math.round(value * 10) / 10;
 }
 
 /**
