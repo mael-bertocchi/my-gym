@@ -2,7 +2,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import type { Prisma } from 'prisma/generated/prisma/client';
 import { computeVariantStats } from 'src/modules/stats/stats-compute';
-import type { VariantStatsRequest } from 'src/modules/stats/stats-models';
+import type { OverviewRequest, VariantStatsRequest } from 'src/modules/stats/stats-models';
+import { computeOverview } from 'src/modules/stats/stats-overview';
 import { RequestError } from 'src/shared/models';
 
 /**
@@ -62,6 +63,51 @@ async function getVariantStats(request: FastifyRequest<VariantStatsRequest>, rep
     reply.status(StatusCodes.OK).send({ data: { variantId: request.params.id, ...stats } });
 }
 
+/**
+ * @function getOverview
+ * @description Returns the user's time-bucketed workout totals (duration, volume, reps, sets).
+ *
+ * @returns {Promise<void>} Resolves when the overview is sent.
+ */
+async function getOverview(request: FastifyRequest<OverviewRequest>, reply: FastifyReply): Promise<void> {
+    const where: Prisma.WorkoutWhereInput = { userId: request.user.id };
+
+    if (request.query.from !== undefined || request.query.to !== undefined) {
+        where.startedAt = { gte: request.query.from, lte: request.query.to };
+    }
+
+    const workouts = await request.server.prisma.workout.findMany({
+        where,
+        select: {
+            startedAt: true,
+            endedAt: true,
+            entries: {
+                select: {
+                    sets: {
+                        where: { setType: 'WORKING' },
+                        select: { weightKg: true, reps: true }
+                    }
+                }
+            }
+        },
+        orderBy: { startedAt: 'asc' }
+    });
+
+    const raw = workouts.map((workout) => ({
+        startedAt: workout.startedAt.toISOString(),
+        endedAt: workout.endedAt !== null ? workout.endedAt.toISOString() : null,
+        sets: workout.entries.flatMap((entry) => entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        })))
+    }));
+
+    const overview = computeOverview(raw, request.query.bucket ?? 'week');
+
+    reply.status(StatusCodes.OK).send({ data: overview });
+}
+
 export default {
+    getOverview,
     getVariantStats
 };
