@@ -28,3 +28,5 @@ export * from './reps-field';
 export * from './set-row';
 export * from './exercise-log-card';
 export * from './workout-header';
+export * from './metric-strip';
+export * from './set-mini-table';

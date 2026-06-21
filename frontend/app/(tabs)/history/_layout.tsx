@@ -21,5 +21,10 @@ function GearButton(): ReactElement {
  * @returns {ReactElement} The History stack layout.
  */
 export default function HistoryLayout(): ReactElement {
-    return <Stack screenOptions={{ ...darkHeaderOptions, title: 'History', headerRight: () => <GearButton /> }} />;
+    return (
+        <Stack screenOptions={{ ...darkHeaderOptions, title: 'History', headerRight: () => <GearButton /> }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="[workoutId]" options={{ title: '' }} />
+        </Stack>
+    );
 }
