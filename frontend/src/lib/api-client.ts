@@ -21,6 +21,7 @@ export interface ApiClient {
     post: <T>(path: string, body?: unknown) => Promise<T>; /*!< POST unwrapping {data} */
     patch: <T>(path: string, body?: unknown) => Promise<T>; /*!< PATCH unwrapping {data} */
     del: <T>(path: string) => Promise<T>; /*!< DELETE unwrapping {data} */
+    list: <T>(path: string) => Promise<T>; /*!< GET returning the FULL list body {data,pagination} unchanged (no {data} unwrap) */
 }
 
 /**
@@ -86,15 +87,15 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     }
 
     /**
-     * @function call
-     * @description Performs one request with the current token, retrying once after a refresh on 401.
+     * @function callRaw
+     * @description Performs one request with refresh-retry and returns the PARSED body unchanged (no envelope unwrap).
      *
      * @param {string} method The HTTP method.
      * @param {string} path The path under /v1.
      * @param {unknown} body Optional JSON body.
-     * @returns {Promise<T>} The unwrapped data.
+     * @returns {Promise<T>} The parsed response body.
      */
-    async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+    async function callRaw<T>(method: string, path: string, body?: unknown): Promise<T> {
         /**
          * @function send
          * @description Issues the fetch with a given bearer token.
@@ -125,7 +126,21 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
             throw await toApiError(response);
         }
 
-        const envelope: { data?: unknown } = { ...(await response.json()) };
+        const parsed: unknown = await response.json();
+        return castEnvelopeData<T>(parsed);
+    }
+
+    /**
+     * @function call
+     * @description Performs one request and returns the unwrapped envelope `data` (single-item contract).
+     *
+     * @param {string} method The HTTP method.
+     * @param {string} path The path under /v1.
+     * @param {unknown} body Optional JSON body.
+     * @returns {Promise<T>} The unwrapped data.
+     */
+    async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+        const envelope: { data?: unknown } = { ...(await callRaw<{ data?: unknown }>(method, path, body)) };
         return castEnvelopeData<T>(envelope.data);
     }
 
@@ -133,6 +148,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
         get: <T>(path: string) => call<T>('GET', path),
         post: <T>(path: string, b?: unknown) => call<T>('POST', path, b),
         patch: <T>(path: string, b?: unknown) => call<T>('PATCH', path, b),
-        del: <T>(path: string) => call<T>('DELETE', path)
+        del: <T>(path: string) => call<T>('DELETE', path),
+        list: <T>(path: string) => callRaw<T>('GET', path)
     };
 }

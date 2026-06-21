@@ -1,4 +1,6 @@
 import { createApiClient } from '@/lib/api-client';
+import type { ApiClient } from '@/lib/api-client';
+import type { PaginatedResponse } from '@/lib/use-paginated-query';
 import { isApiError } from '@/shared/models';
 
 /**
@@ -11,6 +13,46 @@ import { isApiError } from '@/shared/models';
  */
 function jsonResponse(status: number, body: unknown): Response {
     return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
+/**
+ * @interface FakeResponse
+ * @description The minimal slice of Response the api-client reads, used to stub fetch without a real Response.
+ */
+interface FakeResponse {
+    ok: boolean; /*!< Whether the status is 2xx */
+    status: number; /*!< HTTP status code */
+    statusText: string; /*!< Status text fallback message */
+    json: () => Promise<unknown>; /*!< Parsed JSON body */
+}
+
+/**
+ * @function fakeFetch
+ * @description Builds a fetch stub that resolves to a real Response carrying the given body as JSON.
+ *
+ * @param {unknown} body The body returned by json().
+ * @returns {typeof fetch} A fetch-compatible stub.
+ */
+function fakeFetch(body: unknown): typeof fetch {
+    const fields: FakeResponse = { ok: true, status: 200, statusText: 'OK', json: (): Promise<unknown> => Promise.resolve(body) };
+    return (): Promise<Response> => Promise.resolve(new Response(JSON.stringify(body), { status: fields.status }));
+}
+
+/**
+ * @function buildClient
+ * @description Builds an api-client wired to a body-returning fetch stub and a static token.
+ *
+ * @param {unknown} body The body every request resolves to.
+ * @returns {ApiClient} The configured client.
+ */
+function buildClient(body: unknown): ApiClient {
+    return createApiClient({
+        baseUrl: 'https://example.test',
+        fetchImpl: fakeFetch(body),
+        getAccessToken: (): Promise<string> => Promise.resolve('token'),
+        onRefresh: (): Promise<string> => Promise.resolve('token'),
+        onAuthLost: (): Promise<void> => Promise.resolve()
+    });
 }
 
 describe('api-client', () => {
@@ -80,5 +122,21 @@ describe('api-client', () => {
         });
         await client.get('/a').catch(() => {});
         expect(lost).toBe(true);
+    });
+});
+
+describe('ApiClient list', () => {
+    it('preserves the pagination sibling of a list body', async () => {
+        const body: PaginatedResponse<{ id: string }> = { data: [{ id: 'a' }], pagination: { page: 1, pageSize: 25, total: 1, totalPages: 1 } };
+        const client = buildClient(body);
+        const result = await client.list<PaginatedResponse<{ id: string }>>('/exercises');
+        expect(result.pagination.totalPages).toBe(1);
+        expect(result.data.map((row) => row.id)).toEqual(['a']);
+    });
+
+    it('get still unwraps to the inner data for single-item bodies', async () => {
+        const client = buildClient({ data: { id: 'x' } });
+        const result = await client.get<{ id: string }>('/exercises/x');
+        expect(result.id).toBe('x');
     });
 });
