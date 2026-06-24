@@ -31,8 +31,3 @@ web-build/
 # Expo prebuild native projects
 frontend/android/
 frontend/ios/
-
-# AI artifacts
-CLAUDE.md
-INITIAL_PROMPT.md
-docs/superpowers/

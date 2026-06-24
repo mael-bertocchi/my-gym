@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# Prisma generated client
+prisma/generated
+
+# Environment files
+.env
+.env.*
+
+# Tests
+tests
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode
+.idea
+.DS_Store
+
+# Version control
+.git
+.gitignore
+
+# Docker
+.docker
+.dockerignore
+
+# Tooling configs not needed to build or run
+eslint.config.js
+vitest.config.ts
