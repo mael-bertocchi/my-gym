@@ -4,19 +4,19 @@ import fp from 'fastify-plugin';
 
 /**
  * @function administratorPlugin
- * @description Seeds the single administrator account at boot from the configured email and password.
+ * @description Reconciles the administrator account from the configured email and password on every boot.
  */
 export default fp(async function (fastify: FastifyInstance): Promise<void> {
     const email = fastify.variables.ADMINISTRATOR_EMAIL;
-    const existing = await fastify.prisma.user.findUnique({ where: { email } });
+    const passwordHash = await argon2.hash(fastify.variables.ADMINISTRATOR_PASSWORD);
 
-    if (existing === null) {
-        const passwordHash = await argon2.hash(fastify.variables.ADMINISTRATOR_PASSWORD);
-        await fastify.prisma.user.create({
-            data: { email, passwordHash, firstname: 'Admin', lastname: 'Account', isAdministrator: true }
-        });
-        fastify.log.info({ email }, 'Seeded the administrator account');
-    }
+    await fastify.prisma.user.upsert({
+        where: { email },
+        update: { passwordHash, isAdministrator: true, isActive: true },
+        create: { email, passwordHash, displayName: 'Administrator', isAdministrator: true, isActive: true }
+    });
+
+    fastify.log.info({ email }, 'Reconciled the administrator account');
 }, {
     name: 'administrator',
     dependencies: ['database']

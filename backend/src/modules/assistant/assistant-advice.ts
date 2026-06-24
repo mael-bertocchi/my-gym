@@ -1,78 +1,47 @@
-import type { PrismaClient } from 'prisma/generated/prisma/client';
-import type { AssistantContext } from 'src/assets/prompts/assistant';
-import { buildAssistantPrompt } from 'src/assets/prompts/assistant';
+import type { AssistantContext, AssistantPromptMessage } from 'src/assets/prompts/assistant';
+import { buildChatSystem, buildInsightsPrompt } from 'src/assets/prompts/assistant';
 import type { GoogleAI } from 'src/plugins/google-ai';
-import type { Maybe } from 'src/shared/models';
+import { z } from 'zod';
 
 /**
- * @function loadAdviceContext
- * @description Loads a variant (scoped to the user) and its recent working-set history into an AssistantContext. Returns null when the variant is not the user's.
- *
- * @param {PrismaClient} prisma The Prisma client.
- * @param {string} userId The owning user's id.
- * @param {string} variantId The exercise variant id.
- * @returns {Promise<Maybe<AssistantContext>>} The context, or null when the variant is not found/owned.
+ * @constant InsightsResultSchema
+ * @description Runtime parser for the proactive-insights JSON the model must return.
  */
-export async function loadAdviceContext(prisma: PrismaClient, userId: string, variantId: string): Promise<Maybe<AssistantContext>> {
-    const variant = await prisma.exerciseVariant.findFirst({
-        where: { id: variantId, exercise: { userId } },
-        select: {
-            equipmentType: true,
-            exercise: { select: { name: true } },
-            machineBrand: { select: { name: true } }
-        }
-    });
+const InsightsResultSchema = z.object({
+    insights: z.array(z.string())
+});
 
-    if (variant === null) {
-        return null;
+/**
+ * @function generateReply
+ * @description Streams the assistant's reply to a conversation, grounded in the caller's training context, and collects it into a single string.
+ *
+ * @param {GoogleAI} ai The Gemini client decorated on the Fastify instance.
+ * @param {AssistantContext} context The caller's training context.
+ * @param {AssistantPromptMessage[]} history The conversation so far, oldest first.
+ * @returns {Promise<string>} The full reply text.
+ */
+export async function generateReply(ai: GoogleAI, context: AssistantContext, history: AssistantPromptMessage[]): Promise<string> {
+    const system = buildChatSystem(context);
+
+    let reply = '';
+    for await (const delta of ai.stream({ system, messages: history, temperature: 0.5 })) {
+        reply += delta;
     }
 
-    const entries = await prisma.workoutExercise.findMany({
-        where: { exerciseVariantId: variantId, workout: { userId } },
-        select: {
-            workout: { select: { startedAt: true } },
-            sets: {
-                where: { setType: 'WORKING' },
-                orderBy: { setNumber: 'asc' },
-                select: { weightKg: true, reps: true, rpe: true }
-            }
-        },
-        orderBy: { workout: { startedAt: 'desc' } },
-        take: 10
-    });
-
-    const sessions = entries.map((entry) => ({
-        date: entry.workout.startedAt.toISOString(),
-        sets: entry.sets.map((set) => ({
-            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
-            reps: set.reps,
-            rpe: set.rpe !== null ? set.rpe.toNumber() : null
-        }))
-    }));
-
-    return {
-        exerciseName: variant.exercise.name,
-        equipmentType: variant.equipmentType,
-        brandName: variant.machineBrand?.name,
-        sessions
-    };
+    return reply;
 }
 
 /**
- * @function generateAdvice
- * @description Builds the advice prompt and collects the streamed model reply into a single string.
+ * @function generateInsights
+ * @description Asks the model for proactive insights from the caller's training context and validates the JSON reply.
  *
  * @param {GoogleAI} ai The Gemini client decorated on the Fastify instance.
- * @param {AssistantContext} context The variant facts and recent history.
- * @returns {Promise<string>} The full advice text.
+ * @param {AssistantContext} context The caller's training context.
+ * @returns {Promise<string[]>} The validated list of insight strings.
  */
-export async function generateAdvice(ai: GoogleAI, context: AssistantContext): Promise<string> {
-    const prompt = buildAssistantPrompt(context);
+export async function generateInsights(ai: GoogleAI, context: AssistantContext): Promise<string[]> {
+    const prompt = buildInsightsPrompt(context);
+    const raw = await ai.chat<unknown>({ system: prompt.system, messages: prompt.messages, temperature: 0.4 });
 
-    let advice = '';
-    for await (const delta of ai.stream({ system: prompt.system, messages: prompt.messages, temperature: 0.5 })) {
-        advice += delta;
-    }
-
-    return advice;
+    return InsightsResultSchema.parse(raw).insights;
 }

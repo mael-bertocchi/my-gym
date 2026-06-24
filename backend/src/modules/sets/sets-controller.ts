@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import type { Prisma } from 'prisma/generated/prisma/client';
 import type { CreateSetRequest, SetParamsRequest, UpdateSetRequest } from 'src/modules/sets/sets-models';
+import { detectPersonalRecords } from 'src/modules/sets/sets-records';
 import { RequestError } from 'src/shared/models';
 
 /**
@@ -16,23 +17,22 @@ const SET_SELECT = {
     weightKg: true,
     reps: true,
     rpe: true,
-    restSeconds: true,
+    distanceM: true,
     durationSeconds: true,
-    tempo: true,
-    notes: true,
     isCompleted: true,
     createdAt: true
-} satisfies Prisma.SetEntrySelect;
+} satisfies Prisma.WorkoutSetSelect;
 
 /**
  * @function createSet
- * @description Logs a set under one of the user's workout exercises (setNumber auto-assigned when omitted).
+ * @description Logs a set under one of the caller's workout exercises (setNumber auto-assigned when omitted) and reports any personal records it sets.
  *
  * @returns {Promise<void>} Resolves when the set is created.
  */
 async function createSet(request: FastifyRequest<CreateSetRequest>, reply: FastifyReply): Promise<void> {
     const parent = await request.server.prisma.workoutExercise.findFirst({
-        where: { id: request.body.workoutExerciseId, workout: { userId: request.user.id } }
+        where: { id: request.params.workoutExerciseId, workoutId: request.params.workoutId, workout: { userId: request.user.id } },
+        select: { id: true, exerciseId: true }
     });
 
     if (parent === null) {
@@ -41,49 +41,53 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
 
     let setNumber = request.body.setNumber;
     if (setNumber === undefined) {
-        const last = await request.server.prisma.setEntry.findFirst({
-            where: { workoutExerciseId: request.body.workoutExerciseId },
+        const last = await request.server.prisma.workoutSet.findFirst({
+            where: { workoutExerciseId: request.params.workoutExerciseId },
             orderBy: { setNumber: 'desc' }
         });
         setNumber = (last?.setNumber ?? 0) + 1;
     }
 
-    const created = await request.server.prisma.setEntry.create({
+    const created = await request.server.prisma.workoutSet.create({
         data: {
-            workoutExerciseId: request.body.workoutExerciseId,
+            workoutExerciseId: request.params.workoutExerciseId,
             setNumber,
             setType: request.body.setType,
             weightKg: request.body.weightKg,
             reps: request.body.reps,
             rpe: request.body.rpe,
-            restSeconds: request.body.restSeconds,
+            distanceM: request.body.distanceM,
             durationSeconds: request.body.durationSeconds,
-            tempo: request.body.tempo,
-            notes: request.body.notes,
             isCompleted: request.body.isCompleted
         },
         select: SET_SELECT
     });
 
-    reply.status(StatusCodes.CREATED).send({ data: created });
+    const personalRecords = await detectPersonalRecords(request.server.prisma, request.user.id, parent.exerciseId, created.id);
+
+    reply.status(StatusCodes.CREATED).send({ data: { set: created, personalRecords } });
 }
 
 /**
  * @function updateSet
- * @description Updates a set owned by the user. Only the provided fields change.
+ * @description Updates one of the caller's sets and re-checks for personal records. Only the provided fields change.
  *
  * @returns {Promise<void>} Resolves when the set is updated.
  */
 async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.setEntry.findFirst({
-        where: { id: request.params.id, workoutExercise: { workout: { userId: request.user.id } } }
+    const existing = await request.server.prisma.workoutSet.findFirst({
+        where: {
+            id: request.params.setId,
+            workoutExercise: { id: request.params.workoutExerciseId, workoutId: request.params.workoutId, workout: { userId: request.user.id } }
+        },
+        select: { id: true, workoutExercise: { select: { exerciseId: true } } }
     });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Set not found');
     }
 
-    const data: Prisma.SetEntryUncheckedUpdateInput = {};
+    const data: Prisma.WorkoutSetUncheckedUpdateInput = {};
 
     if (request.body.setNumber !== undefined) {
         data.setNumber = request.body.setNumber;
@@ -100,47 +104,46 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
     if (request.body.rpe !== undefined) {
         data.rpe = request.body.rpe;
     }
-    if (request.body.restSeconds !== undefined) {
-        data.restSeconds = request.body.restSeconds;
+    if (request.body.distanceM !== undefined) {
+        data.distanceM = request.body.distanceM;
     }
     if (request.body.durationSeconds !== undefined) {
         data.durationSeconds = request.body.durationSeconds;
-    }
-    if (request.body.tempo !== undefined) {
-        data.tempo = request.body.tempo;
-    }
-    if (request.body.notes !== undefined) {
-        data.notes = request.body.notes;
     }
     if (request.body.isCompleted !== undefined) {
         data.isCompleted = request.body.isCompleted;
     }
 
-    const updated = await request.server.prisma.setEntry.update({
-        where: { id: request.params.id },
+    const updated = await request.server.prisma.workoutSet.update({
+        where: { id: request.params.setId },
         data,
         select: SET_SELECT
     });
 
-    reply.status(StatusCodes.OK).send({ data: updated });
+    const personalRecords = await detectPersonalRecords(request.server.prisma, request.user.id, existing.workoutExercise.exerciseId, updated.id);
+
+    reply.status(StatusCodes.OK).send({ data: { set: updated, personalRecords } });
 }
 
 /**
  * @function deleteSet
- * @description Removes a set owned by the user.
+ * @description Removes one of the caller's sets.
  *
  * @returns {Promise<void>} Resolves when the set is deleted.
  */
 async function deleteSet(request: FastifyRequest<SetParamsRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.setEntry.findFirst({
-        where: { id: request.params.id, workoutExercise: { workout: { userId: request.user.id } } }
+    const existing = await request.server.prisma.workoutSet.findFirst({
+        where: {
+            id: request.params.setId,
+            workoutExercise: { id: request.params.workoutExerciseId, workoutId: request.params.workoutId, workout: { userId: request.user.id } }
+        }
     });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Set not found');
     }
 
-    await request.server.prisma.setEntry.delete({ where: { id: request.params.id } });
+    await request.server.prisma.workoutSet.delete({ where: { id: request.params.setId } });
 
     reply.status(StatusCodes.OK).send({ data: { message: 'Set deleted' } });
 }

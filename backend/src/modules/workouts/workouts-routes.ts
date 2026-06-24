@@ -1,12 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import workoutsController from 'src/modules/workouts/workouts-controller';
 import type { CreateWorkoutRequest, ListWorkoutsRequest, UpdateWorkoutRequest, WorkoutParamsRequest } from 'src/modules/workouts/workouts-models';
-import { CreateWorkoutSchema, ListWorkoutsQuerySchema, UpdateWorkoutSchema } from 'src/modules/workouts/workouts-models';
-import { UuidParamsSchema } from 'src/shared/schemas';
+import { CreateWorkoutSchema, ListWorkoutsQuerySchema, UpdateWorkoutSchema, WorkoutParamsSchema } from 'src/modules/workouts/workouts-models';
 
 /**
  * @function workoutsRoutes
- * @description Defines the routes for managing the user's workouts.
+ * @description Defines the caller's workout routes.
  */
 export default function (fastify: FastifyInstance): void {
     fastify.get<ListWorkoutsRequest>('/', {
@@ -16,13 +15,6 @@ export default function (fastify: FastifyInstance): void {
         }
     }, workoutsController.listWorkouts);
 
-    fastify.get<WorkoutParamsRequest>('/:id', {
-        preHandler: [fastify.authentication.authenticate],
-        schema: {
-            params: UuidParamsSchema
-        }
-    }, workoutsController.getWorkout);
-
     fastify.post<CreateWorkoutRequest>('/', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
@@ -30,18 +22,25 @@ export default function (fastify: FastifyInstance): void {
         }
     }, workoutsController.createWorkout);
 
-    fastify.patch<UpdateWorkoutRequest>('/:id', {
+    fastify.get<WorkoutParamsRequest>('/:workoutId', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
-            params: UuidParamsSchema,
+            params: WorkoutParamsSchema
+        }
+    }, workoutsController.getWorkout);
+
+    fastify.patch<UpdateWorkoutRequest>('/:workoutId', {
+        preHandler: [fastify.authentication.authenticate],
+        schema: {
+            params: WorkoutParamsSchema,
             body: UpdateWorkoutSchema
         }
     }, workoutsController.updateWorkout);
 
-    fastify.delete<WorkoutParamsRequest>('/:id', {
+    fastify.delete<WorkoutParamsRequest>('/:workoutId', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
-            params: UuidParamsSchema
+            params: WorkoutParamsSchema
         }
     }, workoutsController.deleteWorkout);
 }

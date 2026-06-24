@@ -1,21 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import statsController from 'src/modules/stats/stats-controller';
-import type { MusclesRequest, OverviewRequest, VariantStatsRequest } from 'src/modules/stats/stats-models';
-import { MusclesQuerySchema, OverviewQuerySchema, VariantStatsQuerySchema } from 'src/modules/stats/stats-models';
-import { UuidParamsSchema } from 'src/shared/schemas';
+import type { CalendarRequest, MuscleDistributionRequest, OverviewRequest, VolumeRequest } from 'src/modules/stats/stats-models';
+import { CalendarQuerySchema, MuscleDistributionQuerySchema, OverviewQuerySchema, VolumeQuerySchema } from 'src/modules/stats/stats-models';
 
 /**
  * @function statsRoutes
- * @description Defines the statistics routes.
+ * @description Defines the caller's statistics routes.
  */
 export default function (fastify: FastifyInstance): void {
-    fastify.get<MusclesRequest>('/muscles', {
-        preHandler: [fastify.authentication.authenticate],
-        schema: {
-            querystring: MusclesQuerySchema
-        }
-    }, statsController.getMuscles);
-
     fastify.get<OverviewRequest>('/overview', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
@@ -23,11 +15,28 @@ export default function (fastify: FastifyInstance): void {
         }
     }, statsController.getOverview);
 
-    fastify.get<VariantStatsRequest>('/exercise-variants/:id', {
+    fastify.get<VolumeRequest>('/volume', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
-            params: UuidParamsSchema,
-            querystring: VariantStatsQuerySchema
+            querystring: VolumeQuerySchema
         }
-    }, statsController.getVariantStats);
+    }, statsController.getVolume);
+
+    fastify.get<MuscleDistributionRequest>('/muscle-distribution', {
+        preHandler: [fastify.authentication.authenticate],
+        schema: {
+            querystring: MuscleDistributionQuerySchema
+        }
+    }, statsController.getMuscleDistribution);
+
+    fastify.get('/personal-records', {
+        preHandler: [fastify.authentication.authenticate]
+    }, statsController.getPersonalRecords);
+
+    fastify.get<CalendarRequest>('/calendar', {
+        preHandler: [fastify.authentication.authenticate],
+        schema: {
+            querystring: CalendarQuerySchema
+        }
+    }, statsController.getCalendar);
 }

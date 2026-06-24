@@ -1,13 +1,31 @@
 import type { RequestGenericInterface } from 'fastify';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from 'src/shared/pagination';
+import { CursorQuerySchema } from 'src/shared/schemas';
 import { z } from 'zod';
+
+/**
+ * @constant WorkoutParamsSchema
+ * @description Zod schema for route params identifying a single workout.
+ */
+export const WorkoutParamsSchema = z.object({
+    workoutId: z.uuid()
+});
+
+/**
+ * @constant ListWorkoutsQuerySchema
+ * @description Zod schema for the list-workouts query string (cursor pagination plus date-range and gym filters).
+ */
+export const ListWorkoutsQuerySchema = CursorQuerySchema.extend({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+    gymId: z.uuid().optional()
+});
 
 /**
  * @constant CreateWorkoutSchema
  * @description Zod schema for the create-workout request body. All fields are optional; startedAt defaults to now in the controller.
  */
 export const CreateWorkoutSchema = z.object({
-    gymLocationId: z.uuid().optional(),
+    gymId: z.uuid().optional(),
     name: z.string().min(1).max(120).optional(),
     startedAt: z.coerce.date().optional(),
     notes: z.string().max(2000).optional()
@@ -21,10 +39,10 @@ export type CreateWorkoutBody = z.infer<typeof CreateWorkoutSchema>;
 
 /**
  * @constant UpdateWorkoutSchema
- * @description Zod schema for the update-workout request body. Each field is optional, but at least one must be provided. A null gymLocationId/endedAt clears that field.
+ * @description Zod schema for the update-workout request body. Each field is optional, but at least one must be provided. A null gymId/endedAt clears that field.
  */
 export const UpdateWorkoutSchema = z.object({
-    gymLocationId: z.uuid().nullable().optional(),
+    gymId: z.uuid().nullable().optional(),
     name: z.string().min(1).max(120).optional(),
     startedAt: z.coerce.date().optional(),
     endedAt: z.coerce.date().nullable().optional(),
@@ -40,28 +58,18 @@ export const UpdateWorkoutSchema = z.object({
 export type UpdateWorkoutBody = z.infer<typeof UpdateWorkoutSchema>;
 
 /**
- * @constant ListWorkoutsQuerySchema
- * @description Zod schema for the list-workouts query string (pagination plus an optional gym-location filter).
- */
-export const ListWorkoutsQuerySchema = z.object({
-    gymLocationId: z.uuid().optional(),
-    page: z.coerce.number().int().positive().optional(),
-    pageSize: z.coerce.number().refine(value => PAGE_SIZES.includes(value), {
-        message: `Page size must be one of ${PAGE_SIZES.join(', ')}`
-    }).optional().default(DEFAULT_PAGE_SIZE)
-});
-
-/**
  * @interface ListWorkoutsRequest
- * @description Fastify request generic for listing workouts.
+ * @description Fastify request generic for listing the caller's workouts.
  *
  * @extends RequestGenericInterface
  */
 export interface ListWorkoutsRequest extends RequestGenericInterface {
     Querystring: {
-        gymLocationId?: string; /*!< Optional gym-location filter */
-        page?: number; /*!< Optional 1-based page number */
-        pageSize?: number; /*!< Optional page size (must be one of PAGE_SIZES) */
+        from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte */
+        gymId?: string; /*!< Optional gym filter */
+        limit?: number; /*!< Optional page size (1..MAX_LIMIT) */
+        cursor?: string; /*!< Optional id of the previous page's last item */
     };
 }
 
@@ -83,7 +91,7 @@ export interface CreateWorkoutRequest extends RequestGenericInterface {
  */
 export interface UpdateWorkoutRequest extends RequestGenericInterface {
     Params: {
-        id: string; /*!< Workout identifier */
+        workoutId: string; /*!< Workout identifier */
     };
     Body: UpdateWorkoutBody; /*!< Validated update-workout body */
 }
@@ -96,6 +104,6 @@ export interface UpdateWorkoutRequest extends RequestGenericInterface {
  */
 export interface WorkoutParamsRequest extends RequestGenericInterface {
     Params: {
-        id: string; /*!< Workout identifier */
+        workoutId: string; /*!< Workout identifier */
     };
 }

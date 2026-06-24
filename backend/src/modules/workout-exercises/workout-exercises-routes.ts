@@ -1,33 +1,33 @@
 import type { FastifyInstance } from 'fastify';
 import workoutExercisesController from 'src/modules/workout-exercises/workout-exercises-controller';
-import { CreateWorkoutExerciseSchema, UpdateWorkoutExerciseSchema } from 'src/modules/workout-exercises/workout-exercises-models';
 import type { CreateWorkoutExerciseRequest, UpdateWorkoutExerciseRequest, WorkoutExerciseParamsRequest } from 'src/modules/workout-exercises/workout-exercises-models';
-import { UuidParamsSchema } from 'src/shared/schemas';
+import { CreateWorkoutExerciseSchema, UpdateWorkoutExerciseSchema, WorkoutExerciseCreateParamsSchema, WorkoutExerciseParamsSchema } from 'src/modules/workout-exercises/workout-exercises-models';
 
 /**
  * @function workoutExercisesRoutes
- * @description Defines the routes for managing exercises within a workout.
+ * @description Defines the routes for managing exercises nested within a workout.
  */
 export default function (fastify: FastifyInstance): void {
-    fastify.post<CreateWorkoutExerciseRequest>('/', {
+    fastify.post<CreateWorkoutExerciseRequest>('/:workoutId/exercises', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
+            params: WorkoutExerciseCreateParamsSchema,
             body: CreateWorkoutExerciseSchema
         }
     }, workoutExercisesController.createWorkoutExercise);
 
-    fastify.patch<UpdateWorkoutExerciseRequest>('/:id', {
+    fastify.patch<UpdateWorkoutExerciseRequest>('/:workoutId/exercises/:workoutExerciseId', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
-            params: UuidParamsSchema,
+            params: WorkoutExerciseParamsSchema,
             body: UpdateWorkoutExerciseSchema
         }
     }, workoutExercisesController.updateWorkoutExercise);
 
-    fastify.delete<WorkoutExerciseParamsRequest>('/:id', {
+    fastify.delete<WorkoutExerciseParamsRequest>('/:workoutId/exercises/:workoutExerciseId', {
         preHandler: [fastify.authentication.authenticate],
         schema: {
-            params: UuidParamsSchema
+            params: WorkoutExerciseParamsSchema
         }
     }, workoutExercisesController.deleteWorkoutExercise);
 }

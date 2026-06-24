@@ -43,9 +43,8 @@ export interface StreamChatOptions {
  * @description Public interface exposed on the Fastify instance.
  */
 export interface GoogleAI {
-    chat: <T>(options: ChatOptions) => Promise<T>; /*!< Single-shot JSON-mode completion used by exercise onboarding */
+    chat: <T>(options: ChatOptions) => Promise<T>; /*!< Single-shot JSON-mode completion used by proactive insights */
     stream: (options: StreamChatOptions) => AsyncIterable<string>; /*!< Incremental text stream for the freeform assistant */
-    ping: () => Promise<void>; /*!< Lightweight reachability check used by the health endpoint */
 }
 
 /**
@@ -64,7 +63,7 @@ function toContents(messages: ChatMessage[]): { role: ChatMessageRole; parts: { 
  * @description Fastify plugin integrating with Google AI Studio (Gemini) through the @google/genai SDK.
  */
 export default fp(function (fastify: FastifyInstance): void {
-    const client = new GoogleGenAI({ apiKey: fastify.variables.GOOGLE_AI_API_KEY });
+    const client = new GoogleGenAI({ apiKey: fastify.variables.GOOGLE_AI_STUDIO_API_KEY });
     const model = fastify.variables.GOOGLE_AI_MODEL;
 
     fastify.decorate('ai', {
@@ -114,10 +113,6 @@ export default fp(function (fastify: FastifyInstance): void {
                     yield text;
                 }
             }
-        },
-
-        async ping(): Promise<void> {
-            await client.models.generateContent({ model, contents: 'ping' });
         }
     });
 }, {

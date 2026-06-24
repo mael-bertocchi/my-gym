@@ -13,7 +13,7 @@ export const variables = Type.Object({
     PORT: Type.Number(),
     CORS_ORIGINS: Type.String(),
     DATABASE_URL: Type.String({ minLength: 1 }),
-    GOOGLE_AI_API_KEY: Type.String({ minLength: 1 }),
+    GOOGLE_AI_STUDIO_API_KEY: Type.String({ minLength: 1 }),
     GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' }),
     ADMINISTRATOR_EMAIL: Type.String({ format: 'email' }),
     ADMINISTRATOR_PASSWORD: Type.String({ minLength: 8 }),

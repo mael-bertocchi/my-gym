@@ -14,8 +14,8 @@ describe('CreateWorkoutSchema', () => {
         }
     });
 
-    it('rejects an invalid gymLocationId', () => {
-        expect(CreateWorkoutSchema.safeParse({ gymLocationId: 'nope' }).success).toBe(false);
+    it('rejects an invalid gymId', () => {
+        expect(CreateWorkoutSchema.safeParse({ gymId: 'nope' }).success).toBe(false);
     });
 });
 

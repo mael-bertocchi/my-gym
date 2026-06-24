@@ -9,20 +9,36 @@ import { z } from 'zod';
 export const SetTypeSchema = z.enum(SetType);
 
 /**
+ * @constant SetCreateParamsSchema
+ * @description Zod schema for route params when adding a set to a workout exercise.
+ */
+export const SetCreateParamsSchema = z.object({
+    workoutId: z.uuid(),
+    workoutExerciseId: z.uuid()
+});
+
+/**
+ * @constant SetParamsSchema
+ * @description Zod schema for route params identifying a single set.
+ */
+export const SetParamsSchema = z.object({
+    workoutId: z.uuid(),
+    workoutExerciseId: z.uuid(),
+    setId: z.uuid()
+});
+
+/**
  * @constant CreateSetSchema
  * @description Zod schema for the create-set request body. setNumber defaults to next in the controller; setType/isCompleted fall back to the DB defaults.
  */
 export const CreateSetSchema = z.object({
-    workoutExerciseId: z.uuid(),
     setNumber: z.number().int().positive().optional(),
     setType: SetTypeSchema.optional(),
     weightKg: z.number().min(0).max(9999.99).optional(),
     reps: z.number().int().min(0).max(10000).optional(),
     rpe: z.number().min(0).max(10).optional(),
-    restSeconds: z.number().int().min(0).optional(),
+    distanceM: z.number().min(0).max(99999999.99).optional(),
     durationSeconds: z.number().int().min(0).optional(),
-    tempo: z.string().max(20).optional(),
-    notes: z.string().max(2000).optional(),
     isCompleted: z.boolean().optional()
 });
 
@@ -34,18 +50,16 @@ export type CreateSetBody = z.infer<typeof CreateSetSchema>;
 
 /**
  * @constant UpdateSetSchema
- * @description Zod schema for the update-set request body. Each field is optional, but at least one must be provided.
+ * @description Zod schema for the update-set request body. Each field is optional, but at least one must be provided. A null weight/rpe/distance clears it.
  */
 export const UpdateSetSchema = z.object({
     setNumber: z.number().int().positive().optional(),
     setType: SetTypeSchema.optional(),
     weightKg: z.number().min(0).max(9999.99).nullable().optional(),
-    reps: z.number().int().min(0).max(10000).optional(),
-    rpe: z.number().min(0).max(10).optional(),
-    restSeconds: z.number().int().min(0).optional(),
-    durationSeconds: z.number().int().min(0).optional(),
-    tempo: z.string().max(20).optional(),
-    notes: z.string().max(2000).optional(),
+    reps: z.number().int().min(0).max(10000).nullable().optional(),
+    rpe: z.number().min(0).max(10).nullable().optional(),
+    distanceM: z.number().min(0).max(99999999.99).nullable().optional(),
+    durationSeconds: z.number().int().min(0).nullable().optional(),
     isCompleted: z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
@@ -59,11 +73,15 @@ export type UpdateSetBody = z.infer<typeof UpdateSetSchema>;
 
 /**
  * @interface CreateSetRequest
- * @description Fastify request generic for creating a set.
+ * @description Fastify request generic for adding a set to a workout exercise.
  *
  * @extends RequestGenericInterface
  */
 export interface CreateSetRequest extends RequestGenericInterface {
+    Params: {
+        workoutId: string; /*!< Workout identifier */
+        workoutExerciseId: string; /*!< Workout exercise identifier */
+    };
     Body: CreateSetBody; /*!< Validated create-set body */
 }
 
@@ -75,19 +93,23 @@ export interface CreateSetRequest extends RequestGenericInterface {
  */
 export interface UpdateSetRequest extends RequestGenericInterface {
     Params: {
-        id: string; /*!< Set identifier */
+        workoutId: string; /*!< Workout identifier */
+        workoutExerciseId: string; /*!< Workout exercise identifier */
+        setId: string; /*!< Set identifier */
     };
     Body: UpdateSetBody; /*!< Validated update-set body */
 }
 
 /**
  * @interface SetParamsRequest
- * @description Fastify request generic for operations targeting a single set by id.
+ * @description Fastify request generic for operations targeting a single set.
  *
  * @extends RequestGenericInterface
  */
 export interface SetParamsRequest extends RequestGenericInterface {
     Params: {
-        id: string; /*!< Set identifier */
+        workoutId: string; /*!< Workout identifier */
+        workoutExerciseId: string; /*!< Workout exercise identifier */
+        setId: string; /*!< Set identifier */
     };
 }

@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from 'src/shared/pagination';
+import { MAX_LIMIT } from 'src/shared/pagination';
 import { z } from 'zod';
 
 /**
@@ -10,13 +10,16 @@ export const UuidParamsSchema = z.object({
 });
 
 /**
- * @constant PaginationQuerySchema
- * @description Reusable schema for pagination query parameters. Mirrors the shape consumed by parsePagination().
+ * @constant CursorQuerySchema
+ * @description Reusable schema for cursor-pagination query parameters. Mirrors the shape consumed by parseCursor(). Endpoints with additional filters extend this schema.
  */
-export const PaginationQuerySchema = z.object({
-    page: z.coerce.number().int().positive().optional(),
-    pageSize: z.coerce.number().refine(value => PAGE_SIZES.includes(value), {
-        message: `Page size must be one of ${PAGE_SIZES.join(', ')}`
-    }).optional().default(DEFAULT_PAGE_SIZE),
-    search: z.string().max(200).optional()
+export const CursorQuerySchema = z.object({
+    limit: z.coerce.number().int().positive().max(MAX_LIMIT).optional(),
+    cursor: z.uuid().optional()
 });
+
+/**
+ * @constant SettingsSchema
+ * @description Reusable schema for free-form, structured key/value settings (e.g. seat height, pad position) stored as JSON.
+ */
+export const SettingsSchema = z.record(z.string(), z.unknown());

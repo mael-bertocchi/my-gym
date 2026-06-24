@@ -1,90 +1,80 @@
-/**
- * @constant PAGE_SIZES
- * @description Allowed page sizes. Enforced by the JSON Schema fragment.
- */
-export const PAGE_SIZES: readonly number[] = [10, 25, 50, 100];
+import type { Maybe } from 'src/shared/models';
 
 /**
- * @constant DEFAULT_PAGE_SIZE
- * @description Default page size when the client omits the parameter.
+ * @constant DEFAULT_LIMIT
+ * @description Number of items a list endpoint returns when the client omits ?limit=.
  */
-export const DEFAULT_PAGE_SIZE: number = 25;
+export const DEFAULT_LIMIT: number = 25;
 
 /**
- * @interface PaginationQuery
- * @description Shape of the pagination-related query parameters.
+ * @constant MAX_LIMIT
+ * @description Upper bound for ?limit=; larger requests are clamped (or rejected by the schema) to this.
  */
-export interface PaginationQuery {
-    page?: number; /*!< Optional page number, 1-based. Defaults to 1 when not a finite number. Clamped to >= 1. */
-    pageSize?: number; /*!< Optional page size. Must be one of PAGE_SIZES when provided, otherwise defaults to DEFAULT_PAGE_SIZE. */
-    search?: string; /*!< Optional search string for filtering results. Max length 200 characters. */
+export const MAX_LIMIT: number = 100;
+
+/**
+ * @interface CursorQuery
+ * @description Shape of the cursor-pagination query parameters shared by every list endpoint.
+ */
+export interface CursorQuery {
+    limit?: number; /*!< Optional page size, 1..MAX_LIMIT. Defaults to DEFAULT_LIMIT. */
+    cursor?: string; /*!< Optional id of the previous page's last item; results continue after it. */
 }
 
 /**
- * @interface PaginationMeta
- * @description Metadata returned with each paginated response.
+ * @interface CursorPage
+ * @description Envelope returned by every cursor-paginated list endpoint.
  */
-export interface PaginationMeta {
-    page: number; /*!< Current page number, 1-based. Clamped to totalPages when requested page exceeds totalPages. Defaults to 1 when total is 0. */
-    pageSize: number; /*!< Number of items per page. One of PAGE_SIZES. */
-    total: number; /*!< Total number of items across all pages. */
-    totalPages: number; /*!< Total number of pages, calculated as Math.ceil(total / pageSize). Can be 0 when total is 0. */
+export interface CursorPage<T> {
+    data: T[]; /*!< Items for the current page (length <= limit). */
+    nextCursor: Maybe<string>; /*!< Cursor to fetch the next page, or null once the list is exhausted. */
 }
 
 /**
- * @interface PaginatedResponse
- * @description Envelope returned by every paginated list endpoint.
+ * @interface ParsedCursor
+ * @description Normalized cursor values plus the Prisma take/cursor/skip used to over-fetch by one.
  */
-export interface PaginatedResponse<T> {
-    data: T[]; /*!< Array of items for the current page. Length can be less than pageSize on the last page. */
-    pagination: PaginationMeta; /*!< Pagination metadata for the current response. */
+export interface ParsedCursor {
+    limit: number; /*!< Normalized page size. */
+    take: number; /*!< limit + 1, so buildCursorPage can detect whether another page exists. */
+    cursor?: { id: string }; /*!< Prisma cursor positioned on the previous page's last id. */
+    skip?: number; /*!< 1 when a cursor is supplied, to skip the cursor row itself. */
 }
 
 /**
- * @interface ParsedPagination
- * @description Result of parsePagination: normalized values plus Prisma skip/take.
- */
-export interface ParsedPagination {
-    page: number; /*!< Current page number, 1-based. */
-    pageSize: number; /*!< Number of items per page. */
-    skip: number; /*!< Number of items to skip for the Prisma query. */
-    take: number; /*!< Number of items to take for the Prisma query. */
-}
-
-/**
- * @function parsePagination
- * @description Normalizes raw pagination query params into safe values for a Prisma query. Page is clamped to >= 1 (defaults to 1 on non-finite values). PageSize falls back to DEFAULT_PAGE_SIZE when not in PAGE_SIZES.
+ * @function parseCursor
+ * @description Normalizes raw cursor-pagination query params into safe values for a Prisma query. Limit is clamped to 1..MAX_LIMIT (DEFAULT_LIMIT on non-finite values); take over-fetches by one.
  *
- * @param {PaginationQuery} query The raw pagination query parameters.
- * @returns {ParsedPagination} The normalized pagination values for the Prisma query.
+ * @param {CursorQuery} query The raw cursor-pagination query parameters.
+ * @returns {ParsedCursor} The normalized values for the Prisma query.
  */
-export function parsePagination(query: PaginationQuery): ParsedPagination {
-    const rawPage: number = typeof query.page === 'number' && Number.isFinite(query.page) ? query.page : 1;
-    const page: number = rawPage > 0 ? Math.floor(rawPage) : 1;
+export function parseCursor(query: CursorQuery): ParsedCursor {
+    const rawLimit: number = typeof query.limit === 'number' && Number.isFinite(query.limit) ? Math.floor(query.limit) : DEFAULT_LIMIT;
+    const limit: number = rawLimit < 1 ? DEFAULT_LIMIT : (rawLimit > MAX_LIMIT ? MAX_LIMIT : rawLimit);
 
-    const rawSize: number = typeof query.pageSize !== 'number' ? DEFAULT_PAGE_SIZE : query.pageSize;
-    const pageSize: number = PAGE_SIZES.includes(rawSize) ? rawSize : DEFAULT_PAGE_SIZE;
+    const parsed: ParsedCursor = { limit, take: limit + 1 };
 
-    return {
-        page,
-        pageSize,
-        skip: (page - 1) * pageSize,
-        take: pageSize
-    };
+    if (query.cursor !== undefined && query.cursor.length !== 0) {
+        parsed.cursor = { id: query.cursor };
+        parsed.skip = 1;
+    }
+
+    return parsed;
 }
 
 /**
- * @function buildPaginationMeta
- * @description Builds the pagination meta object given total rows. When the requested page overshoots totalPages, the returned page is clamped to the last page (totalPages), or 1 when total is 0. Callers should re-query with skip = (page - 1) * pageSize if page was clamped.
+ * @function buildCursorPage
+ * @description Trims an over-fetched row set to the page size and derives the next cursor. Pass the rows obtained with ParsedCursor.take (limit + 1); the presence of the extra row means another page exists and the last kept row's id becomes nextCursor.
  *
- * @param {number} total The total number of items across all pages.
- * @param {number} pageSize The number of items per page.
- * @param {number} requestedPage The requested page number.
- * @returns {PaginationMeta} The pagination metadata for the current response.
+ * @param {T[]} rows The rows fetched with take = limit + 1, in their final order.
+ * @param {number} limit The normalized page size from parseCursor.
+ * @returns {CursorPage<T>} The page of items and the next cursor (null when exhausted).
  */
-export function buildPaginationMeta(total: number, pageSize: number, requestedPage: number): PaginationMeta {
-    const totalPages: number = total !== 0 ? Math.ceil(total / pageSize) : 0;
-    const page: number = total !== 0 ? (requestedPage > totalPages ? totalPages : requestedPage) : 1;
+export function buildCursorPage<T extends { id: string }>(rows: T[], limit: number): CursorPage<T> {
+    if (rows.length > limit) {
+        const data: T[] = rows.slice(0, limit);
+        return { data, nextCursor: data[data.length - 1].id };
+    }
 
-    return { page, pageSize, total, totalPages };
+    return { data: rows, nextCursor: null };
 }

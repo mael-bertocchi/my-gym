@@ -1,4 +1,4 @@
-import { LoginSchema, RefreshSchema, UpdateProfileSchema } from 'src/modules/identity/identity-models';
+import { LoginSchema, LogoutSchema, RefreshSchema } from 'src/modules/identity/identity-models';
 import { describe, expect, it } from 'vitest';
 
 describe('LoginSchema', () => {
@@ -25,27 +25,12 @@ describe('RefreshSchema', () => {
     });
 });
 
-describe('UpdateProfileSchema', () => {
-    it('accepts a partial update', () => {
-        expect(UpdateProfileSchema.safeParse({ firstname: 'Mael' }).success).toBe(true);
+describe('LogoutSchema', () => {
+    it('accepts a non-empty refresh token', () => {
+        expect(LogoutSchema.safeParse({ refreshToken: 'abc.def.ghi' }).success).toBe(true);
     });
 
-    it('rejects a too-short password', () => {
-        expect(UpdateProfileSchema.safeParse({ password: 'short' }).success).toBe(false);
-    });
-
-    it('accepts a weightUnit update', () => {
-        const result = UpdateProfileSchema.safeParse({ weightUnit: 'LBS' });
-
-        expect(result.success).toBe(true);
-        expect(result.data?.weightUnit).toBe('LBS');
-    });
-
-    it('rejects an unknown weightUnit', () => {
-        expect(UpdateProfileSchema.safeParse({ weightUnit: 'STONE' }).success).toBe(false);
-    });
-
-    it('rejects an empty update', () => {
-        expect(UpdateProfileSchema.safeParse({}).success).toBe(false);
+    it('rejects an empty refresh token', () => {
+        expect(LogoutSchema.safeParse({ refreshToken: '' }).success).toBe(false);
     });
 });

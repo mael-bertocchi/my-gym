@@ -1,5 +1,4 @@
 import type { RequestGenericInterface } from 'fastify';
-import { WeightUnit } from 'prisma/generated/prisma/client';
 import { z } from 'zod';
 
 /**
@@ -32,23 +31,18 @@ export const RefreshSchema = z.object({
 export type RefreshBody = z.infer<typeof RefreshSchema>;
 
 /**
- * @constant UpdateProfileSchema
- * @description Zod schema for updating the current user's profile. Each field is optional, but at least one must be provided.
+ * @constant LogoutSchema
+ * @description Zod schema for the logout request body (the refresh token to invalidate).
  */
-export const UpdateProfileSchema = z.object({
-    firstname: z.string().min(1).max(80).optional(),
-    lastname: z.string().min(1).max(80).optional(),
-    password: z.string().min(8).max(200).optional(),
-    weightUnit: z.enum(WeightUnit).optional()
-}).refine((value) => Object.keys(value).length > 0, {
-    message: 'At least one field must be provided'
+export const LogoutSchema = z.object({
+    refreshToken: z.string().min(1)
 });
 
 /**
- * @type UpdateProfileBody
- * @description Inferred body type for the update-profile endpoint.
+ * @type LogoutBody
+ * @description Inferred body type for the logout endpoint.
  */
-export type UpdateProfileBody = z.infer<typeof UpdateProfileSchema>;
+export type LogoutBody = z.infer<typeof LogoutSchema>;
 
 /**
  * @interface LoginRequest
@@ -71,11 +65,11 @@ export interface RefreshRequest extends RequestGenericInterface {
 }
 
 /**
- * @interface UpdateProfileRequest
- * @description Fastify request generic for the update-profile endpoint.
+ * @interface LogoutRequest
+ * @description Fastify request generic for the logout endpoint.
  *
  * @extends RequestGenericInterface
  */
-export interface UpdateProfileRequest extends RequestGenericInterface {
-    Body: UpdateProfileBody; /*!< Validated update-profile body */
+export interface LogoutRequest extends RequestGenericInterface {
+    Body: LogoutBody; /*!< Validated logout body */
 }

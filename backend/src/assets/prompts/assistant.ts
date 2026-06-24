@@ -1,84 +1,156 @@
 import type { Maybe } from 'src/shared/models';
 
 /**
- * @interface AdviceSet
- * @description One working set's numbers used in the advice prompt (weights already converted from Decimal).
+ * @constant COACH_SYSTEM
+ * @description System instruction for the conversational coaching assistant.
  */
-export interface AdviceSet {
-    weightKg: Maybe<number>; /*!< External load in kg, or null for bodyweight */
-    reps: Maybe<number>; /*!< Reps performed */
-    rpe: Maybe<number>; /*!< Rate of perceived exertion (0-10) */
+export const COACH_SYSTEM = 'You are a personal strength and conditioning coach. You advise one athlete, grounded strictly in the training data provided below. Be concise, specific, and practical: reference the athlete\'s own exercises, loads, and trends. If the data is insufficient to answer, say so and suggest what to log. Never invent numbers that are not in the data.';
+
+/**
+ * @constant INSIGHTS_SYSTEM
+ * @description System instruction for proactive insights (JSON mode).
+ */
+export const INSIGHTS_SYSTEM = 'You are a personal strength coach reviewing the athlete\'s recent training data below. Surface proactive insights: plateaus on specific lifts, muscle-group imbalances, notable progress, and what to prioritise next session. Base every point strictly on the data. Respond as JSON with a single field "insights": an array of 2-6 short, specific strings.';
+
+/**
+ * @interface ContextWorkoutExercise
+ * @description One exercise performed in a recent workout, summarised for the prompt.
+ */
+export interface ContextWorkoutExercise {
+    name: string; /*!< The exercise name */
+    setCount: number; /*!< Number of sets logged */
+    topSet: Maybe<string>; /*!< The heaviest working set, rendered like "100kg x 5" */
 }
 
 /**
- * @interface AdviceSession
- * @description One past session's working sets for a variant.
+ * @interface ContextWorkout
+ * @description A recent workout summarised for the prompt.
  */
-export interface AdviceSession {
-    date: string; /*!< ISO timestamp of when the session started */
-    sets: AdviceSet[]; /*!< The working sets logged for the variant in that session */
+export interface ContextWorkout {
+    date: string; /*!< ISO timestamp of the workout */
+    gym: Maybe<string>; /*!< The gym name, when recorded */
+    exercises: ContextWorkoutExercise[]; /*!< The exercises performed */
+}
+
+/**
+ * @interface ContextRecord
+ * @description An exercise's bests, summarised for the prompt.
+ */
+export interface ContextRecord {
+    name: string; /*!< The exercise name */
+    heaviestKg: Maybe<number>; /*!< Heaviest load in kg */
+    bestEstimated1RM: Maybe<number>; /*!< Best estimated 1RM in kg */
+}
+
+/**
+ * @interface ContextMuscle
+ * @description Recent working-set credit for one muscle, summarised for the prompt.
+ */
+export interface ContextMuscle {
+    muscle: string; /*!< The muscle group */
+    sets: number; /*!< Weighted set credit */
+    volume: number; /*!< Weighted volume credit */
 }
 
 /**
  * @interface AssistantContext
- * @description The facts about a variant and its recent history used to prompt the coaching model.
+ * @description The caller's own training data assembled to ground the assistant.
  */
 export interface AssistantContext {
-    exerciseName: string; /*!< The movement name */
-    equipmentType: string; /*!< The equipment used */
-    brandName?: string; /*!< The machine manufacturer, when relevant */
-    sessions: AdviceSession[]; /*!< Recent sessions, most recent first */
+    displayName: string; /*!< The athlete's display name */
+    recentWorkouts: ContextWorkout[]; /*!< Recent sessions, most recent first */
+    personalRecords: ContextRecord[]; /*!< Top lifts by estimated 1RM */
+    muscleBalance: ContextMuscle[]; /*!< Recent per-muscle working-set credit */
+}
+
+/**
+ * @interface AssistantPromptMessage
+ * @description One turn passed to the model ('model' is the assistant turn).
+ */
+export interface AssistantPromptMessage {
+    role: 'user' | 'model'; /*!< The turn's author */
+    content: string; /*!< The turn's text */
 }
 
 /**
  * @interface AssistantPrompt
- * @description A system instruction plus the user turn sent to the coaching model.
+ * @description A system instruction plus the turns sent to the model.
  */
 export interface AssistantPrompt {
     system: string; /*!< System instruction setting the coaching context */
-    messages: { role: 'user'; content: string }[]; /*!< The single user turn describing the history */
+    messages: AssistantPromptMessage[]; /*!< The conversation turns */
 }
 
 /**
- * @function formatSet
- * @description Renders one working set as a short human-readable string.
+ * @function formatContext
+ * @description Renders the caller's training data into the grounding text shared by chat and insights. All loads are in kilograms.
  *
- * @param {AdviceSet} set The set to render.
- * @returns {string} A compact description like "100kg x 5 @RPE8" or "bodyweight x 10".
+ * @param {AssistantContext} context The assembled training data.
+ * @returns {string} The grounding text block.
  */
-function formatSet(set: AdviceSet): string {
-    const load = set.weightKg !== null ? `${set.weightKg}kg` : 'bodyweight';
-    const reps = set.reps !== null ? ` x ${set.reps}` : '';
-    const rpe = set.rpe !== null ? ` @RPE${set.rpe}` : '';
+export function formatContext(context: AssistantContext): string {
+    const lines: string[] = [`Athlete: ${context.displayName}. All loads are in kilograms.`];
 
-    return `${load}${reps}${rpe}`;
-}
-
-/**
- * @function buildAssistantPrompt
- * @description Builds the system + user prompt asking the model for progressive-overload advice from a variant's history.
- *
- * @param {AssistantContext} context The variant facts and recent session history.
- * @returns {AssistantPrompt} The system instruction and the single user message.
- */
-export function buildAssistantPrompt(context: AssistantContext): AssistantPrompt {
-    const system = 'You are an expert strength coach focused on progressive overload. Given an exercise and its recent working-set history (most recent session first), give concise, specific, actionable advice for the next session: what weight and reps to target and why. Reply in 3-5 sentences with no preamble.';
-
-    const brand = context.brandName !== undefined ? ` (${context.brandName})` : '';
-    let description = `Exercise: ${context.exerciseName} on ${context.equipmentType}${brand}.`;
-
-    if (context.sessions.length !== 0) {
-        description += '\nRecent working sets (most recent first):';
-        for (const session of context.sessions) {
-            const sets = session.sets.length !== 0 ? session.sets.map(formatSet).join(', ') : 'no working sets';
-            description += `\n- ${session.date}: ${sets}`;
+    lines.push('', 'Recent workouts:');
+    if (context.recentWorkouts.length !== 0) {
+        for (const workout of context.recentWorkouts) {
+            const where = workout.gym !== null ? ` at ${workout.gym}` : '';
+            const exercises = workout.exercises
+                .map((exercise) => {
+                    const top = exercise.topSet !== null ? ` top ${exercise.topSet}` : '';
+                    return `${exercise.name} (${exercise.setCount} sets${top})`;
+                })
+                .join('; ');
+            lines.push(`- ${workout.date}${where}: ${exercises.length !== 0 ? exercises : 'no exercises'}`);
         }
     } else {
-        description += '\nThere is no logged history yet. Suggest a sensible starting point and how to progress.';
+        lines.push('- none logged yet');
     }
 
+    lines.push('', 'Personal records (top lifts):');
+    if (context.personalRecords.length !== 0) {
+        for (const record of context.personalRecords) {
+            const heaviest = record.heaviestKg !== null ? `heaviest ${record.heaviestKg}kg` : 'bodyweight';
+            const oneRm = record.bestEstimated1RM !== null ? `, est 1RM ${record.bestEstimated1RM}kg` : '';
+            lines.push(`- ${record.name}: ${heaviest}${oneRm}`);
+        }
+    } else {
+        lines.push('- none yet');
+    }
+
+    lines.push('', 'Recent muscle balance (working-set volume):');
+    if (context.muscleBalance.length !== 0) {
+        for (const muscle of context.muscleBalance) {
+            lines.push(`- ${muscle.muscle}: ${muscle.sets} sets, ${muscle.volume} volume`);
+        }
+    } else {
+        lines.push('- no data yet');
+    }
+
+    return lines.join('\n');
+}
+
+/**
+ * @function buildChatSystem
+ * @description Builds the system instruction for a chat turn: the coaching brief plus the grounding context.
+ *
+ * @param {AssistantContext} context The assembled training data.
+ * @returns {string} The full system instruction.
+ */
+export function buildChatSystem(context: AssistantContext): string {
+    return `${COACH_SYSTEM}\n\n${formatContext(context)}`;
+}
+
+/**
+ * @function buildInsightsPrompt
+ * @description Builds the JSON-mode prompt that asks the model for proactive insights from the caller's data.
+ *
+ * @param {AssistantContext} context The assembled training data.
+ * @returns {AssistantPrompt} The system instruction and the single user turn.
+ */
+export function buildInsightsPrompt(context: AssistantContext): AssistantPrompt {
     return {
-        system,
-        messages: [{ role: 'user', content: description }]
+        system: `${INSIGHTS_SYSTEM}\n\n${formatContext(context)}`,
+        messages: [{ role: 'user', content: 'Review my recent training data and return proactive insights.' }]
     };
 }

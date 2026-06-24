@@ -1,141 +1,42 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import type { Prisma } from 'prisma/generated/prisma/client';
-import { computeVariantStats } from 'src/modules/stats/stats-compute';
-import type { MusclesRequest, OverviewRequest, VariantStatsRequest } from 'src/modules/stats/stats-models';
+import { computeCalendar } from 'src/modules/stats/stats-calendar';
+import { computeDashboard } from 'src/modules/stats/stats-dashboard';
+import type { CalendarRequest, MuscleDistributionRequest, OverviewRequest, VolumeRequest } from 'src/modules/stats/stats-models';
 import { computeMuscleBreakdown } from 'src/modules/stats/stats-muscles';
 import { computeOverview } from 'src/modules/stats/stats-overview';
-import { RequestError } from 'src/shared/models';
+import { computePersonalRecords } from 'src/modules/stats/stats-records';
 
 /**
- * @function getMuscles
- * @description Returns the user's working-set volume and set credit aggregated per muscle.
+ * @function dateRange
+ * @description Builds an optional startedAt range filter from from/to query params.
  *
- * @returns {Promise<void>} Resolves when the breakdown is sent.
+ * @param {Date | undefined} from The inclusive lower bound.
+ * @param {Date | undefined} to The upper bound.
+ * @returns {Prisma.DateTimeFilter | undefined} The range filter, or undefined when neither bound is set.
  */
-async function getMuscles(request: FastifyRequest<MusclesRequest>, reply: FastifyReply): Promise<void> {
-    const where: Prisma.WorkoutWhereInput = { userId: request.user.id };
-
-    if (request.query.from !== undefined || request.query.to !== undefined) {
-        where.startedAt = { gte: request.query.from, lte: request.query.to };
+function dateRange(from: Date | undefined, to: Date | undefined): Prisma.DateTimeFilter | undefined {
+    if (from === undefined && to === undefined) {
+        return undefined;
     }
 
-    const workouts = await request.server.prisma.workout.findMany({
-        where,
-        select: {
-            entries: {
-                select: {
-                    exerciseVariant: {
-                        select: {
-                            exercise: {
-                                select: { primaryMuscle: true, secondaryMuscles: true }
-                            }
-                        }
-                    },
-                    sets: {
-                        where: { setType: 'WORKING' },
-                        select: { weightKg: true, reps: true }
-                    }
-                }
-            }
-        }
-    });
-
-    const entries = workouts.flatMap((workout) => workout.entries.map((entry) => ({
-        primaryMuscle: entry.exerciseVariant.exercise.primaryMuscle,
-        secondaryMuscles: entry.exerciseVariant.exercise.secondaryMuscles,
-        sets: entry.sets.map((set) => ({
-            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
-            reps: set.reps
-        }))
-    })));
-
-    reply.status(StatusCodes.OK).send({ data: { muscles: computeMuscleBreakdown(entries) } });
-}
-
-/**
- * @function getVariantStats
- * @description Returns per-session progression stats for one of the user's exercise variants.
- *
- * @returns {Promise<void>} Resolves when the stats are sent.
- */
-async function getVariantStats(request: FastifyRequest<VariantStatsRequest>, reply: FastifyReply): Promise<void> {
-    const variant = await request.server.prisma.exerciseVariant.findFirst({
-        where: { id: request.params.id, exercise: { userId: request.user.id } }
-    });
-
-    if (variant === null) {
-        throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise variant not found');
-    }
-
-    const where: Prisma.WorkoutWhereInput = {
-        userId: request.user.id,
-        entries: { some: { exerciseVariantId: request.params.id } }
-    };
-
-    if (request.query.gymLocationId !== undefined) {
-        where.gymLocationId = request.query.gymLocationId;
-    }
-    if (request.query.from !== undefined || request.query.to !== undefined) {
-        where.startedAt = { gte: request.query.from, lte: request.query.to };
-    }
-
-    const workouts = await request.server.prisma.workout.findMany({
-        where,
-        select: {
-            startedAt: true,
-            entries: {
-                where: { exerciseVariantId: request.params.id },
-                select: {
-                    sets: {
-                        where: { setType: 'WORKING' },
-                        select: { weightKg: true, reps: true }
-                    }
-                }
-            }
-        },
-        orderBy: { startedAt: 'asc' }
-    });
-
-    const sessions = workouts.map((workout) => ({
-        date: workout.startedAt.toISOString(),
-        sets: workout.entries.flatMap((entry) => entry.sets.map((set) => ({
-            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
-            reps: set.reps
-        })))
-    }));
-
-    const stats = computeVariantStats(sessions);
-
-    reply.status(StatusCodes.OK).send({ data: { variantId: request.params.id, ...stats } });
+    return { gte: from, lte: to };
 }
 
 /**
  * @function getOverview
- * @description Returns the user's time-bucketed workout totals (duration, volume, reps, sets).
+ * @description Returns the caller's aggregate dashboard: totals, streak, frequency, and recent volume.
  *
  * @returns {Promise<void>} Resolves when the overview is sent.
  */
 async function getOverview(request: FastifyRequest<OverviewRequest>, reply: FastifyReply): Promise<void> {
-    const where: Prisma.WorkoutWhereInput = { userId: request.user.id };
-
-    if (request.query.from !== undefined || request.query.to !== undefined) {
-        where.startedAt = { gte: request.query.from, lte: request.query.to };
-    }
-
     const workouts = await request.server.prisma.workout.findMany({
-        where,
+        where: { userId: request.user.id, startedAt: dateRange(request.query.from, request.query.to) },
         select: {
             startedAt: true,
             endedAt: true,
-            entries: {
-                select: {
-                    sets: {
-                        where: { setType: 'WORKING' },
-                        select: { weightKg: true, reps: true }
-                    }
-                }
-            }
+            entries: { select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } } }
         },
         orderBy: { startedAt: 'asc' }
     });
@@ -149,13 +50,131 @@ async function getOverview(request: FastifyRequest<OverviewRequest>, reply: Fast
         })))
     }));
 
-    const overview = computeOverview(raw, request.query.bucket ?? 'week');
+    reply.status(StatusCodes.OK).send({ data: computeDashboard(raw, new Date()) });
+}
 
-    reply.status(StatusCodes.OK).send({ data: overview });
+/**
+ * @function getVolume
+ * @description Returns the caller's working-set volume bucketed by week or month.
+ *
+ * @returns {Promise<void>} Resolves when the volume series is sent.
+ */
+async function getVolume(request: FastifyRequest<VolumeRequest>, reply: FastifyReply): Promise<void> {
+    const workouts = await request.server.prisma.workout.findMany({
+        where: { userId: request.user.id, startedAt: dateRange(request.query.from, request.query.to) },
+        select: {
+            startedAt: true,
+            endedAt: true,
+            entries: { select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } } }
+        },
+        orderBy: { startedAt: 'asc' }
+    });
+
+    const raw = workouts.map((workout) => ({
+        startedAt: workout.startedAt.toISOString(),
+        endedAt: workout.endedAt !== null ? workout.endedAt.toISOString() : null,
+        sets: workout.entries.flatMap((entry) => entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        })))
+    }));
+
+    reply.status(StatusCodes.OK).send({ data: computeOverview(raw, request.query.period ?? 'week') });
+}
+
+/**
+ * @function getMuscleDistribution
+ * @description Returns the caller's working-set volume and set credit aggregated per muscle.
+ *
+ * @returns {Promise<void>} Resolves when the breakdown is sent.
+ */
+async function getMuscleDistribution(request: FastifyRequest<MuscleDistributionRequest>, reply: FastifyReply): Promise<void> {
+    const workouts = await request.server.prisma.workout.findMany({
+        where: { userId: request.user.id, startedAt: dateRange(request.query.from, request.query.to) },
+        select: {
+            entries: {
+                select: {
+                    exercise: { select: { primaryMuscle: true, secondaryMuscles: true } },
+                    sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } }
+                }
+            }
+        }
+    });
+
+    const entries = workouts.flatMap((workout) => workout.entries.map((entry) => ({
+        primaryMuscle: entry.exercise.primaryMuscle,
+        secondaryMuscles: entry.exercise.secondaryMuscles,
+        sets: entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        }))
+    })));
+
+    reply.status(StatusCodes.OK).send({ data: { muscles: computeMuscleBreakdown(entries) } });
+}
+
+/**
+ * @function getPersonalRecords
+ * @description Returns the caller's all-time bests (heaviest set, estimated 1RM, set volume) per exercise.
+ *
+ * @returns {Promise<void>} Resolves when the records are sent.
+ */
+async function getPersonalRecords(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const exercises = await request.server.prisma.exercise.findMany({
+        where: { workoutEntries: { some: { workout: { userId: request.user.id } } } },
+        select: {
+            id: true,
+            name: true,
+            workoutEntries: {
+                where: { workout: { userId: request.user.id } },
+                select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } }
+            }
+        }
+    });
+
+    const entries = exercises.map((exercise) => ({
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        sets: exercise.workoutEntries.flatMap((entry) => entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        })))
+    }));
+
+    reply.status(StatusCodes.OK).send({ data: { records: computePersonalRecords(entries) } });
+}
+
+/**
+ * @function getCalendar
+ * @description Returns the caller's per-day workout activity for a calendar or heatmap.
+ *
+ * @returns {Promise<void>} Resolves when the calendar is sent.
+ */
+async function getCalendar(request: FastifyRequest<CalendarRequest>, reply: FastifyReply): Promise<void> {
+    const workouts = await request.server.prisma.workout.findMany({
+        where: { userId: request.user.id, startedAt: dateRange(request.query.from, request.query.to) },
+        select: {
+            startedAt: true,
+            entries: { select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } } }
+        },
+        orderBy: { startedAt: 'asc' }
+    });
+
+    const raw = workouts.map((workout) => ({
+        startedAt: workout.startedAt.toISOString(),
+        sets: workout.entries.flatMap((entry) => entry.sets.map((set) => ({
+            weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+            reps: set.reps
+        })))
+    }));
+
+    reply.status(StatusCodes.OK).send({ data: { days: computeCalendar(raw) } });
 }
 
 export default {
-    getMuscles,
     getOverview,
-    getVariantStats
+    getVolume,
+    getMuscleDistribution,
+    getPersonalRecords,
+    getCalendar
 };

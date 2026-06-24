@@ -1,76 +1,92 @@
 import type { RequestGenericInterface } from 'fastify';
-import type { OverviewBucketUnit } from 'src/modules/stats/stats-overview';
 import { z } from 'zod';
 
 /**
- * @constant VariantStatsQuerySchema
- * @description Zod schema for the variant-stats query string (optional location + date-range filters; dates are coerced).
+ * @constant OverviewQuerySchema
+ * @description Zod schema for the overview query string (optional date range).
  */
-export const VariantStatsQuerySchema = z.object({
-    gymLocationId: z.uuid().optional(),
+export const OverviewQuerySchema = z.object({
     from: z.coerce.date().optional(),
     to: z.coerce.date().optional()
 });
 
 /**
- * @interface VariantStatsRequest
- * @description Fastify request generic for the per-variant stats endpoint.
- *
- * @extends RequestGenericInterface
+ * @constant VolumeQuerySchema
+ * @description Zod schema for the volume-over-time query string (optional date range; period granularity defaults to week).
  */
-export interface VariantStatsRequest extends RequestGenericInterface {
-    Params: {
-        id: string; /*!< Exercise variant identifier */
-    };
-    Querystring: {
-        gymLocationId?: string; /*!< Optional gym-location filter */
-        from?: Date; /*!< Optional inclusive start of the date range (coerced from an ISO string) */
-        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
-    };
-}
-
-/**
- * @constant OverviewQuerySchema
- * @description Zod schema for the overview query string (optional date range; bucket granularity defaults to week).
- */
-export const OverviewQuerySchema = z.object({
+export const VolumeQuerySchema = z.object({
     from: z.coerce.date().optional(),
     to: z.coerce.date().optional(),
-    bucket: z.enum(['day', 'week', 'month']).optional().default('week')
+    period: z.enum(['week', 'month']).optional().default('week')
+});
+
+/**
+ * @constant MuscleDistributionQuerySchema
+ * @description Zod schema for the muscle-distribution query string (optional date range).
+ */
+export const MuscleDistributionQuerySchema = z.object({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional()
+});
+
+/**
+ * @constant CalendarQuerySchema
+ * @description Zod schema for the calendar query string (optional date range).
+ */
+export const CalendarQuerySchema = z.object({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional()
 });
 
 /**
  * @interface OverviewRequest
- * @description Fastify request generic for the workout-overview endpoint.
+ * @description Fastify request generic for the dashboard-overview endpoint.
  *
  * @extends RequestGenericInterface
  */
 export interface OverviewRequest extends RequestGenericInterface {
     Querystring: {
         from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
-        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
-        bucket?: OverviewBucketUnit; /*!< Calendar granularity; defaults to 'week' */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte */
     };
 }
 
 /**
- * @constant MusclesQuerySchema
- * @description Zod schema for the muscle-breakdown query string (optional date range).
- */
-export const MusclesQuerySchema = z.object({
-    from: z.coerce.date().optional(),
-    to: z.coerce.date().optional()
-});
-
-/**
- * @interface MusclesRequest
- * @description Fastify request generic for the per-muscle breakdown endpoint.
+ * @interface VolumeRequest
+ * @description Fastify request generic for the volume-over-time endpoint.
  *
  * @extends RequestGenericInterface
  */
-export interface MusclesRequest extends RequestGenericInterface {
+export interface VolumeRequest extends RequestGenericInterface {
     Querystring: {
         from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
-        to?: Date; /*!< Optional upper-bound instant, applied as lte (pass an end-of-day instant to include a whole day) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte */
+        period?: 'week' | 'month'; /*!< Calendar granularity; defaults to 'week' */
+    };
+}
+
+/**
+ * @interface MuscleDistributionRequest
+ * @description Fastify request generic for the muscle-distribution endpoint.
+ *
+ * @extends RequestGenericInterface
+ */
+export interface MuscleDistributionRequest extends RequestGenericInterface {
+    Querystring: {
+        from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte */
+    };
+}
+
+/**
+ * @interface CalendarRequest
+ * @description Fastify request generic for the calendar endpoint.
+ *
+ * @extends RequestGenericInterface
+ */
+export interface CalendarRequest extends RequestGenericInterface {
+    Querystring: {
+        from?: Date; /*!< Optional inclusive start of the range (coerced from ISO) */
+        to?: Date; /*!< Optional upper-bound instant, applied as lte */
     };
 }

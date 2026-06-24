@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import identityController from 'src/modules/identity/identity-controller';
-import type { LoginRequest, RefreshRequest, UpdateProfileRequest } from 'src/modules/identity/identity-models';
-import { LoginSchema, RefreshSchema, UpdateProfileSchema } from 'src/modules/identity/identity-models';
+import type { LoginRequest, LogoutRequest, RefreshRequest } from 'src/modules/identity/identity-models';
+import { LoginSchema, LogoutSchema, RefreshSchema } from 'src/modules/identity/identity-models';
 
 /**
  * @function identityRoutes
- * @description Defines the authentication and profile routes.
+ * @description Defines the authentication routes.
  */
 export default function (fastify: FastifyInstance): void {
     fastify.post<LoginRequest>('/login', {
@@ -20,14 +20,14 @@ export default function (fastify: FastifyInstance): void {
         }
     }, identityController.refresh);
 
+    fastify.post<LogoutRequest>('/logout', {
+        preHandler: [fastify.authentication.authenticate],
+        schema: {
+            body: LogoutSchema
+        }
+    }, identityController.logout);
+
     fastify.get('/me', {
         preHandler: [fastify.authentication.authenticate]
     }, identityController.me);
-
-    fastify.patch<UpdateProfileRequest>('/me', {
-        preHandler: [fastify.authentication.authenticate],
-        schema: {
-            body: UpdateProfileSchema
-        }
-    }, identityController.updateMe);
 }

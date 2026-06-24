@@ -3,16 +3,19 @@ import Fastify from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { hasZodFastifySchemaValidationErrors, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { StatusCodes } from 'http-status-codes';
+import accountRoutes from 'src/modules/account/account-routes';
 import assistantRoutes from 'src/modules/assistant/assistant-routes';
-import exerciseVariantsRoutes from 'src/modules/exercise-variants/exercise-variants-routes';
+import brandsRoutes from 'src/modules/brands/brands-routes';
+import equipmentRoutes from 'src/modules/equipment/equipment-routes';
+import exerciseGroupsRoutes from 'src/modules/exercise-groups/exercise-groups-routes';
+import exerciseSettingsRoutes from 'src/modules/exercise-settings/exercise-settings-routes';
 import exercisesRoutes from 'src/modules/exercises/exercises-routes';
-import gymBrandsRoutes from 'src/modules/gym-brands/gym-brands-routes';
-import gymLocationsRoutes from 'src/modules/gym-locations/gym-locations-routes';
+import gymsRoutes from 'src/modules/gyms/gyms-routes';
 import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
-import machineBrandsRoutes from 'src/modules/machine-brands/machine-brands-routes';
 import setsRoutes from 'src/modules/sets/sets-routes';
 import statsRoutes from 'src/modules/stats/stats-routes';
+import usersRoutes from 'src/modules/users/users-routes';
 import workoutExercisesRoutes from 'src/modules/workout-exercises/workout-exercises-routes';
 import workoutsRoutes from 'src/modules/workouts/workouts-routes';
 import administratorPlugin from 'src/plugins/administrator';
@@ -123,18 +126,21 @@ async function startServer(): Promise<void> {
 
     fastify.setErrorHandler(handleGlobalError);
 
-    await fastify.register(assistantRoutes, { prefix: '/v1/assistant' });
-    await fastify.register(exerciseVariantsRoutes, { prefix: '/v1/exercise-variants' });
-    await fastify.register(exercisesRoutes, { prefix: '/v1/exercises' });
-    await fastify.register(gymBrandsRoutes, { prefix: '/v1/gym-brands' });
-    await fastify.register(gymLocationsRoutes, { prefix: '/v1/gym-locations' });
-    await fastify.register(healthRoutes, { prefix: '/v1/health' });
-    await fastify.register(identityRoutes, { prefix: '/v1/identity' });
-    await fastify.register(machineBrandsRoutes, { prefix: '/v1/machine-brands' });
-    await fastify.register(setsRoutes, { prefix: '/v1/sets' });
-    await fastify.register(statsRoutes, { prefix: '/v1/stats' });
-    await fastify.register(workoutExercisesRoutes, { prefix: '/v1/workout-exercises' });
-    await fastify.register(workoutsRoutes, { prefix: '/v1/workouts' });
+    await fastify.register(accountRoutes, { prefix: '/api/v1/me' });
+    await fastify.register(assistantRoutes, { prefix: '/api/v1/assistant' });
+    await fastify.register(brandsRoutes, { prefix: '/api/v1/brands' });
+    await fastify.register(equipmentRoutes, { prefix: '/api/v1/equipment' });
+    await fastify.register(exerciseGroupsRoutes, { prefix: '/api/v1/exercise-groups' });
+    await fastify.register(exerciseSettingsRoutes, { prefix: '/api/v1/exercise-settings' });
+    await fastify.register(exercisesRoutes, { prefix: '/api/v1/exercises' });
+    await fastify.register(gymsRoutes, { prefix: '/api/v1/gyms' });
+    await fastify.register(healthRoutes, { prefix: '/api/v1/health' });
+    await fastify.register(identityRoutes, { prefix: '/api/v1/identity' });
+    await fastify.register(statsRoutes, { prefix: '/api/v1/stats' });
+    await fastify.register(usersRoutes, { prefix: '/api/v1/users' });
+    await fastify.register(workoutsRoutes, { prefix: '/api/v1/workouts' });
+    await fastify.register(workoutExercisesRoutes, { prefix: '/api/v1/workouts' });
+    await fastify.register(setsRoutes, { prefix: '/api/v1/workouts' });
 
     fastify.setNotFoundHandler(handleNotFound);
 

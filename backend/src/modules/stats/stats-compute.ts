@@ -12,7 +12,7 @@ export interface RawSet {
 
 /**
  * @interface RawSession
- * @description One session's working sets for a variant.
+ * @description One session's working sets for an exercise.
  */
 export interface RawSession {
     date: string; /*!< ISO timestamp of when the session started */
@@ -34,7 +34,7 @@ export interface SessionStats {
 
 /**
  * @interface RepPR
- * @description The heaviest external load lifted for a given rep count across all of a variant's sessions.
+ * @description The heaviest external load lifted for a given rep count across all of an exercise's sessions.
  */
 export interface RepPR {
     reps: number; /*!< Rep count */
@@ -43,10 +43,10 @@ export interface RepPR {
 }
 
 /**
- * @interface VariantStatsSummary
+ * @interface ExerciseStatsSummary
  * @description Bests across all sessions.
  */
-export interface VariantStatsSummary {
+export interface ExerciseStatsSummary {
     sessionCount: number; /*!< Number of sessions */
     maxWeightKg: Maybe<number>; /*!< Heaviest load across sessions */
     bestEstimated1RM: Maybe<number>; /*!< Best estimated 1RM across sessions */
@@ -55,12 +55,12 @@ export interface VariantStatsSummary {
 }
 
 /**
- * @interface VariantStats
+ * @interface ExerciseStats
  * @description Per-session progression plus an overall summary.
  */
-export interface VariantStats {
+export interface ExerciseStats {
     sessions: SessionStats[]; /*!< Per-session stats, in input order */
-    summary: VariantStatsSummary; /*!< Bests across all sessions */
+    summary: ExerciseStatsSummary; /*!< Bests across all sessions */
 }
 
 /**
@@ -131,13 +131,13 @@ function computeSessionStats(session: RawSession): SessionStats {
 }
 
 /**
- * @function computeVariantStats
- * @description Computes per-session stats and an overall summary for a variant's session history.
+ * @function computeExerciseStats
+ * @description Computes per-session stats and an overall summary for an exercise's session history.
  *
- * @param {RawSession[]} sessions The variant's sessions (each with its working sets).
- * @returns {VariantStats} The per-session stats and summary.
+ * @param {RawSession[]} sessions The exercise's sessions (each with its working sets).
+ * @returns {ExerciseStats} The per-session stats and summary.
  */
-export function computeVariantStats(sessions: RawSession[]): VariantStats {
+export function computeExerciseStats(sessions: RawSession[]): ExerciseStats {
     const sessionStats = sessions.map(computeSessionStats);
 
     let maxWeightKg: Maybe<number> = null;

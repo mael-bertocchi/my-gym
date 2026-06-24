@@ -1,43 +1,43 @@
-import { buildPaginationMeta, parsePagination } from 'src/shared/pagination';
+import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 import { describe, expect, it } from 'vitest';
 
-describe('parsePagination', () => {
-    it('defaults to page 1 and the default page size', () => {
-        const result = parsePagination({});
+describe('parseCursor', () => {
+    it('defaults to the default limit and over-fetches by one', () => {
+        const result = parseCursor({});
 
-        expect(result.page).toBe(1);
-        expect(result.pageSize).toBe(25);
-        expect(result.skip).toBe(0);
-        expect(result.take).toBe(25);
+        expect(result.limit).toBe(25);
+        expect(result.take).toBe(26);
+        expect(result.cursor).toBeUndefined();
+        expect(result.skip).toBeUndefined();
     });
 
-    it('computes skip from page and page size', () => {
-        const result = parsePagination({ page: 3, pageSize: 10 });
+    it('clamps the limit to MAX_LIMIT', () => {
+        const result = parseCursor({ limit: 500 });
 
-        expect(result.skip).toBe(20);
-        expect(result.take).toBe(10);
+        expect(result.limit).toBe(100);
+        expect(result.take).toBe(101);
     });
 
-    it('falls back to the default page size for sizes outside PAGE_SIZES', () => {
-        const result = parsePagination({ pageSize: 7 });
+    it('positions on the cursor and skips it when provided', () => {
+        const result = parseCursor({ cursor: 'cafef00d' });
 
-        expect(result.pageSize).toBe(25);
+        expect(result.cursor).toEqual({ id: 'cafef00d' });
+        expect(result.skip).toBe(1);
     });
 });
 
-describe('buildPaginationMeta', () => {
-    it('clamps an overshooting page to the last page', () => {
-        const meta = buildPaginationMeta(45, 10, 99);
+describe('buildCursorPage', () => {
+    it('returns all rows and a null cursor when not over-fetched', () => {
+        const page = buildCursorPage([{ id: 'a' }, { id: 'b' }], 25);
 
-        expect(meta.totalPages).toBe(5);
-        expect(meta.page).toBe(5);
+        expect(page.data).toHaveLength(2);
+        expect(page.nextCursor).toBe(null);
     });
 
-    it('reports page 1 and zero pages when there are no rows', () => {
-        const meta = buildPaginationMeta(0, 10, 1);
+    it('trims the extra row and returns the last kept id as the next cursor', () => {
+        const page = buildCursorPage([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 2);
 
-        expect(meta.total).toBe(0);
-        expect(meta.totalPages).toBe(0);
-        expect(meta.page).toBe(1);
+        expect(page.data.map((row) => row.id)).toEqual(['a', 'b']);
+        expect(page.nextCursor).toBe('b');
     });
 });
