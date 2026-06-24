@@ -15,6 +15,7 @@ import healthRoutes from 'src/modules/health/health-routes';
 import identityRoutes from 'src/modules/identity/identity-routes';
 import setsRoutes from 'src/modules/sets/sets-routes';
 import statsRoutes from 'src/modules/stats/stats-routes';
+import syncRoutes from 'src/modules/sync/sync-routes';
 import usersRoutes from 'src/modules/users/users-routes';
 import workoutExercisesRoutes from 'src/modules/workout-exercises/workout-exercises-routes';
 import workoutsRoutes from 'src/modules/workouts/workouts-routes';
@@ -137,6 +138,7 @@ async function startServer(): Promise<void> {
     await fastify.register(healthRoutes, { prefix: '/api/v1/health' });
     await fastify.register(identityRoutes, { prefix: '/api/v1/identity' });
     await fastify.register(statsRoutes, { prefix: '/api/v1/stats' });
+    await fastify.register(syncRoutes, { prefix: '/api/v1/sync' });
     await fastify.register(usersRoutes, { prefix: '/api/v1/users' });
     await fastify.register(workoutsRoutes, { prefix: '/api/v1/workouts' });
     await fastify.register(workoutExercisesRoutes, { prefix: '/api/v1/workouts' });

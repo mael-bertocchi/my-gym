@@ -64,6 +64,8 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
         select: WORKOUT_EXERCISE_SELECT
     });
 
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
+
     reply.status(StatusCodes.CREATED).send({ data: created });
 }
 
@@ -100,6 +102,8 @@ async function updateWorkoutExercise(request: FastifyRequest<UpdateWorkoutExerci
         select: WORKOUT_EXERCISE_SELECT
     });
 
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
+
     reply.status(StatusCodes.OK).send({ data: updated });
 }
 
@@ -119,6 +123,8 @@ async function deleteWorkoutExercise(request: FastifyRequest<WorkoutExercisePara
     }
 
     await request.server.prisma.workoutExercise.delete({ where: { id: request.params.workoutExerciseId } });
+
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
 
     reply.status(StatusCodes.OK).send({ data: { message: 'Workout exercise deleted' } });
 }

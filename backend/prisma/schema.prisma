@@ -68,6 +68,11 @@ enum MessageRole {
   ASSISTANT
 }
 
+enum SyncEntityType {
+  WORKOUT
+  EXERCISE_SETTING
+}
+
 /// An application account. The administrator curates the shared catalog and manages
 /// other accounts; every user owns their own workouts, settings, and conversations.
 model User {
@@ -85,6 +90,7 @@ model User {
   exerciseSettings ExerciseSetting[]
   conversations    Conversation[]
   refreshSessions  RefreshSession[]
+  syncDeletions    SyncDeletion[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -290,4 +296,18 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+/// A tombstone recording a caller-owned deletion, so offline clients can reconcile
+/// deletes on their next pull.
+model SyncDeletion {
+  id         String         @id @default(uuid())
+  userId     String         @map("user_id")
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType SyncEntityType @map("entity_type")
+  entityId   String         @map("entity_id")
+  deletedAt  DateTime       @default(now()) @map("deleted_at")
+
+  @@index([userId, deletedAt])
+  @@map("sync_deletions")
 }

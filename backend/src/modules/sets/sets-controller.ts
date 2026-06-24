@@ -63,6 +63,8 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
         select: SET_SELECT
     });
 
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
+
     const personalRecords = await detectPersonalRecords(request.server.prisma, request.user.id, parent.exerciseId, created.id);
 
     reply.status(StatusCodes.CREATED).send({ data: { set: created, personalRecords } });
@@ -120,6 +122,8 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
         select: SET_SELECT
     });
 
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
+
     const personalRecords = await detectPersonalRecords(request.server.prisma, request.user.id, existing.workoutExercise.exerciseId, updated.id);
 
     reply.status(StatusCodes.OK).send({ data: { set: updated, personalRecords } });
@@ -144,6 +148,8 @@ async function deleteSet(request: FastifyRequest<SetParamsRequest>, reply: Fasti
     }
 
     await request.server.prisma.workoutSet.delete({ where: { id: request.params.setId } });
+
+    await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
 
     reply.status(StatusCodes.OK).send({ data: { message: 'Set deleted' } });
 }

@@ -16,6 +16,9 @@ CREATE TYPE "SetType" AS ENUM ('WARMUP', 'NORMAL', 'DROP', 'FAILURE');
 -- CreateEnum
 CREATE TYPE "MessageRole" AS ENUM ('USER', 'ASSISTANT');
 
+-- CreateEnum
+CREATE TYPE "SyncEntityType" AS ENUM ('WORKOUT', 'EXERCISE_SETTING');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -182,6 +185,17 @@ CREATE TABLE "messages" (
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "sync_deletions" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "entity_type" "SyncEntityType" NOT NULL,
+    "entity_id" TEXT NOT NULL,
+    "deleted_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "sync_deletions_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
@@ -248,6 +262,9 @@ CREATE INDEX "conversations_user_id_updated_at_idx" ON "conversations"("user_id"
 -- CreateIndex
 CREATE INDEX "messages_conversation_id_created_at_idx" ON "messages"("conversation_id", "created_at");
 
+-- CreateIndex
+CREATE INDEX "sync_deletions_user_id_deleted_at_idx" ON "sync_deletions"("user_id", "deleted_at");
+
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_default_gym_id_fkey" FOREIGN KEY ("default_gym_id") REFERENCES "gyms"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -292,3 +309,6 @@ ALTER TABLE "conversations" ADD CONSTRAINT "conversations_user_id_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "sync_deletions" ADD CONSTRAINT "sync_deletions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

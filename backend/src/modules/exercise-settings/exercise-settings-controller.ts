@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import type { Prisma } from 'prisma/generated/prisma/client';
+import { SyncEntityType, type Prisma } from 'prisma/generated/prisma/client';
 import type { ExerciseSettingParamsRequest, ListExerciseSettingsRequest, UpsertExerciseSettingRequest } from 'src/modules/exercise-settings/exercise-settings-models';
 import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
@@ -96,7 +96,12 @@ async function deleteExerciseSetting(request: FastifyRequest<ExerciseSettingPara
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise setting not found');
     }
 
-    await request.server.prisma.exerciseSetting.delete({ where: { id: request.params.id } });
+    await request.server.prisma.$transaction([
+        request.server.prisma.exerciseSetting.delete({ where: { id: request.params.id } }),
+        request.server.prisma.syncDeletion.create({
+            data: { userId: request.user.id, entityType: SyncEntityType.EXERCISE_SETTING, entityId: request.params.id }
+        })
+    ]);
 
     reply.status(StatusCodes.OK).send({ data: { message: 'Exercise setting cleared' } });
 }

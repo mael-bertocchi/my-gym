@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import { Prisma } from 'prisma/generated/prisma/client';
+import { Prisma, SyncEntityType } from 'prisma/generated/prisma/client';
 import type { CreateWorkoutRequest, ListWorkoutsRequest, UpdateWorkoutRequest, WorkoutParamsRequest } from 'src/modules/workouts/workouts-models';
 import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
@@ -206,7 +206,12 @@ async function deleteWorkout(request: FastifyRequest<WorkoutParamsRequest>, repl
         throw new RequestError(StatusCodes.NOT_FOUND, 'Workout not found');
     }
 
-    await request.server.prisma.workout.delete({ where: { id: request.params.workoutId } });
+    await request.server.prisma.$transaction([
+        request.server.prisma.workout.delete({ where: { id: request.params.workoutId } }),
+        request.server.prisma.syncDeletion.create({
+            data: { userId: request.user.id, entityType: SyncEntityType.WORKOUT, entityId: request.params.workoutId }
+        })
+    ]);
 
     reply.status(StatusCodes.OK).send({ data: { message: 'Workout deleted' } });
 }
