@@ -1,0 +1,272 @@
+import Foundation
+import Observation
+
+@MainActor
+@Observable
+final class ActiveWorkoutStore {
+    struct RestTimer: Codable, Equatable {
+        var endsAt: Date
+        var totalSeconds: Int
+
+        var remainingSeconds: Int {
+            max(0, Int(endsAt.timeIntervalSinceNow.rounded()))
+        }
+
+        var isExpired: Bool { remainingSeconds <= 0 }
+
+        var progress: Double {
+            guard totalSeconds > 0 else { return 1 }
+            return 1 - Double(remainingSeconds) / Double(totalSeconds)
+        }
+    }
+
+    private(set) var workout: LocalWorkout?
+    private(set) var restTimer: RestTimer?
+
+    var isActive: Bool { workout != nil }
+
+    private let store: LocalStore
+    private let syncEngine: SyncEngine
+    private let healthKit: HealthKitService
+
+    init(store: LocalStore, syncEngine: SyncEngine, healthKit: HealthKitService) {
+        self.store = store
+        self.syncEngine = syncEngine
+        self.healthKit = healthKit
+        restore()
+    }
+
+    func start(gymId: String?, name: String? = nil) {
+        workout = LocalWorkout(
+            gymId: gymId,
+            name: name ?? Self.defaultName(for: .now),
+            startedAt: .now
+        )
+        restTimer = nil
+        persist()
+    }
+
+    func repeatLast() {
+        guard let last = store.workouts.first(where: { $0.endedAt != nil }) else { return }
+        let gymId = workout?.gymId ?? last.gymId
+        var seeded = LocalWorkout(gymId: gymId, name: last.name, startedAt: workout?.startedAt ?? .now)
+        seeded.exercises = last.exercises.map { entry in
+            LocalWorkoutExercise(
+                exerciseId: entry.exerciseId,
+                position: entry.position,
+                settings: entry.settings,
+                sets: entry.sets.map { set in
+                    LocalSet(
+                        setNumber: set.setNumber,
+                        setType: set.setType,
+                        weightKg: set.weightKg,
+                        reps: set.reps,
+                        isCompleted: false
+                    )
+                }
+            )
+        }
+        if let current = workout {
+            seeded.id = current.id
+            seeded.name = current.name
+        }
+        workout = seeded
+        persist()
+    }
+
+    func rename(_ name: String) {
+        workout?.name = name
+        persist()
+    }
+
+    var elapsed: TimeInterval {
+        workout.map { Date.now.timeIntervalSince($0.startedAt) } ?? 0
+    }
+
+    func finish() {
+        guard var finished = workout else { return }
+        finished.endedAt = .now
+        store.upsertWorkout(finished)
+        let exerciseNames = finished.exercises.compactMap { store.exercise(id: $0.exerciseId)?.name }
+        workout = nil
+        restTimer = nil
+        persist()
+        Task { await syncEngine.sync() }
+        Task { await healthKit.logWorkout(finished, exerciseNames: exerciseNames) }
+    }
+
+    func discard() {
+        workout = nil
+        restTimer = nil
+        persist()
+    }
+
+    @discardableResult
+    func addExercise(_ exercise: Exercise) -> LocalWorkoutExercise? {
+        guard var current = workout else { return nil }
+
+        var sets: [LocalSet] = []
+        if let lastEntry = latestHistoryEntry(exerciseId: exercise.id) {
+            sets = lastEntry.sets.map { set in
+                LocalSet(
+                    setNumber: set.setNumber,
+                    setType: set.setType,
+                    weightKg: set.weightKg,
+                    reps: set.reps,
+                    isCompleted: false
+                )
+            }
+        }
+        if sets.isEmpty {
+            sets = [LocalSet(setNumber: 1)]
+        }
+
+        let remembered = store.setting(exerciseId: exercise.id, gymId: current.gymId)
+        let entry = LocalWorkoutExercise(
+            exerciseId: exercise.id,
+            position: (current.exercises.map(\.position).max() ?? 0) + 1,
+            settings: remembered?.settings,
+            sets: sets
+        )
+        current.exercises.append(entry)
+        workout = current
+        persist()
+        return entry
+    }
+
+    func removeExercise(entryId: String) {
+        workout?.exercises.removeAll { $0.id == entryId }
+        persist()
+    }
+
+    func updateEntrySettings(entryId: String, settings: [String: JSONValue]?) {
+        guard let index = entryIndex(entryId) else { return }
+        workout?.exercises[index].settings = settings
+        persist()
+    }
+
+    func addSet(entryId: String) {
+        guard let index = entryIndex(entryId) else { return }
+        let sets = workout!.exercises[index].sets
+        let last = sets.last
+        let next = LocalSet(
+            setNumber: (sets.map(\.setNumber).max() ?? 0) + 1,
+            setType: .normal,
+            weightKg: last?.weightKg,
+            reps: last?.reps
+        )
+        workout?.exercises[index].sets.append(next)
+        persist()
+    }
+
+    func updateSet(entryId: String, set updated: LocalSet) {
+        guard let entryIndex = entryIndex(entryId),
+              let setIndex = workout?.exercises[entryIndex].sets.firstIndex(where: { $0.id == updated.id })
+        else { return }
+        workout?.exercises[entryIndex].sets[setIndex] = updated
+        persist()
+    }
+
+    func removeSet(entryId: String, setId: String) {
+        guard let entryIndex = entryIndex(entryId) else { return }
+        workout?.exercises[entryIndex].sets.removeAll { $0.id == setId }
+        persist()
+    }
+
+    func setCompleted(entryId: String, setId: String, completed: Bool, restSeconds: Int) {
+        guard let entryIndex = entryIndex(entryId),
+              let setIndex = workout?.exercises[entryIndex].sets.firstIndex(where: { $0.id == setId })
+        else { return }
+        workout?.exercises[entryIndex].sets[setIndex].isCompleted = completed
+        if completed {
+            startRest(seconds: restSeconds)
+        }
+        persist()
+    }
+
+    func startRest(seconds: Int) {
+        restTimer = RestTimer(endsAt: .now.addingTimeInterval(TimeInterval(seconds)), totalSeconds: seconds)
+        persist()
+    }
+
+    func adjustRest(by delta: Int) {
+        guard var timer = restTimer else { return }
+        timer.endsAt = timer.endsAt.addingTimeInterval(TimeInterval(delta))
+        timer.totalSeconds = max(1, timer.totalSeconds + delta)
+        restTimer = timer.isExpired ? nil : timer
+        persist()
+    }
+
+    func skipRest() {
+        restTimer = nil
+        persist()
+    }
+
+    func expireRestIfNeeded() {
+        if let restTimer, restTimer.isExpired {
+            self.restTimer = nil
+            persist()
+        }
+    }
+
+    #if DEBUG
+    func debugBackdateStart(minutes: Int) {
+        workout?.startedAt = .now.addingTimeInterval(-Double(minutes) * 60)
+        persist()
+    }
+    #endif
+
+    private func latestHistoryEntry(exerciseId: String) -> LocalWorkoutExercise? {
+        for workout in store.workouts.sorted(by: { $0.startedAt > $1.startedAt }) {
+            if let entry = workout.exercises.first(where: { $0.exerciseId == exerciseId }),
+               !entry.sets.isEmpty {
+                return entry
+            }
+        }
+        return nil
+    }
+
+    func lastSessionSummary(exerciseId: String) -> String? {
+        guard let entry = latestHistoryEntry(exerciseId: exerciseId) else { return nil }
+        let completed = entry.sets.filter(\.isCompleted)
+        guard let last = completed.last, let weight = last.weightKg, let reps = last.reps else { return nil }
+        return "\(completed.count) sets logged · last: \(Formatting.weight(weight)) × \(reps)"
+    }
+
+    private func entryIndex(_ entryId: String) -> Int? {
+        workout?.exercises.firstIndex { $0.id == entryId }
+    }
+
+    private static func defaultName(for date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 5..<12: return "Morning workout"
+        case 12..<18: return "Afternoon workout"
+        default: return "Evening workout"
+        }
+    }
+
+    private struct Snapshot: Codable {
+        var workout: LocalWorkout?
+        var restTimer: RestTimer?
+    }
+
+    private static var fileURL: URL {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appending(path: "active-workout.json")
+    }
+
+    private func persist() {
+        let snapshot = Snapshot(workout: workout, restTimer: restTimer)
+        if let data = try? APIClient.encoder.encode(snapshot) {
+            try? data.write(to: Self.fileURL, options: .atomic)
+        }
+    }
+
+    private func restore() {
+        guard let data = try? Data(contentsOf: Self.fileURL),
+              let snapshot = try? APIClient.decoder.decode(Snapshot.self, from: data) else { return }
+        workout = snapshot.workout
+        restTimer = snapshot.restTimer?.isExpired == false ? snapshot.restTimer : nil
+    }
+}
