@@ -40,6 +40,7 @@ struct AdministratorGymsView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 AdministratorAddButton { showsAddSheet = true }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .sheet(isPresented: $showsAddSheet) {
             AdministratorGymAddSheet()

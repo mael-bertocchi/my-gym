@@ -26,6 +26,7 @@ struct AdministratorUsersView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 AdministratorAddButton { showsCreateSheet = true }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .sheet(isPresented: $showsCreateSheet) {
             AdministratorCreateUserSheet { created in

@@ -128,8 +128,8 @@ struct HistoryWorkoutDetailView: View {
             value += " × \(reps)"
         }
         return (
-            Text("New PR").font(Theme.font(13, .bold))
-            + Text(" · \(descriptor) — \(value)").font(Theme.font(13))
+            Text("New Record").font(Theme.font(13, .bold))
+            + Text(" · \(descriptor) with \(value)").font(Theme.font(13))
         )
         .foregroundStyle(Theme.inkSecondary)
     }

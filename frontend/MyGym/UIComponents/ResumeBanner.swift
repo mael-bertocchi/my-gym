@@ -3,16 +3,17 @@ import SwiftUI
 struct ResumeBanner: View {
     var workoutName: String
     var gymName: String?
-    var startedAt: Date
+    var isPaused: Bool
     var exerciseCount: Int
+    var elapsed: (Date) -> TimeInterval
     var onResume: () -> Void
 
     var body: some View {
         Button(action: onResume) {
             HStack(spacing: 11) {
-                StatusDot(color: Theme.positive)
+                StatusDot(color: isPaused ? Theme.warning : Theme.positive)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(workoutName) · in progress")
+                    Text("\(workoutName) · \(isPaused ? "paused" : "in progress")")
                         .font(Theme.font(14, .bold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
@@ -24,12 +25,6 @@ struct ResumeBanner: View {
                     }
                 }
                 Spacer(minLength: 8)
-                Text("Resume")
-                    .font(Theme.font(12, .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
@@ -45,7 +40,7 @@ struct ResumeBanner: View {
         if let gymName {
             parts.append(gymName)
         }
-        parts.append(Formatting.elapsed(date.timeIntervalSince(startedAt)))
+        parts.append(Formatting.elapsed(elapsed(date)))
         parts.append("\(exerciseCount) exercise\(exerciseCount == 1 ? "" : "s")")
         return parts.joined(separator: " · ")
     }

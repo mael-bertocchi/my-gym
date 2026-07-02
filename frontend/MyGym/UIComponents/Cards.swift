@@ -26,6 +26,10 @@ struct LiquidGlassBackground: ViewModifier {
                     .fill(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .fill(Color.white.opacity(0.75))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
                             .fill(blueTinted ? Theme.accentBlue.opacity(0.06) : Color.clear)
                     )
             }

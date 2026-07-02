@@ -29,6 +29,9 @@ struct RootView: View {
                 DebugSeed.enterDemo(store: store, session: session)
                 if CommandLine.arguments.contains("-demo-active") {
                     DebugSeed.startDemoActiveWorkout(store: store, activeWorkout: activeWorkout)
+                    if CommandLine.arguments.contains("-demo-paused") {
+                        activeWorkout.pause()
+                    }
                 } else {
                     activeWorkout.discard()
                 }
@@ -41,6 +44,7 @@ struct RootView: View {
 }
 
 struct MainShell: View {
+    @Environment(AppSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
     @Environment(LocalStore.self) private var store
     @Environment(SyncEngine.self) private var syncEngine
@@ -50,10 +54,20 @@ struct MainShell: View {
     @State private var showStartWorkout = false
     @State private var showActiveWorkout = false
 
+    #if DEBUG
+    @State private var debugShowAdminUsers = false
+    @State private var debugShowManageAccount = false
+    #endif
+
     var body: some View {
         ZStack(alignment: .bottom) {
             tabContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear
+                        .frame(height: bottomClearance)
+                        .allowsHitTesting(false)
+                }
 
             if !tabChrome.isHidden {
                 VStack(spacing: 8) {
@@ -61,8 +75,9 @@ struct MainShell: View {
                         ResumeBanner(
                             workoutName: workout.name ?? "Workout",
                             gymName: store.gym(id: workout.gymId)?.name,
-                            startedAt: workout.startedAt,
+                            isPaused: activeWorkout.isPaused,
                             exerciseCount: workout.exercises.count,
+                            elapsed: { activeWorkout.elapsed(at: $0) },
                             onResume: { showActiveWorkout = true }
                         )
                         .padding(.horizontal, 14)
@@ -81,10 +96,22 @@ struct MainShell: View {
                     )
                 }
                 .animation(.snappy(duration: 0.25), value: activeWorkout.isActive)
+                .animation(.snappy(duration: 0.25), value: activeWorkout.isPaused)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .animation(.snappy(duration: 0.22), value: tabChrome.isHidden)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear
+                .frame(height: 0)
+                .background {
+                    ZStack {
+                        Rectangle().fill(.ultraThinMaterial)
+                        Theme.screenBackground.opacity(0.75)
+                    }
+                    .ignoresSafeArea(edges: .top)
+                }
+        }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $showStartWorkout) {
             StartWorkoutSheet(onStarted: {
@@ -95,6 +122,16 @@ struct MainShell: View {
         .fullScreenCover(isPresented: $showActiveWorkout) {
             ActiveWorkoutView()
         }
+        #if DEBUG
+        .sheet(isPresented: $debugShowAdminUsers) {
+            NavigationStack { AdministratorUsersView() }
+        }
+        .sheet(isPresented: $debugShowManageAccount) {
+            if let user = session.currentUser {
+                AdministratorManageUserSheet(user: user) { _ in }
+            }
+        }
+        #endif
         .onScenePhaseActive {
             Task { await syncEngine.sync() }
         }
@@ -107,10 +144,16 @@ struct MainShell: View {
             switch UserDefaults.standard.string(forKey: "open") {
             case "active", "picker", "settings": showActiveWorkout = true
             case "start": showStartWorkout = true
+            case "admin-users": debugShowAdminUsers = true
+            case "admin-account": debugShowManageAccount = true
             default: break
             }
             #endif
         }
+    }
+
+    private var bottomClearance: CGFloat {
+        activeWorkout.isActive && !tabChrome.isHidden ? Theme.resumeBannerClearance : 0
     }
 
     @ViewBuilder

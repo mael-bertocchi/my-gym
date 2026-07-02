@@ -93,6 +93,7 @@ struct AdministratorExercisesView: View {
                     showsNewGroupAlert = true
                 }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .alert("New group", isPresented: $showsNewGroupAlert) {
             TextField("Group name", text: $newGroupName)

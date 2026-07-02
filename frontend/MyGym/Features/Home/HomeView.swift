@@ -35,6 +35,7 @@ struct HomeView: View {
             .padding(.horizontal, Theme.screenPadding)
         }
         .contentMargins(.bottom, Theme.tabBarClearance, for: .scrollContent)
+        .defaultScrollAnchor(debugScrollToBottom ? .bottom : .top)
         .background(Theme.screenBackground.ignoresSafeArea())
         .sheet(isPresented: $showProfile) {
             ProfileView()
@@ -46,6 +47,14 @@ struct HomeView: View {
             }
             #endif
         }
+    }
+
+    private var debugScrollToBottom: Bool {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "open") == "bottom"
+        #else
+        return false
+        #endif
     }
 
     private var headerRow: some View {

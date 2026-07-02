@@ -82,7 +82,7 @@ struct ActiveWorkoutView: View {
                 VStack(spacing: 0) {
                     header(workout, now: context.date)
                         .zIndex(1)
-                    if let timer = activeWorkout.restTimer {
+                    if let timer = activeWorkout.restTimer, !activeWorkout.isPaused {
                         RestTimerBar(
                             timer: timer,
                             onAdjust: { activeWorkout.adjustRest(by: $0) },
@@ -96,6 +96,7 @@ struct ActiveWorkoutView: View {
                 }
             }
             .animation(.snappy(duration: 0.25), value: activeWorkout.restTimer != nil)
+            .animation(.snappy(duration: 0.25), value: activeWorkout.isPaused)
 
             ScrollView {
                 VStack(spacing: 14) {
@@ -165,15 +166,29 @@ struct ActiveWorkoutView: View {
 
                 Spacer(minLength: 8)
 
-                HStack(spacing: 6) {
-                    StatusDot(color: Theme.positive, size: 7)
-                    Text(Formatting.elapsed(now.timeIntervalSince(workout.startedAt)))
-                        .font(Theme.mono(15, .bold))
-                        .foregroundStyle(Theme.ink)
+                Button {
+                    if activeWorkout.isPaused {
+                        activeWorkout.resume()
+                    } else {
+                        activeWorkout.pause()
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        StatusDot(color: activeWorkout.isPaused ? Theme.warning : Theme.positive, size: 7)
+                        Text(Formatting.elapsed(activeWorkout.elapsed(at: now)))
+                            .font(Theme.mono(15, .bold))
+                            .foregroundStyle(Theme.ink)
+                        Image(systemName: activeWorkout.isPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(activeWorkout.isPaused ? Theme.accentBlue : Theme.muted2)
+                    }
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 11)
+                    .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .contentShape(Rectangle())
                 }
-                .padding(.vertical, 7)
-                .padding(.horizontal, 11)
-                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .buttonStyle(.plain)
+                .accessibilityLabel(activeWorkout.isPaused ? "Resume workout" : "Pause workout")
 
                 Button {
                     showFinishConfirm = true

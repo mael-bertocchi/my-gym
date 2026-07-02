@@ -46,6 +46,7 @@ struct AdministratorBrandsView: View {
                     showsNewBrandAlert = true
                 }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .alert("New brand", isPresented: $showsNewBrandAlert) {
             TextField("Brand name", text: $newBrandName)

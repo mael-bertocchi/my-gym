@@ -260,7 +260,7 @@ struct AddExercisePicker: View {
 
     private func prLabel(for set: LocalSet) -> String? {
         guard let weightKg = set.weightKg else { return nil }
-        var label = "PR " + Formatting.weight(weightKg, unit: session.weightUnit)
+        var label = "Record " + Formatting.weight(weightKg, unit: session.weightUnit)
         if let reps = set.reps {
             label += "\n×\(reps)"
         }

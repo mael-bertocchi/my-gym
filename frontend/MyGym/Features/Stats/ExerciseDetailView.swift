@@ -275,9 +275,9 @@ struct ExerciseDetailView: View {
     private func prTimeline(exerciseId: String) -> some View {
         let events = Array(StatsMath.prEvents(for: exerciseId, workouts: store.workouts).prefix(4))
         return VStack(alignment: .leading, spacing: 10) {
-            EyebrowText("PR TIMELINE", size: 10)
+            EyebrowText("RECORD TIMELINE", size: 10)
             if events.isEmpty {
-                Text("No PRs yet")
+                Text("No records yet")
                     .font(Theme.font(13))
                     .foregroundStyle(Theme.muted2)
                     .padding(.vertical, 9)

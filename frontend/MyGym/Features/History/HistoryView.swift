@@ -245,7 +245,7 @@ private struct HistoryWorkoutCard: View {
                     unit: unit.suffix
                 )
                 if prCount > 0 {
-                    Text("★ \(prCount) PR")
+                    Text("★ \(prCount) Record\(prCount > 1 ? "s" : "")")
                         .font(Theme.font(13, .bold))
                         .foregroundStyle(Theme.accentBlue)
                 }

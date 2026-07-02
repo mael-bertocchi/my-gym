@@ -22,8 +22,11 @@ final class ActiveWorkoutStore {
 
     private(set) var workout: LocalWorkout?
     private(set) var restTimer: RestTimer?
+    private(set) var pausedAt: Date?
+    private(set) var pausedSeconds: TimeInterval = 0
 
     var isActive: Bool { workout != nil }
+    var isPaused: Bool { pausedAt != nil }
 
     private let store: LocalStore
     private let syncEngine: SyncEngine
@@ -43,6 +46,26 @@ final class ActiveWorkoutStore {
             startedAt: .now
         )
         restTimer = nil
+        pausedAt = nil
+        pausedSeconds = 0
+        persist()
+    }
+
+    func pause() {
+        guard workout != nil, pausedAt == nil else { return }
+        pausedAt = .now
+        persist()
+    }
+
+    func resume() {
+        guard let pausedAt else { return }
+        let pausedSpan = Date.now.timeIntervalSince(pausedAt)
+        pausedSeconds += pausedSpan
+        if var timer = restTimer {
+            timer.endsAt = timer.endsAt.addingTimeInterval(pausedSpan)
+            restTimer = timer
+        }
+        self.pausedAt = nil
         persist()
     }
 
@@ -79,17 +102,21 @@ final class ActiveWorkoutStore {
         persist()
     }
 
-    var elapsed: TimeInterval {
-        workout.map { Date.now.timeIntervalSince($0.startedAt) } ?? 0
+    func elapsed(at date: Date = .now) -> TimeInterval {
+        guard let workout else { return 0 }
+        let reference = pausedAt ?? date
+        return max(0, reference.timeIntervalSince(workout.startedAt) - pausedSeconds)
     }
 
     func finish() {
         guard var finished = workout else { return }
-        finished.endedAt = .now
+        finished.endedAt = finished.startedAt.addingTimeInterval(elapsed())
         store.upsertWorkout(finished)
         let exerciseNames = finished.exercises.compactMap { store.exercise(id: $0.exerciseId)?.name }
         workout = nil
         restTimer = nil
+        pausedAt = nil
+        pausedSeconds = 0
         persist()
         Task { await syncEngine.sync() }
         Task { await healthKit.logWorkout(finished, exerciseNames: exerciseNames) }
@@ -98,6 +125,8 @@ final class ActiveWorkoutStore {
     func discard() {
         workout = nil
         restTimer = nil
+        pausedAt = nil
+        pausedSeconds = 0
         persist()
     }
 
@@ -203,6 +232,7 @@ final class ActiveWorkoutStore {
     }
 
     func expireRestIfNeeded() {
+        guard pausedAt == nil else { return }
         if let restTimer, restTimer.isExpired {
             self.restTimer = nil
             persist()
@@ -248,6 +278,8 @@ final class ActiveWorkoutStore {
     private struct Snapshot: Codable {
         var workout: LocalWorkout?
         var restTimer: RestTimer?
+        var pausedAt: Date?
+        var pausedSeconds: TimeInterval?
     }
 
     private static var fileURL: URL {
@@ -257,7 +289,12 @@ final class ActiveWorkoutStore {
     }
 
     private func persist() {
-        let snapshot = Snapshot(workout: workout, restTimer: restTimer)
+        let snapshot = Snapshot(
+            workout: workout,
+            restTimer: restTimer,
+            pausedAt: pausedAt,
+            pausedSeconds: pausedSeconds
+        )
         if let data = try? APIClient.encoder.encode(snapshot) {
             try? data.write(to: Self.fileURL, options: .atomic)
         }
@@ -267,6 +304,12 @@ final class ActiveWorkoutStore {
         guard let data = try? Data(contentsOf: Self.fileURL),
               let snapshot = try? APIClient.decoder.decode(Snapshot.self, from: data) else { return }
         workout = snapshot.workout
-        restTimer = snapshot.restTimer?.isExpired == false ? snapshot.restTimer : nil
+        pausedAt = snapshot.workout == nil ? nil : snapshot.pausedAt
+        pausedSeconds = snapshot.workout == nil ? 0 : (snapshot.pausedSeconds ?? 0)
+        if let timer = snapshot.restTimer, timer.endsAt > (pausedAt ?? .now) {
+            restTimer = timer
+        } else {
+            restTimer = nil
+        }
     }
 }

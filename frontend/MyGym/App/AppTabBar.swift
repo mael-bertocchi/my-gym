@@ -27,6 +27,7 @@ enum AppTab: String, CaseIterable {
 
 extension Theme {
     static let tabBarClearance: CGFloat = 108
+    static let resumeBannerClearance: CGFloat = 72
 }
 
 struct AppTabBar: View {
@@ -103,6 +104,7 @@ struct AppTabBar: View {
             }
             .frame(maxWidth: .infinity)
             .offset(y: -22)
+            .padding(.bottom, -22)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

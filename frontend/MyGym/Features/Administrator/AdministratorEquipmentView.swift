@@ -40,6 +40,7 @@ struct AdministratorEquipmentView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 AdministratorAddButton { showsAddSheet = true }
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .sheet(isPresented: $showsAddSheet) {
             AdministratorEquipmentAddSheet()

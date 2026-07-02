@@ -171,7 +171,7 @@ struct AdministratorModalHeader: View {
         }
         .padding(.top, 18)
         .padding(.horizontal, 22)
-        .padding(.bottom, 20)
+        .padding(.bottom, 32)
     }
 }
 
