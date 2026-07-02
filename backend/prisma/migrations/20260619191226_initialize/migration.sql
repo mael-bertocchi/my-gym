@@ -141,7 +141,6 @@ CREATE TABLE "workout_sets" (
     "set_type" "SetType" NOT NULL DEFAULT 'NORMAL',
     "weight_kg" DECIMAL(6,2),
     "reps" INTEGER,
-    "rpe" DECIMAL(3,1),
     "distance_m" DECIMAL(10,2),
     "duration_seconds" INTEGER,
     "is_completed" BOOLEAN NOT NULL DEFAULT false,

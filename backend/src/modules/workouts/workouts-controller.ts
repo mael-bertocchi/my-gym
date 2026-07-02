@@ -53,7 +53,6 @@ const WORKOUT_DETAIL_SELECT = {
                     setType: true,
                     weightKg: true,
                     reps: true,
-                    rpe: true,
                     distanceM: true,
                     durationSeconds: true,
                     isCompleted: true,

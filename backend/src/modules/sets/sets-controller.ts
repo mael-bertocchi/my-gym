@@ -16,7 +16,6 @@ const SET_SELECT = {
     setType: true,
     weightKg: true,
     reps: true,
-    rpe: true,
     distanceM: true,
     durationSeconds: true,
     isCompleted: true,
@@ -55,7 +54,6 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
             setType: request.body.setType,
             weightKg: request.body.weightKg,
             reps: request.body.reps,
-            rpe: request.body.rpe,
             distanceM: request.body.distanceM,
             durationSeconds: request.body.durationSeconds,
             isCompleted: request.body.isCompleted
@@ -102,9 +100,6 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
     }
     if (request.body.reps !== undefined) {
         data.reps = request.body.reps;
-    }
-    if (request.body.rpe !== undefined) {
-        data.rpe = request.body.rpe;
     }
     if (request.body.distanceM !== undefined) {
         data.distanceM = request.body.distanceM;

@@ -33,7 +33,6 @@ const HISTORY_SET_SELECT = {
     setType: true,
     weightKg: true,
     reps: true,
-    rpe: true,
     distanceM: true,
     durationSeconds: true,
     isCompleted: true

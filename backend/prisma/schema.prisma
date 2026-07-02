@@ -239,7 +239,6 @@ model WorkoutSet {
   setType           SetType         @default(NORMAL) @map("set_type")
   weightKg          Decimal?        @map("weight_kg") @db.Decimal(6, 2)
   reps              Int?
-  rpe               Decimal?        @db.Decimal(3, 1)
   distanceM         Decimal?        @map("distance_m") @db.Decimal(10, 2)
   durationSeconds   Int?            @map("duration_seconds")
   isCompleted       Boolean         @default(false) @map("is_completed")

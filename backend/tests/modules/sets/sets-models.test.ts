@@ -11,7 +11,6 @@ describe('CreateSetSchema', () => {
             setType: 'NORMAL',
             weightKg: 100,
             reps: 8,
-            rpe: 8.5,
             distanceM: 0,
             durationSeconds: 60,
             isCompleted: true
@@ -19,8 +18,8 @@ describe('CreateSetSchema', () => {
         expect(result.success).toBe(true);
     });
 
-    it('rejects an rpe above 10', () => {
-        expect(CreateSetSchema.safeParse({ rpe: 11 }).success).toBe(false);
+    it('rejects a negative weight', () => {
+        expect(CreateSetSchema.safeParse({ weightKg: -1 }).success).toBe(false);
     });
 
     it('rejects an unknown setType', () => {

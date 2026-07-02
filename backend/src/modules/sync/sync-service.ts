@@ -32,7 +32,6 @@ const WORKOUT_SYNC_SELECT = {
                     setType: true,
                     weightKg: true,
                     reps: true,
-                    rpe: true,
                     distanceM: true,
                     durationSeconds: true,
                     isCompleted: true,
@@ -157,7 +156,6 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                                 setType: set.setType,
                                 weightKg: set.weightKg ?? null,
                                 reps: set.reps ?? null,
-                                rpe: set.rpe ?? null,
                                 distanceM: set.distanceM ?? null,
                                 durationSeconds: set.durationSeconds ?? null,
                                 isCompleted: set.isCompleted ?? false

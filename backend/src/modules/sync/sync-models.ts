@@ -20,7 +20,6 @@ export const SyncSetSchema = z.object({
     setType: SetTypeSchema.optional(),
     weightKg: z.number().min(0).max(9999.99).nullable().optional(),
     reps: z.number().int().min(0).max(10000).nullable().optional(),
-    rpe: z.number().min(0).max(10).nullable().optional(),
     distanceM: z.number().min(0).max(99999999.99).nullable().optional(),
     durationSeconds: z.number().int().min(0).nullable().optional(),
     isCompleted: z.boolean().optional()

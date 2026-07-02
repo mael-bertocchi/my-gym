@@ -36,7 +36,6 @@ export const CreateSetSchema = z.object({
     setType: SetTypeSchema.optional(),
     weightKg: z.number().min(0).max(9999.99).optional(),
     reps: z.number().int().min(0).max(10000).optional(),
-    rpe: z.number().min(0).max(10).optional(),
     distanceM: z.number().min(0).max(99999999.99).optional(),
     durationSeconds: z.number().int().min(0).optional(),
     isCompleted: z.boolean().optional()
@@ -50,14 +49,13 @@ export type CreateSetBody = z.infer<typeof CreateSetSchema>;
 
 /**
  * @constant UpdateSetSchema
- * @description Zod schema for the update-set request body. Each field is optional, but at least one must be provided. A null weight/rpe/distance clears it.
+ * @description Zod schema for the update-set request body. Each field is optional, but at least one must be provided. A null weight/distance clears it.
  */
 export const UpdateSetSchema = z.object({
     setNumber: z.number().int().positive().optional(),
     setType: SetTypeSchema.optional(),
     weightKg: z.number().min(0).max(9999.99).nullable().optional(),
     reps: z.number().int().min(0).max(10000).nullable().optional(),
-    rpe: z.number().min(0).max(10).nullable().optional(),
     distanceM: z.number().min(0).max(99999999.99).nullable().optional(),
     durationSeconds: z.number().int().min(0).nullable().optional(),
     isCompleted: z.boolean().optional()
