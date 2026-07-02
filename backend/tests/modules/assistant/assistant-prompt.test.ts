@@ -3,7 +3,7 @@ import { buildChatSystem, buildInsightsPrompt, formatContext } from 'src/assets/
 import { describe, expect, it } from 'vitest';
 
 const context: AssistantContext = {
-    displayName: 'Mael',
+    displayName: 'Maël Bertocchi',
     recentWorkouts: [
         { date: '2026-06-18T10:00:00.000Z', gym: 'Iron Temple', exercises: [{ name: 'Chest Press', setCount: 3, topSet: '100kg x 5' }] }
     ],
@@ -14,14 +14,14 @@ const context: AssistantContext = {
 describe('formatContext', () => {
     it('includes the athlete, recent workout, PR, and muscle data', () => {
         const text = formatContext(context);
-        expect(text).toContain('Mael');
+        expect(text).toContain('Maël Bertocchi');
         expect(text).toContain('Chest Press');
         expect(text).toContain('Iron Temple');
         expect(text).toContain('CHEST');
     });
 
     it('notes when there is no logged data', () => {
-        const text = formatContext({ displayName: 'Mael', recentWorkouts: [], personalRecords: [], muscleBalance: [] });
+        const text = formatContext({ displayName: 'Maël Bertocchi', recentWorkouts: [], personalRecords: [], muscleBalance: [] });
         expect(text.toLowerCase()).toContain('none logged yet');
     });
 });
@@ -30,7 +30,7 @@ describe('buildChatSystem', () => {
     it('prepends the coaching brief to the grounding context', () => {
         const system = buildChatSystem(context);
         expect(system.length).toBeGreaterThan(0);
-        expect(system).toContain('Mael');
+        expect(system).toContain('Maël Bertocchi');
     });
 });
 

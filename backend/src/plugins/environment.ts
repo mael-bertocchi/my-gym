@@ -16,6 +16,7 @@ export const variables = Type.Object({
     GOOGLE_AI_STUDIO_API_KEY: Type.String({ minLength: 1 }),
     GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' }),
     ADMINISTRATOR_EMAIL: Type.String({ format: 'email' }),
+    ADMINISTRATOR_DISPLAY_NAME: Type.String({ minLength: 1 }),
     ADMINISTRATOR_PASSWORD: Type.String({ minLength: 8 }),
     JWT_SECRET: Type.String({ minLength: 32 }),
     JWT_ACCESS_EXPIRY: Type.String({ minLength: 1 }),

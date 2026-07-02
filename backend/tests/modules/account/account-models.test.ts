@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('UpdateProfileSchema', () => {
     it('accepts a display-name update', () => {
-        expect(UpdateProfileSchema.safeParse({ displayName: 'Mael' }).success).toBe(true);
+        expect(UpdateProfileSchema.safeParse({ displayName: 'Maël Bertocchi' }).success).toBe(true);
     });
 
     it('accepts clearing the default gym with null', () => {
