@@ -5,6 +5,7 @@ struct AdministratorGymsView: View {
 
     @State private var showsAddSheet = false
     @State private var alert: AdministratorAlert?
+    @State private var deleteCandidate: Gym?
 
     private var gyms: [Gym] {
         store.gyms.sorted {
@@ -24,9 +25,9 @@ struct AdministratorGymsView: View {
                 ForEach(gyms) { gym in
                     row(gym)
                         .administratorListRow()
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                delete(gym)
+                                deleteCandidate = gym
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -44,6 +45,24 @@ struct AdministratorGymsView: View {
         }
         .sheet(isPresented: $showsAddSheet) {
             AdministratorGymAddSheet()
+        }
+        .confirmationDialog(
+            "Delete \(deleteCandidate?.name ?? "gym")?",
+            isPresented: Binding(
+                get: { deleteCandidate != nil },
+                set: { if !$0 { deleteCandidate = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete gym", role: .destructive) {
+                if let gym = deleteCandidate {
+                    delete(gym)
+                }
+                deleteCandidate = nil
+            }
+            Button("Cancel", role: .cancel) { deleteCandidate = nil }
+        } message: {
+            Text("Workouts logged at this gym keep their history but lose the gym label.")
         }
         .administratorInfoAlert($alert)
     }
@@ -102,20 +121,23 @@ struct AdministratorGymAddSheet: View {
                     LabeledField(
                         label: "NAME",
                         placeholder: "e.g. Iron Temple",
-                        text: $name
+                        text: $name,
+                        autocapitalization: .words
                     )
                     LabeledField(
                         label: "ADDRESS",
                         placeholder: "Optional",
-                        text: $address
+                        text: $address,
+                        autocapitalization: .words
                     )
                     LabeledField(
                         label: "NOTES",
                         placeholder: "Optional",
-                        text: $notes
+                        text: $notes,
+                        autocapitalization: .sentences
                     )
                 }
-                .padding(.horizontal, 22)
+                .padding(.horizontal, 24)
                 .padding(.bottom, 24)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -127,13 +149,18 @@ struct AdministratorGymAddSheet: View {
             ) {
                 create()
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 24)
             .padding(.top, 12)
             .padding(.bottom, 8)
         }
         .background(Color.white.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
         .administratorInfoAlert($alert)
-        .interactiveDismissDisabled(isCreating)
+        .interactiveDismissDisabled(isCreating || hasInput)
+    }
+
+    private var hasInput: Bool {
+        !name.isEmpty || !address.isEmpty || !notes.isEmpty
     }
 
     private var trimmedName: String {

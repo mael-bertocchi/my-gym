@@ -114,6 +114,7 @@ struct AdministratorManageUserSheet: View {
     @State private var isUpdatingRole = false
     @State private var isResettingPassword = false
     @State private var isUpdatingActive = false
+    @State private var showDeactivateConfirm = false
     @State private var alert: AdministratorAlert?
 
     init(user: UserProfile, onUpdated: @escaping (UserProfile) -> Void) {
@@ -144,13 +145,23 @@ struct AdministratorManageUserSheet: View {
                 isDestructive: user.isActive,
                 isLoading: isUpdatingActive
             ) {
-                toggleActive()
+                if user.isActive {
+                    showDeactivateConfirm = true
+                } else {
+                    toggleActive()
+                }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 24)
             .padding(.top, 12)
             .padding(.bottom, 8)
         }
         .background(Color.white.ignoresSafeArea())
+        .alert("Deactivate \(user.displayName)?", isPresented: $showDeactivateConfirm) {
+            Button("Cancel", role: .cancel) {}
+            Button("Deactivate", role: .destructive) { toggleActive() }
+        } message: {
+            Text("They are signed out everywhere and can no longer sign in.")
+        }
         .administratorInfoAlert($alert)
     }
 

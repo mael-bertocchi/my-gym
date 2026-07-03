@@ -76,8 +76,8 @@ struct AdministratorScreenTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(Theme.font(24, .heavy))
-                .tracking(-0.3)
+                .font(Theme.font(26, .heavy))
+                .tracking(-0.4)
                 .foregroundStyle(Theme.ink)
             if let subtitle {
                 Text(subtitle)
@@ -117,9 +117,9 @@ struct AdministratorHubRow<Destination: View>: View {
                     .font(Theme.font(15))
                     .foregroundStyle(Theme.ink)
                 Spacer()
-                Text("›")
-                    .font(Theme.font(18, .semibold))
-                    .foregroundStyle(Color(hex: 0xC4C9CF))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.tabInactive)
             }
             .padding(.vertical, 15)
             .padding(.horizontal, 16)
@@ -134,14 +134,15 @@ struct AdministratorAddButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text("+")
-                .font(Theme.font(20, .semibold))
+            Image(systemName: "plus")
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
                 .background(
                     Theme.accentBlue,
-                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                 )
+                .expandedTapTarget(vertical: 5, horizontal: 5)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Add")
@@ -154,24 +155,10 @@ struct AdministratorModalHeader: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        ZStack {
-            Text(title)
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button(action: onDismiss) {
-                    Text(dismissLabel)
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                }
-                .buttonStyle(.plain)
-                Spacer()
-                Color.clear.frame(width: 38, height: 1)
-            }
-        }
-        .padding(.top, 18)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 32)
+        ModalHeader(title: title, dismissTitle: dismissLabel, onDismiss: onDismiss)
+            .padding(.top, 18)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 20)
     }
 }
 
@@ -181,7 +168,7 @@ struct AdministratorToggleRow: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        Toggle(isOn: $isOn) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(Theme.font(15))
@@ -189,14 +176,11 @@ struct AdministratorToggleRow: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(Theme.font(12))
-                        .foregroundStyle(Theme.muted2)
+                        .foregroundStyle(Theme.muted)
                 }
             }
-            Spacer(minLength: 12)
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Theme.accentBlue)
         }
+        .tint(Theme.accentBlue)
         .padding(.vertical, 10)
         .padding(.horizontal, 16)
         .frame(minHeight: 54)
@@ -223,21 +207,21 @@ struct AdministratorDropdownField<MenuItems: View>: View {
             HStack {
                 Text(text)
                     .font(Theme.font(15, .semibold))
-                    .foregroundStyle(isPlaceholder ? Theme.tabInactive : Theme.ink)
+                    .foregroundStyle(isPlaceholder ? Theme.muted : Theme.ink)
                     .lineLimit(1)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0xC4C9CF))
+                    .foregroundStyle(Theme.tabInactive)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
-            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .frame(minHeight: 54)
+            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                     .strokeBorder(Theme.fieldBorder, lineWidth: 1)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
         }
         .menuOrder(.fixed)
         .buttonStyle(.plain)

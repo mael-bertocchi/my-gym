@@ -6,6 +6,7 @@ struct AdministratorBrandsView: View {
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
     @State private var alert: AdministratorAlert?
+    @State private var deleteCandidate: Brand?
 
     private var brands: [Brand] {
         store.brands.sorted {
@@ -27,9 +28,9 @@ struct AdministratorBrandsView: View {
                         .font(Theme.font(15))
                         .foregroundStyle(Theme.ink)
                         .administratorListRow()
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                delete(brand)
+                                deleteCandidate = brand
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -54,6 +55,24 @@ struct AdministratorBrandsView: View {
             Button("Create") { createBrand() }
         } message: {
             Text("Exercises reference a brand for cross-machine comparisons.")
+        }
+        .confirmationDialog(
+            "Delete \(deleteCandidate?.name ?? "brand")?",
+            isPresented: Binding(
+                get: { deleteCandidate != nil },
+                set: { if !$0 { deleteCandidate = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete brand", role: .destructive) {
+                if let brand = deleteCandidate {
+                    delete(brand)
+                }
+                deleteCandidate = nil
+            }
+            Button("Cancel", role: .cancel) { deleteCandidate = nil }
+        } message: {
+            Text("Exercises using this brand keep working but lose the brand label.")
         }
         .administratorInfoAlert($alert)
     }

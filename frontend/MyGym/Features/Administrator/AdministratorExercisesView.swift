@@ -77,7 +77,7 @@ struct AdministratorExercisesView: View {
                                             systemImage: exercise.isArchived ? "tray.and.arrow.up" : "archivebox"
                                         )
                                     }
-                                    .tint(Color(hex: 0x8A9099))
+                                    .tint(Theme.muted2)
                                 }
                         }
                     }
