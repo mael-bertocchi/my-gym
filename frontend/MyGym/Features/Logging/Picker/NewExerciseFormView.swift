@@ -22,6 +22,10 @@ struct NewExerciseFormView: View {
     @State private var newGroupName = ""
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
+    @State private var showsDiscardConfirm = false
+
+    private let initialName: String
+    private let initialGroupId: String?
 
     init(
         prefilledGroup: ExerciseGroup? = nil,
@@ -31,7 +35,10 @@ struct NewExerciseFormView: View {
         self.prefilledGroup = prefilledGroup
         self.suggestedGroupName = suggestedGroupName
         self.onCreated = onCreated
-        _exerciseName = State(initialValue: suggestedGroupName ?? prefilledGroup?.name ?? "")
+        let name = suggestedGroupName ?? prefilledGroup?.name ?? ""
+        initialName = name
+        initialGroupId = prefilledGroup?.id
+        _exerciseName = State(initialValue: name)
         _selectedGroupId = State(initialValue: prefilledGroup?.id)
     }
 
@@ -67,26 +74,36 @@ struct NewExerciseFormView: View {
         } message: {
             Text(errorMessage ?? "Something went wrong.")
         }
+        .confirmationDialog(
+            "Discard this exercise?",
+            isPresented: $showsDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Discard", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
+        }
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("New exercise")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button {
+        ModalHeader(
+            title: "New exercise",
+            dismissTitle: "Back",
+            onDismiss: {
+                if hasEdits {
+                    showsDiscardConfirm = true
+                } else {
                     dismiss()
-                } label: {
-                    Text("Back")
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
                 }
-                .buttonStyle(.plain)
-                Spacer()
-                Color.clear.frame(width: 38, height: 1)
             }
-        }
+        )
+    }
+
+    private var hasEdits: Bool {
+        trimmedName != initialName.trimmingCharacters(in: .whitespacesAndNewlines)
+            || selectedGroupId != initialGroupId
+            || equipmentType != .machine
+            || selectedBrandId != nil
+            || primaryMuscle != nil
     }
 
     private var footer: some View {
@@ -122,10 +139,10 @@ struct NewExerciseFormView: View {
                 .textInputAutocapitalization(.words)
                 .submitLabel(.done)
                 .padding(.horizontal, 16)
-                .frame(height: 50)
-                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .frame(minHeight: 54)
+                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                         .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                 )
         }
@@ -166,10 +183,7 @@ struct NewExerciseFormView: View {
             NewExerciseFieldLabel("EQUIPMENT TYPE")
             PickerWrapLayout(spacing: 8) {
                 ForEach(EquipmentType.allCases) { type in
-                    NewExerciseTypeChip(
-                        title: type.label,
-                        isActive: equipmentType == type
-                    ) {
+                    FilterChip(title: type.label, isActive: equipmentType == type) {
                         equipmentType = type
                     }
                 }
@@ -347,7 +361,7 @@ private struct NewExerciseFieldLabel: View {
     }
 
     var body: some View {
-        EyebrowText(text, color: Color(hex: 0xA2A8B0))
+        EyebrowText(text)
     }
 }
 
@@ -363,48 +377,23 @@ private struct NewExerciseDropdown<Content: View>: View {
             HStack {
                 Text(text)
                     .font(Theme.font(15, .semibold))
-                    .foregroundStyle(isPlaceholder ? Theme.tabInactive : Theme.ink)
+                    .foregroundStyle(isPlaceholder ? Theme.muted : Theme.ink)
                     .lineLimit(1)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0xC4C9CF))
+                    .foregroundStyle(Theme.tabInactive)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
-            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .frame(minHeight: 54)
+            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                     .strokeBorder(Theme.fieldBorder, lineWidth: 1)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
         }
         .menuOrder(.fixed)
-        .buttonStyle(.plain)
-    }
-}
-
-private struct NewExerciseTypeChip: View {
-    let title: String
-    let isActive: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(Theme.font(12, .semibold))
-                .foregroundStyle(isActive ? .white : Theme.muted)
-                .padding(.vertical, 9)
-                .padding(.horizontal, 14)
-                .background(
-                    isActive ? Theme.accentBlue : Theme.fieldFill,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .strokeBorder(isActive ? Color.clear : Theme.fieldBorder, lineWidth: 1)
-                )
-        }
         .buttonStyle(.plain)
     }
 }

@@ -10,7 +10,7 @@ struct RestTimerBar: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .stroke(Color(hex: 0xBCD2F5), lineWidth: 2.5)
+                    .stroke(Theme.chartSoft, lineWidth: 2.5)
                 Circle()
                     .trim(from: 0, to: min(1, max(0.02, timer.progress)))
                     .stroke(Theme.accentBlue, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
@@ -19,7 +19,7 @@ struct RestTimerBar: View {
             .frame(width: 30, height: 30)
 
             VStack(alignment: .leading, spacing: 2) {
-                EyebrowText(eyebrow, color: Color(hex: 0x7E879A), size: 10)
+                EyebrowText(eyebrow, size: 10)
                     .lineLimit(1)
                 Text(Formatting.countdown(timer.remainingSeconds))
                     .font(Theme.mono(18, .bold))
@@ -38,9 +38,11 @@ struct RestTimerBar: View {
                         .fixedSize()
                         .padding(.vertical, 7)
                         .padding(.horizontal, 13)
-                        .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                        .expandedTapTarget(vertical: 8, horizontal: 3)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Skip rest")
             }
         }
         .padding(.vertical, 11)
@@ -59,12 +61,14 @@ struct RestTimerBar: View {
                 .fixedSize()
                 .padding(.vertical, 7)
                 .padding(.horizontal, 11)
-                .background(Color.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(Color.white.opacity(0.65), in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.9), lineWidth: 1)
                 )
+                .expandedTapTarget(vertical: 8, horizontal: 3)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(delta < 0 ? "Reduce rest by 15 seconds" : "Extend rest by 15 seconds")
     }
 }

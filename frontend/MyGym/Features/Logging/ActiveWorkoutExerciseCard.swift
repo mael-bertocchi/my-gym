@@ -38,10 +38,11 @@ struct ActiveWorkoutExerciseCard: View {
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(hex: 0xC4C9CF))
-                            .frame(width: 32, height: 22, alignment: .trailing)
+                            .foregroundStyle(Theme.tabInactive)
+                            .frame(width: 44, height: 32, alignment: .trailing)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Exercise options")
                 }
             }
             .padding(.bottom, 4)
@@ -72,7 +73,7 @@ struct ActiveWorkoutExerciseCard: View {
                 }
             }
 
-            InlineLink(title: "+ Add set") {
+            InlineLink(title: "Add set", systemImage: "plus") {
                 activeWorkout.addSet(entryId: entry.id)
             }
             .padding(.top, 12)
@@ -80,7 +81,6 @@ struct ActiveWorkoutExerciseCard: View {
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
         .card(
-            radius: 18,
             border: superset?.isHighlighted == true ? Theme.accentBlue : Theme.hairline,
             borderWidth: superset?.isHighlighted == true ? 1.5 : 1
         )
@@ -91,7 +91,7 @@ struct ActiveWorkoutExerciseCard: View {
     }
 
     private func tableHeaderCell(_ text: String) -> some View {
-        EyebrowText(text, color: Color(hex: 0xA2A8B0), size: 10)
+        EyebrowText(text, size: 10)
             .lineLimit(1)
     }
 }
@@ -135,7 +135,7 @@ struct ActiveWorkoutSetRow: View {
                         .font(Theme.font(13, .bold))
                         .foregroundStyle(.white)
                         .frame(width: Self.revealWidth - 10, height: 38)
-                        .background(Theme.danger, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .background(Theme.danger, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -171,7 +171,7 @@ struct ActiveWorkoutSetRow: View {
         HStack(spacing: 8) {
             Text("\(set.setNumber)")
                 .font(Theme.font(13, .bold))
-                .foregroundStyle(set.isCompleted ? Color(hex: 0x8A9099) : Theme.ink)
+                .foregroundStyle(set.isCompleted ? Theme.muted2 : Theme.ink)
                 .frame(width: 28)
 
             if set.isCompleted {
@@ -195,7 +195,7 @@ struct ActiveWorkoutSetRow: View {
                             .foregroundStyle(.white)
                     } else {
                         Circle()
-                            .strokeBorder(Color(hex: 0xD2D6DB), lineWidth: 2)
+                            .strokeBorder(Theme.controlOutline, lineWidth: 2)
                             .frame(width: 24, height: 24)
                     }
                 }
@@ -203,6 +203,7 @@ struct ActiveWorkoutSetRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(set.isCompleted ? "Mark set \(set.setNumber) incomplete" : "Complete set \(set.setNumber)")
         }
         .contextMenu {
             Button("Remove set", role: .destructive, action: remove)
@@ -250,18 +251,19 @@ struct ActiveWorkoutSetRow: View {
             .keyboardType(keyboard)
             .multilineTextAlignment(.center)
             .font(Theme.font(14, isBold ? .bold : .regular))
-            .foregroundStyle(isGhost ? Theme.tabInactive : Theme.ink)
+            .foregroundStyle(isGhost ? Theme.muted : Theme.ink)
             .focused($focusedField, equals: field)
             .frame(maxWidth: .infinity)
             .frame(height: 38)
-            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                     .strokeBorder(
                         isFocused ? Theme.accentBlue : Theme.fieldBorder,
                         lineWidth: isFocused ? 1.5 : 1
                     )
             )
+            .accessibilityLabel(field == .weight ? "Weight, set \(set.setNumber)" : "Reps, set \(set.setNumber)")
     }
 
     private func completedCell(_ value: String, isBold: Bool) -> some View {
@@ -270,15 +272,23 @@ struct ActiveWorkoutSetRow: View {
             .foregroundStyle(Theme.positive)
             .frame(maxWidth: .infinity)
             .frame(height: 38)
-            .background(Theme.positiveTint, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(Theme.positiveTint, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                     .strokeBorder(Theme.positiveBorder, lineWidth: 1)
             )
     }
 
     private func toggleCompleted() {
+        if !set.isCompleted, (set.reps ?? 0) <= 0 {
+            Haptics.warning()
+            focusedField = .reps
+            return
+        }
         focusedField = nil
+        if !set.isCompleted {
+            Haptics.impact(.medium)
+        }
         let focusEntryId = activeWorkout.setCompleted(
             entryId: entryId,
             setId: set.id,
@@ -325,13 +335,13 @@ struct ActiveWorkoutCondensedCard: View {
                     .padding(.top, superset == nil ? 2 : 4)
                 Text(summary)
                     .font(Theme.font(12))
-                    .foregroundStyle(Theme.muted2)
+                    .foregroundStyle(Theme.muted)
                     .padding(.top, 10)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
-            .card(radius: 18)
+            .card()
             .opacity(superset == nil ? 0.96 : 1)
             .contentShape(Rectangle())
         }

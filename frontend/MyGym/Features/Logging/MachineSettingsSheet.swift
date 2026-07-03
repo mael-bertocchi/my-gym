@@ -14,17 +14,19 @@ struct MachineSettingsSheet: View {
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     @State private var fields: [MachineSettingsFieldModel] = []
+    @State private var initialFields: [(name: String, text: String)] = []
     @State private var hasLoaded = false
     @State private var showAddField = false
     @State private var newFieldName = ""
     @State private var showClearConfirm = false
+    @State private var showDiscardConfirm = false
 
     var body: some View {
         VStack(spacing: 0) {
             navRow
-                .padding(.top, 6)
+                .padding(.top, 18)
                 .padding(.horizontal, 24)
-                .padding(.bottom, 18)
+                .padding(.bottom, 12)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -34,7 +36,7 @@ struct MachineSettingsSheet: View {
                     settingsRows
                         .padding(.top, 6)
 
-                    InlineLink(title: "+ Add field") {
+                    InlineLink(title: "Add field", systemImage: "plus") {
                         newFieldName = ""
                         showAddField = true
                     }
@@ -48,7 +50,17 @@ struct MachineSettingsSheet: View {
         }
         .background(Color.white.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { footer }
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isDirty)
         .onAppear(perform: load)
+        .confirmationDialog(
+            "Discard changes?",
+            isPresented: $showDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Discard changes", role: .destructive) { dismiss() }
+            Button("Keep editing", role: .cancel) {}
+        }
         .alert("Add field", isPresented: $showAddField) {
             TextField("Field name", text: $newFieldName)
             Button("Cancel", role: .cancel) {}
@@ -65,22 +77,22 @@ struct MachineSettingsSheet: View {
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("Machine settings")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button("Close") { dismiss() }
-                    .font(Theme.font(15))
-                    .foregroundStyle(Color(hex: 0x8A9099))
-                    .buttonStyle(.plain)
-                Spacer()
-                Button("Save") { save() }
-                    .font(Theme.font(15, .bold))
-                    .foregroundStyle(Theme.accentBlue)
-                    .buttonStyle(.plain)
-            }
-        }
+        ModalHeader(
+            title: "Machine settings",
+            onDismiss: {
+                if isDirty {
+                    showDiscardConfirm = true
+                } else {
+                    dismiss()
+                }
+            },
+            trailingTitle: "Save",
+            trailingAction: save
+        )
+    }
+
+    private var isDirty: Bool {
+        !fields.elementsEqual(initialFields) { $0.name == $1.name && $0.text == $1.text }
     }
 
     private var contextHeader: some View {
@@ -125,11 +137,12 @@ struct MachineSettingsSheet: View {
                                 .font(Theme.font(15, .bold))
                                 .foregroundStyle(Theme.ink)
                                 .frame(width: 74, height: 40)
-                                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                    RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                                         .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                                 )
+                                .accessibilityLabel(field.name)
                         }
                         .padding(.vertical, 16)
                         RowDivider()
@@ -164,6 +177,7 @@ struct MachineSettingsSheet: View {
         fields = source
             .sorted { $0.key < $1.key }
             .map { MachineSettingsFieldModel(name: $0.key, text: $0.value.displayString) }
+        initialFields = fields.map { ($0.name, $0.text) }
     }
 
     private func addField() {

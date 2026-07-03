@@ -13,6 +13,7 @@ struct ActiveWorkoutView: View {
     @State private var showRepeatConfirm = false
     @State private var settingsEntry: LocalWorkoutExercise?
     @State private var supersetSource: LocalWorkoutExercise?
+    @State private var removeCandidate: LocalWorkoutExercise?
 
     var body: some View {
         Group {
@@ -49,14 +50,14 @@ struct ActiveWorkoutView: View {
         .onChange(of: activeWorkout.isActive) { _, isActive in
             if !isActive { dismiss() }
         }
-        .fullScreenCover(isPresented: $showPicker) {
+        .sheet(isPresented: $showPicker) {
             AddExercisePicker { exercise in
                 if let entry = activeWorkout.addExercise(exercise) {
                     expandedEntryId = entry.id
                 }
             }
         }
-        .fullScreenCover(item: $settingsEntry) { entry in
+        .sheet(item: $settingsEntry) { entry in
             MachineSettingsSheet(entry: entry)
         }
         .sheet(item: $supersetSource) { source in
@@ -75,11 +76,30 @@ struct ActiveWorkoutView: View {
         .alert("Finish workout?", isPresented: $showFinishConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Finish") {
+                Haptics.success()
                 activeWorkout.finish()
                 dismiss()
             }
         } message: {
             Text("Saves this session to your history.")
+        }
+        .confirmationDialog(
+            "Remove \(removeCandidateName)?",
+            isPresented: Binding(
+                get: { removeCandidate != nil },
+                set: { if !$0 { removeCandidate = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Remove exercise and sets", role: .destructive) {
+                if let entry = removeCandidate {
+                    removeEntry(entry)
+                }
+                removeCandidate = nil
+            }
+            Button("Cancel", role: .cancel) { removeCandidate = nil }
+        } message: {
+            Text("Logged sets for this exercise are deleted from the session.")
         }
         .alert("Discard workout?", isPresented: $showDiscardConfirm) {
             Button("Cancel", role: .cancel) {}
@@ -115,7 +135,9 @@ struct ActiveWorkoutView: View {
                     }
                 }
                 .onChange(of: context.date) { _, _ in
-                    activeWorkout.expireRestIfNeeded()
+                    if activeWorkout.expireRestIfNeeded() {
+                        Haptics.warning()
+                    }
                 }
             }
             .animation(.snappy(duration: 0.25), value: activeWorkout.restTimer != nil)
@@ -130,7 +152,7 @@ struct ActiveWorkoutView: View {
                                 ActiveWorkoutExerciseCard(
                                     entry: entry,
                                     onOpenSettings: { settingsEntry = entry },
-                                    onRemove: { removeEntry(entry) },
+                                    onRemove: { confirmRemove(entry) },
                                     onAddToSuperset: supersetPartnerExists(in: workout, excluding: entry)
                                         ? { supersetSource = entry }
                                         : nil,
@@ -148,7 +170,7 @@ struct ActiveWorkoutView: View {
                                 expandedEntryId: expandedEntryId,
                                 onExpand: { focus($0.id) },
                                 onOpenSettings: { settingsEntry = $0 },
-                                onRemove: { removeEntry($0) },
+                                onRemove: { confirmRemove($0) },
                                 onUnlink: {
                                     withAnimation(.snappy(duration: 0.2)) {
                                         activeWorkout.unlinkSuperset(supersetId: supersetId)
@@ -169,7 +191,7 @@ struct ActiveWorkoutView: View {
                             .frame(maxWidth: .infinity)
                     }
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, Theme.screenPadding)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
             }
@@ -186,11 +208,12 @@ struct ActiveWorkoutView: View {
                 } label: {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                        .frame(width: 28, height: 28)
+                        .foregroundStyle(Theme.muted2)
+                        .frame(width: 44, height: 44, alignment: .leading)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Minimize workout")
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(workout.name ?? "Workout")
@@ -227,8 +250,8 @@ struct ActiveWorkoutView: View {
                     }
                     .padding(.vertical, 7)
                     .padding(.horizontal, 11)
-                    .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                    .contentShape(Rectangle())
+                    .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                    .expandedTapTarget(vertical: 6, horizontal: 2)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(activeWorkout.isPaused ? "Resume workout" : "Pause workout")
@@ -241,22 +264,17 @@ struct ActiveWorkoutView: View {
                         .foregroundStyle(.white)
                         .padding(.vertical, 9)
                         .padding(.horizontal, 15)
-                        .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                        .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                        .expandedTapTarget(vertical: 6, horizontal: 2)
                 }
                 .buttonStyle(.plain)
             }
 
             HStack(spacing: 18) {
-                Button("＋ Add exercise") { showPicker = true }
-                    .font(Theme.font(13, .semibold))
-                    .foregroundStyle(Theme.muted)
-                Button("⤺ Repeat last") { confirmRepeatLast(workout) }
-                    .font(Theme.font(13, .semibold))
-                    .foregroundStyle(Theme.muted)
+                headerAction("Add exercise", systemImage: "plus") { showPicker = true }
+                headerAction("Repeat last", systemImage: "arrow.uturn.backward") { confirmRepeatLast(workout) }
                 Spacer()
-                Button("Discard") { showDiscardConfirm = true }
-                    .font(Theme.font(13, .semibold))
-                    .foregroundStyle(Theme.danger)
+                headerAction("Discard", color: Theme.danger) { showDiscardConfirm = true }
             }
             .buttonStyle(.plain)
         }
@@ -270,25 +288,62 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    private func headerAction(
+        _ title: String,
+        systemImage: String? = nil,
+        color: Color = Theme.muted,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                Text(title)
+                    .font(Theme.font(13, .semibold))
+            }
+            .foregroundStyle(color)
+            .expandedTapTarget(vertical: 12, horizontal: 6)
+        }
+    }
+
     private var addExerciseTile: some View {
         Button {
             showPicker = true
         } label: {
-            Text("+ Add exercise")
-                .font(Theme.font(14, .bold))
-                .foregroundStyle(Theme.accentBlue)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .strokeBorder(
-                            Color(hex: 0xC4CBD3),
-                            style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
-                        )
-                )
-                .contentShape(Rectangle())
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .bold))
+                Text("Add exercise")
+                    .font(Theme.font(14, .bold))
+            }
+            .foregroundStyle(Theme.accentBlue)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(
+                        Theme.controlOutline,
+                        style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                    )
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private var removeCandidateName: String {
+        guard let removeCandidate else { return "exercise" }
+        return store.exercise(id: removeCandidate.exerciseId)?.name ?? "exercise"
+    }
+
+    private func confirmRemove(_ entry: LocalWorkoutExercise) {
+        if entry.sets.contains(where: \.isCompleted) {
+            removeCandidate = entry
+        } else {
+            removeEntry(entry)
+        }
     }
 
     private func sortedEntries(_ workout: LocalWorkout) -> [LocalWorkoutExercise] {

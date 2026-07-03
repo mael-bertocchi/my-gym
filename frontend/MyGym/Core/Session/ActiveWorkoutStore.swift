@@ -328,14 +328,16 @@ final class ActiveWorkoutStore {
         persist()
     }
 
-    func expireRestIfNeeded() {
-        guard pausedAt == nil else { return }
-        if let restTimer, restTimer.isExpired {
-            self.restTimer = nil
-            restContext = nil
-            restNotifications.cancel()
-            persist()
-        }
+    @discardableResult
+    func expireRestIfNeeded() -> Bool {
+        guard pausedAt == nil else { return false }
+        guard let restTimer, restTimer.isExpired else { return false }
+        let justEnded = abs(restTimer.endsAt.timeIntervalSinceNow) < 3
+        self.restTimer = nil
+        restContext = nil
+        restNotifications.cancel()
+        persist()
+        return justEnded
     }
 
     #if DEBUG

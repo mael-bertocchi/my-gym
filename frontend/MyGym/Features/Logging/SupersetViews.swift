@@ -221,7 +221,7 @@ struct SupersetPartnerPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Superset with…")
-                .font(Theme.font(17, .bold))
+                .font(Theme.font(16, .bold))
                 .foregroundStyle(Theme.ink)
             Text("Pick one exercise from this workout to pair with \(exerciseName(source)).")
                 .font(Theme.font(13))
@@ -242,26 +242,15 @@ struct SupersetPartnerPicker: View {
                 .foregroundStyle(Theme.muted2)
                 .padding(.top, 14)
 
-            Button {
+            PrimaryButton(title: "Create superset", isDisabled: selectedId == nil) {
                 if let partner = candidates.first(where: { $0.id == selectedId }) {
                     onCreate(partner)
                 }
-            } label: {
-                Text("Create superset")
-                    .font(Theme.font(16, .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .disabled(selectedId == nil)
-            .opacity(selectedId == nil ? 0.5 : 1)
             .padding(.top, 12)
         }
         .padding(.top, 24)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .presentationDetents([.medium])
@@ -288,7 +277,7 @@ struct SupersetPartnerPicker: View {
                         Circle().fill(Theme.accentBlue)
                         Circle().fill(.white).frame(width: 8, height: 8)
                     } else {
-                        Circle().strokeBorder(Color(hex: 0xD2D6DB), lineWidth: 2)
+                        Circle().strokeBorder(Theme.controlOutline, lineWidth: 2)
                     }
                 }
                 .frame(width: 22, height: 22)
@@ -318,6 +307,7 @@ struct SupersetPartnerPicker: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private func exerciseName(_ entry: LocalWorkoutExercise) -> String {

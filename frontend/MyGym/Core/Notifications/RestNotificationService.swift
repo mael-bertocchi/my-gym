@@ -2,11 +2,23 @@ import Foundation
 import UserNotifications
 
 @MainActor
-final class RestNotificationService {
+final class RestNotificationService: NSObject, UNUserNotificationCenterDelegate {
     private static let identifier = "rest-timer-complete"
 
     private let center = UNUserNotificationCenter.current()
     private var generation = 0
+
+    override init() {
+        super.init()
+        center.delegate = self
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .sound]
+    }
 
     func schedule(endsAt: Date) {
         guard isAvailable else { return }
