@@ -4,13 +4,14 @@ struct CardBackground: ViewModifier {
     var radius: CGFloat = Theme.cardRadius
     var fill: Color = Theme.surface
     var border: Color = Theme.hairline
+    var borderWidth: CGFloat = 1
 
     func body(content: Content) -> some View {
         content
             .background(fill, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(border, lineWidth: 1)
+                    .strokeBorder(border, lineWidth: borderWidth)
             )
     }
 }
@@ -45,9 +46,10 @@ extension View {
     func card(
         radius: CGFloat = Theme.cardRadius,
         fill: Color = Theme.surface,
-        border: Color = Theme.hairline
+        border: Color = Theme.hairline,
+        borderWidth: CGFloat = 1
     ) -> some View {
-        modifier(CardBackground(radius: radius, fill: fill, border: border))
+        modifier(CardBackground(radius: radius, fill: fill, border: border, borderWidth: borderWidth))
     }
 
     func tintedCard(radius: CGFloat = Theme.cardRadius) -> some View {

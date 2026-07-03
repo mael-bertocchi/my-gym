@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RestTimerBar: View {
     let timer: ActiveWorkoutStore.RestTimer
+    var eyebrow = "REST"
     var onAdjust: (Int) -> Void
     var onSkip: () -> Void
 
@@ -18,7 +19,8 @@ struct RestTimerBar: View {
             .frame(width: 30, height: 30)
 
             VStack(alignment: .leading, spacing: 2) {
-                EyebrowText("REST", color: Color(hex: 0x7E879A), size: 10)
+                EyebrowText(eyebrow, color: Color(hex: 0x7E879A), size: 10)
+                    .lineLimit(1)
                 Text(Formatting.countdown(timer.remainingSeconds))
                     .font(Theme.mono(18, .bold))
                     .foregroundStyle(Theme.ink)
@@ -33,6 +35,7 @@ struct RestTimerBar: View {
                     Text("Skip")
                         .font(Theme.font(12, .bold))
                         .foregroundStyle(.white)
+                        .fixedSize()
                         .padding(.vertical, 7)
                         .padding(.horizontal, 13)
                         .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -53,6 +56,7 @@ struct RestTimerBar: View {
             Text(title)
                 .font(Theme.mono(12, .bold))
                 .foregroundStyle(Theme.inkSecondary)
+                .fixedSize()
                 .padding(.vertical, 7)
                 .padding(.horizontal, 11)
                 .background(Color.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 9, style: .continuous))

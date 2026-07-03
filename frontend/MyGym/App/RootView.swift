@@ -28,7 +28,11 @@ struct RootView: View {
             if CommandLine.arguments.contains("-demo") {
                 DebugSeed.enterDemo(store: store, session: session)
                 if CommandLine.arguments.contains("-demo-active") {
-                    DebugSeed.startDemoActiveWorkout(store: store, activeWorkout: activeWorkout)
+                    DebugSeed.startDemoActiveWorkout(
+                        store: store,
+                        activeWorkout: activeWorkout,
+                        supersetGo: CommandLine.arguments.contains("-demo-superset-go")
+                    )
                     if CommandLine.arguments.contains("-demo-paused") {
                         activeWorkout.pause()
                     }
@@ -133,6 +137,7 @@ struct MainShell: View {
         }
         #endif
         .onScenePhaseActive {
+            activeWorkout.expireRestIfNeeded()
             Task { await syncEngine.sync() }
         }
         .onAppear {
@@ -142,7 +147,7 @@ struct MainShell: View {
                 selection = target
             }
             switch UserDefaults.standard.string(forKey: "open") {
-            case "active", "picker", "settings": showActiveWorkout = true
+            case "active", "picker", "settings", "superset-picker": showActiveWorkout = true
             case "start": showStartWorkout = true
             case "admin-users": debugShowAdminUsers = true
             case "admin-account": debugShowManageAccount = true

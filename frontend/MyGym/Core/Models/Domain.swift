@@ -187,6 +187,7 @@ struct WorkoutEntry: Codable, Identifiable, Equatable {
     var position: Int
     var notes: String?
     var settings: [String: JSONValue]?
+    var supersetId: String?
     var createdAt: Date
     var exercise: WorkoutEntryExercise
     var sets: [WorkoutSet]
@@ -211,6 +212,7 @@ struct WorkoutExercise: Codable, Identifiable, Equatable {
     var position: Int
     var notes: String?
     var settings: [String: JSONValue]?
+    var supersetId: String?
     var createdAt: Date
 }
 

@@ -12,6 +12,7 @@ struct ActiveWorkoutView: View {
     @State private var showDiscardConfirm = false
     @State private var showRepeatConfirm = false
     @State private var settingsEntry: LocalWorkoutExercise?
+    @State private var supersetSource: LocalWorkoutExercise?
 
     var body: some View {
         Group {
@@ -33,6 +34,14 @@ struct ActiveWorkoutView: View {
             switch UserDefaults.standard.string(forKey: "open") {
             case "picker": showPicker = true
             case "settings": settingsEntry = workout.exercises.first
+            case "superset-picker":
+                for supersetId in Set(workout.exercises.compactMap(\.supersetId)) {
+                    activeWorkout.unlinkSuperset(supersetId: supersetId)
+                }
+                supersetSource = activeWorkout.workout?.exercises
+                    .sorted { $0.position < $1.position }
+                    .dropFirst()
+                    .first
             default: break
             }
             #endif
@@ -49,6 +58,19 @@ struct ActiveWorkoutView: View {
         }
         .fullScreenCover(item: $settingsEntry) { entry in
             MachineSettingsSheet(entry: entry)
+        }
+        .sheet(item: $supersetSource) { source in
+            SupersetPartnerPicker(source: source) { partner in
+                supersetSource = nil
+                withAnimation(.snappy(duration: 0.2)) {
+                    activeWorkout.createSuperset(entryId: source.id, partnerId: partner.id)
+                    if let workout = activeWorkout.workout,
+                       let supersetId = workout.exercises.first(where: { $0.id == source.id })?.supersetId,
+                       let next = Superset.nextIncompleteSet(in: Superset.members(of: supersetId, in: workout)) {
+                        expandedEntryId = next.entryId
+                    }
+                }
+            }
         }
         .alert("Finish workout?", isPresented: $showFinishConfirm) {
             Button("Cancel", role: .cancel) {}
@@ -85,6 +107,7 @@ struct ActiveWorkoutView: View {
                     if let timer = activeWorkout.restTimer, !activeWorkout.isPaused {
                         RestTimerBar(
                             timer: timer,
+                            eyebrow: restEyebrow,
                             onAdjust: { activeWorkout.adjustRest(by: $0) },
                             onSkip: { activeWorkout.skipRest() }
                         )
@@ -100,19 +123,39 @@ struct ActiveWorkoutView: View {
 
             ScrollView {
                 VStack(spacing: 14) {
-                    ForEach(sortedEntries(workout)) { entry in
-                        if entry.id == expandedEntryId {
-                            ActiveWorkoutExerciseCard(
-                                entry: entry,
-                                onOpenSettings: { settingsEntry = entry },
-                                onRemove: { removeEntry(entry) }
-                            )
-                        } else {
-                            ActiveWorkoutCondensedCard(entry: entry) {
-                                withAnimation(.snappy(duration: 0.2)) {
-                                    expandedEntryId = entry.id
+                    ForEach(Superset.groupings(in: workout)) { grouping in
+                        switch grouping {
+                        case .single(let entry):
+                            if entry.id == expandedEntryId {
+                                ActiveWorkoutExerciseCard(
+                                    entry: entry,
+                                    onOpenSettings: { settingsEntry = entry },
+                                    onRemove: { removeEntry(entry) },
+                                    onAddToSuperset: supersetPartnerExists(in: workout, excluding: entry)
+                                        ? { supersetSource = entry }
+                                        : nil,
+                                    onFocusEntry: focus
+                                )
+                            } else {
+                                ActiveWorkoutCondensedCard(entry: entry) {
+                                    focus(entry.id)
                                 }
                             }
+                        case .pair(let supersetId, let members):
+                            SupersetGroupSection(
+                                supersetId: supersetId,
+                                members: members,
+                                expandedEntryId: expandedEntryId,
+                                onExpand: { focus($0.id) },
+                                onOpenSettings: { settingsEntry = $0 },
+                                onRemove: { removeEntry($0) },
+                                onUnlink: {
+                                    withAnimation(.snappy(duration: 0.2)) {
+                                        activeWorkout.unlinkSuperset(supersetId: supersetId)
+                                    }
+                                },
+                                onFocusEntry: focus
+                            )
                         }
                     }
 
@@ -252,11 +295,39 @@ struct ActiveWorkoutView: View {
         workout.exercises.sorted { $0.position < $1.position }
     }
 
+    private var restEyebrow: String {
+        guard let context = activeWorkout.restContext else { return "REST" }
+        return "REST · ROUND \(context.round) DONE"
+    }
+
+    private func focus(_ entryId: String) {
+        withAnimation(.snappy(duration: 0.2)) {
+            expandedEntryId = entryId
+        }
+    }
+
+    private func supersetPartnerExists(in workout: LocalWorkout, excluding entry: LocalWorkoutExercise) -> Bool {
+        workout.exercises.contains { $0.id != entry.id && $0.supersetId == nil }
+    }
+
     private func defaultExpandedId(in workout: LocalWorkout) -> String? {
-        let entries = sortedEntries(workout)
-        return entries.first { entry in
-            entry.sets.contains { !$0.isCompleted }
-        }?.id ?? entries.last?.id
+        if let context = activeWorkout.restContext,
+           let next = Superset.nextIncompleteSet(in: Superset.members(of: context.supersetId, in: workout)) {
+            return next.entryId
+        }
+        for grouping in Superset.groupings(in: workout) {
+            switch grouping {
+            case .single(let entry):
+                if entry.sets.contains(where: { !$0.isCompleted }) {
+                    return entry.id
+                }
+            case .pair(_, let members):
+                if let next = Superset.nextIncompleteSet(in: members) {
+                    return next.entryId
+                }
+            }
+        }
+        return sortedEntries(workout).last?.id
     }
 
     private func removeEntry(_ entry: LocalWorkoutExercise) {

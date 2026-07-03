@@ -23,27 +23,43 @@ enum DebugSeed {
     }
 
     @MainActor
-    static func startDemoActiveWorkout(store: LocalStore, activeWorkout: ActiveWorkoutStore) {
+    static func startDemoActiveWorkout(store: LocalStore, activeWorkout: ActiveWorkoutStore, supersetGo: Bool = false) {
         guard let gym = store.gyms.first(where: { $0.name == "Iron Temple" }),
               let chest = store.exercises.first(where: { $0.name == "Chest Press" }),
-              let incline = store.exercises.first(where: { $0.name == "Incline DB Press" })
+              let incline = store.exercises.first(where: { $0.name == "Incline DB Press" }),
+              let cableFly = store.exercises.first(where: { $0.name == "Cable Fly" })
         else { return }
 
         activeWorkout.discard()
         activeWorkout.start(gymId: gym.id, name: "Push day")
 
         if let chestEntry = activeWorkout.addExercise(chest) {
-            for set in chestEntry.sets.prefix(2) {
+            for set in chestEntry.sets {
                 activeWorkout.setCompleted(entryId: chestEntry.id, setId: set.id, completed: true, restSeconds: 90)
             }
         }
-        if let inclineEntry = activeWorkout.addExercise(incline) {
-            for set in inclineEntry.sets {
-                activeWorkout.setCompleted(entryId: inclineEntry.id, setId: set.id, completed: true, restSeconds: 90)
+        let inclineEntry = activeWorkout.addExercise(incline)
+        let cableFlyEntry = activeWorkout.addExercise(cableFly)
+        activeWorkout.debugBackdateStart(minutes: 42)
+
+        guard let inclineEntry, let cableFlyEntry else {
+            activeWorkout.startRest(seconds: 72)
+            return
+        }
+        activeWorkout.createSuperset(entryId: inclineEntry.id, partnerId: cableFlyEntry.id)
+        activeWorkout.skipRest()
+        if let firstInclineSet = inclineEntry.sets.first {
+            activeWorkout.setCompleted(entryId: inclineEntry.id, setId: firstInclineSet.id, completed: true, restSeconds: 90)
+        }
+        if let firstCableFlySet = cableFlyEntry.sets.first {
+            activeWorkout.setCompleted(entryId: cableFlyEntry.id, setId: firstCableFlySet.id, completed: true, restSeconds: 90)
+        }
+        if supersetGo {
+            activeWorkout.skipRest()
+            if let secondInclineSet = inclineEntry.sets.dropFirst().first {
+                activeWorkout.setCompleted(entryId: inclineEntry.id, setId: secondInclineSet.id, completed: true, restSeconds: 90)
             }
         }
-        activeWorkout.debugBackdateStart(minutes: 42)
-        activeWorkout.startRest(seconds: 72)
     }
 
     @MainActor
@@ -249,7 +265,8 @@ enum DebugSeed {
     }
 
     private static func showcasePushDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
-        workout("Push day", daysAgo: 1, gymId: gymId, minutes: 58, entries: [
+        let superset = newId()
+        return workout("Push day", daysAgo: 1, gymId: gymId, minutes: 58, entries: [
             entry(ex.chestPress, 1, sets: [
                 mkSet(1, type: .warmup, 40, 12),
                 mkSet(2, 60, 10),
@@ -258,12 +275,12 @@ enum DebugSeed {
                 mkSet(5, 60, 8),
             ]),
             entry(ex.chestPressTechnogym, 2, sets: straightSets(3, weight: 55, reps: 10)),
-            entry(ex.inclineDumbbellPress, 3, sets: [
+            entry(ex.inclineDumbbellPress, 3, superset: superset, sets: [
                 mkSet(1, 26, 10),
                 mkSet(2, 26, 10),
                 mkSet(3, 24, 12),
             ]),
-            entry(ex.cableFly, 4, sets: straightSets(3, weight: 22, reps: 12)),
+            entry(ex.cableFly, 4, superset: superset, sets: straightSets(3, weight: 22, reps: 12)),
             entry(ex.shoulderPress, 5, sets: straightSets(3, weight: 40, reps: 10)),
             entry(ex.benchPress, 6, sets: straightSets(3, weight: 80, reps: 8)),
         ])
@@ -407,9 +424,10 @@ enum DebugSeed {
         _ exerciseId: String,
         _ position: Int,
         notes: String? = nil,
+        superset: String? = nil,
         sets: [LocalSet]
     ) -> LocalWorkoutExercise {
-        LocalWorkoutExercise(exerciseId: exerciseId, position: position, notes: notes, sets: sets)
+        LocalWorkoutExercise(exerciseId: exerciseId, position: position, notes: notes, supersetId: superset, sets: sets)
     }
 
     private static func mkSet(

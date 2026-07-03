@@ -13,11 +13,17 @@ struct MyGymApp: App {
         let store = LocalStore()
         let syncEngine = SyncEngine(store: store)
         let healthKit = HealthKitService()
+        let restNotifications = RestNotificationService()
         _store = State(initialValue: store)
         _syncEngine = State(initialValue: syncEngine)
         _healthKit = State(initialValue: healthKit)
         _session = State(initialValue: AppSession(store: store, syncEngine: syncEngine))
-        _activeWorkout = State(initialValue: ActiveWorkoutStore(store: store, syncEngine: syncEngine, healthKit: healthKit))
+        _activeWorkout = State(initialValue: ActiveWorkoutStore(
+            store: store,
+            syncEngine: syncEngine,
+            healthKit: healthKit,
+            restNotifications: restNotifications
+        ))
     }
 
     var body: some Scene {

@@ -135,18 +135,24 @@ struct HistoryWorkoutDetailView: View {
     }
 
     private func exerciseList(for workout: LocalWorkout) -> some View {
-        let entries = workout.exercises.sorted { $0.position < $1.position }
+        let items = Superset.groupings(in: workout)
         return VStack(alignment: .leading, spacing: 0) {
-            ForEach(entries) { entry in
-                if entry.id != entries.first?.id {
-                    RowDivider()
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                switch item {
+                case .single(let entry):
+                    if index > 0, case .single = items[index - 1] {
+                        RowDivider()
+                    }
+                    NavigationLink {
+                        ExerciseDetailView(exerciseId: entry.exerciseId)
+                    } label: {
+                        WorkoutDetailExerciseRow(entry: entry, unit: session.weightUnit)
+                    }
+                    .buttonStyle(.plain)
+                case .pair(_, let members):
+                    HistorySupersetCard(members: members, unit: session.weightUnit)
+                        .padding(.vertical, 12)
                 }
-                NavigationLink {
-                    ExerciseDetailView(exerciseId: entry.exerciseId)
-                } label: {
-                    WorkoutDetailExerciseRow(entry: entry, unit: session.weightUnit)
-                }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -183,6 +189,79 @@ private struct WorkoutDetailStatTile: View {
             Theme.screenBackground,
             in: RoundedRectangle(cornerRadius: 14, style: .continuous)
         )
+    }
+}
+
+private struct HistorySupersetCard: View {
+    let members: [LocalWorkoutExercise]
+    let unit: WeightUnit
+
+    @Environment(LocalStore.self) private var store
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(Theme.accentBlue)
+                .frame(width: 3)
+            VStack(alignment: .leading, spacing: 0) {
+                EyebrowText("SUPERSET · \(roundLabel)", color: Theme.accentBlue, size: 10)
+                ForEach(Array(members.enumerated()), id: \.element.id) { index, member in
+                    NavigationLink {
+                        ExerciseDetailView(exerciseId: member.exerciseId)
+                    } label: {
+                        memberRows(member, index: index)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .card(radius: 18)
+    }
+
+    private func memberRows(_ member: LocalWorkoutExercise, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                SupersetBadge(
+                    letter: index == 0 ? "A" : "B",
+                    isActive: index == 0,
+                    size: 18,
+                    radius: 5,
+                    fontSize: 10
+                )
+                Text(store.exercise(id: member.exerciseId)?.name ?? "Exercise")
+                    .font(Theme.font(14, .bold))
+                    .foregroundStyle(Theme.ink)
+            }
+            if let line = setLine(member) {
+                Text(line)
+                    .font(Theme.mono(11))
+                    .kerning(0.5)
+                    .foregroundStyle(Theme.muted2)
+                    .padding(.leading, 26)
+            }
+        }
+        .padding(.top, index == 0 ? 8 : 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private var roundLabel: String {
+        let rounds = members.map { $0.sets.filter(\.isCompleted).count }.max() ?? 0
+        return "\(rounds) \(rounds == 1 ? "ROUND" : "ROUNDS")"
+    }
+
+    private func setLine(_ member: LocalWorkoutExercise) -> String? {
+        let completed = member.sets
+            .filter(\.isCompleted)
+            .sorted { $0.setNumber < $1.setNumber }
+        guard !completed.isEmpty else { return nil }
+        return completed
+            .map { set in
+                "\(Formatting.weightNumber(set.weightKg ?? 0, unit: unit))×\(set.reps ?? 0)"
+            }
+            .joined(separator: " · ")
     }
 }
 

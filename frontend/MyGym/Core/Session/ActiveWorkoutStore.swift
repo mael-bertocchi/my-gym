@@ -20,8 +20,14 @@ final class ActiveWorkoutStore {
         }
     }
 
+    struct RestContext: Codable, Equatable {
+        var supersetId: String
+        var round: Int
+    }
+
     private(set) var workout: LocalWorkout?
     private(set) var restTimer: RestTimer?
+    private(set) var restContext: RestContext?
     private(set) var pausedAt: Date?
     private(set) var pausedSeconds: TimeInterval = 0
 
@@ -31,11 +37,13 @@ final class ActiveWorkoutStore {
     private let store: LocalStore
     private let syncEngine: SyncEngine
     private let healthKit: HealthKitService
+    private let restNotifications: RestNotificationService
 
-    init(store: LocalStore, syncEngine: SyncEngine, healthKit: HealthKitService) {
+    init(store: LocalStore, syncEngine: SyncEngine, healthKit: HealthKitService, restNotifications: RestNotificationService) {
         self.store = store
         self.syncEngine = syncEngine
         self.healthKit = healthKit
+        self.restNotifications = restNotifications
         restore()
     }
 
@@ -46,14 +54,17 @@ final class ActiveWorkoutStore {
             startedAt: .now
         )
         restTimer = nil
+        restContext = nil
         pausedAt = nil
         pausedSeconds = 0
+        restNotifications.cancel()
         persist()
     }
 
     func pause() {
         guard workout != nil, pausedAt == nil else { return }
         pausedAt = .now
+        restNotifications.cancel()
         persist()
     }
 
@@ -64,6 +75,7 @@ final class ActiveWorkoutStore {
         if var timer = restTimer {
             timer.endsAt = timer.endsAt.addingTimeInterval(pausedSpan)
             restTimer = timer
+            restNotifications.schedule(endsAt: timer.endsAt)
         }
         self.pausedAt = nil
         persist()
@@ -73,11 +85,18 @@ final class ActiveWorkoutStore {
         guard let last = store.workouts.first(where: { $0.endedAt != nil }) else { return }
         let gymId = workout?.gymId ?? last.gymId
         var seeded = LocalWorkout(gymId: gymId, name: last.name, startedAt: workout?.startedAt ?? .now)
+        var remappedSupersetIds: [String: String] = [:]
         seeded.exercises = last.exercises.map { entry in
             LocalWorkoutExercise(
                 exerciseId: entry.exerciseId,
                 position: entry.position,
                 settings: entry.settings,
+                supersetId: entry.supersetId.map { original in
+                    if let remapped = remappedSupersetIds[original] { return remapped }
+                    let fresh = UUID().uuidString.lowercased()
+                    remappedSupersetIds[original] = fresh
+                    return fresh
+                },
                 sets: entry.sets.map { set in
                     LocalSet(
                         setNumber: set.setNumber,
@@ -115,8 +134,10 @@ final class ActiveWorkoutStore {
         let exerciseNames = finished.exercises.compactMap { store.exercise(id: $0.exerciseId)?.name }
         workout = nil
         restTimer = nil
+        restContext = nil
         pausedAt = nil
         pausedSeconds = 0
+        restNotifications.cancel()
         persist()
         Task { await syncEngine.sync() }
         Task { await healthKit.logWorkout(finished, exerciseNames: exerciseNames) }
@@ -125,8 +146,10 @@ final class ActiveWorkoutStore {
     func discard() {
         workout = nil
         restTimer = nil
+        restContext = nil
         pausedAt = nil
         pausedSeconds = 0
+        restNotifications.cancel()
         persist()
     }
 
@@ -164,8 +187,51 @@ final class ActiveWorkoutStore {
     }
 
     func removeExercise(entryId: String) {
+        guard let current = workout else { return }
+        if let supersetId = current.exercises.first(where: { $0.id == entryId })?.supersetId {
+            clearSuperset(supersetId)
+        }
         workout?.exercises.removeAll { $0.id == entryId }
         persist()
+    }
+
+    func createSuperset(entryId: String, partnerId: String) {
+        guard let current = workout,
+              let anchor = current.exercises.first(where: { $0.id == entryId }),
+              let partner = current.exercises.first(where: { $0.id == partnerId }),
+              anchor.supersetId == nil,
+              partner.supersetId == nil
+        else { return }
+
+        let supersetId = UUID().uuidString.lowercased()
+        var ordered = current.exercises.sorted { $0.position < $1.position }
+        ordered.removeAll { $0.id == partnerId }
+        guard let anchorIndex = ordered.firstIndex(where: { $0.id == entryId }) else { return }
+        ordered[anchorIndex].supersetId = supersetId
+        var linkedPartner = partner
+        linkedPartner.supersetId = supersetId
+        ordered.insert(linkedPartner, at: anchorIndex + 1)
+        for index in ordered.indices {
+            ordered[index].position = index + 1
+        }
+        workout?.exercises = ordered
+        persist()
+    }
+
+    func unlinkSuperset(supersetId: String) {
+        guard workout != nil else { return }
+        clearSuperset(supersetId)
+        persist()
+    }
+
+    private func clearSuperset(_ supersetId: String) {
+        guard let current = workout else { return }
+        for index in current.exercises.indices where current.exercises[index].supersetId == supersetId {
+            workout?.exercises[index].supersetId = nil
+        }
+        if restContext?.supersetId == supersetId {
+            restContext = nil
+        }
     }
 
     func updateEntrySettings(entryId: String, settings: [String: JSONValue]?) {
@@ -202,19 +268,37 @@ final class ActiveWorkoutStore {
         persist()
     }
 
-    func setCompleted(entryId: String, setId: String, completed: Bool, restSeconds: Int) {
+    @discardableResult
+    func setCompleted(entryId: String, setId: String, completed: Bool, restSeconds: Int) -> String? {
         guard let entryIndex = entryIndex(entryId),
               let setIndex = workout?.exercises[entryIndex].sets.firstIndex(where: { $0.id == setId })
-        else { return }
+        else { return nil }
         workout?.exercises[entryIndex].sets[setIndex].isCompleted = completed
+        var focusEntryId: String?
         if completed {
-            startRest(seconds: restSeconds)
+            if let current = workout, let supersetId = current.exercises[entryIndex].supersetId {
+                let members = Superset.members(of: supersetId, in: current)
+                if Superset.isRoundComplete(in: members, setIndex: setIndex) {
+                    startRest(seconds: restSeconds, context: RestContext(supersetId: supersetId, round: setIndex + 1))
+                    focusEntryId = Superset.nextIncompleteSet(in: members)?.entryId
+                } else {
+                    focusEntryId = members.first { member in
+                        member.id != entryId && setIndex < member.sets.count && !member.sets[setIndex].isCompleted
+                    }?.id ?? Superset.nextIncompleteSet(in: members)?.entryId
+                }
+            } else {
+                startRest(seconds: restSeconds)
+            }
         }
         persist()
+        return focusEntryId
     }
 
-    func startRest(seconds: Int) {
-        restTimer = RestTimer(endsAt: .now.addingTimeInterval(TimeInterval(seconds)), totalSeconds: seconds)
+    func startRest(seconds: Int, context: RestContext? = nil) {
+        let timer = RestTimer(endsAt: .now.addingTimeInterval(TimeInterval(seconds)), totalSeconds: seconds)
+        restTimer = timer
+        restContext = context
+        restNotifications.schedule(endsAt: timer.endsAt)
         persist()
     }
 
@@ -223,11 +307,19 @@ final class ActiveWorkoutStore {
         timer.endsAt = timer.endsAt.addingTimeInterval(TimeInterval(delta))
         timer.totalSeconds = max(1, timer.totalSeconds + delta)
         restTimer = timer.isExpired ? nil : timer
+        if restTimer == nil {
+            restContext = nil
+            restNotifications.cancel()
+        } else {
+            restNotifications.schedule(endsAt: timer.endsAt)
+        }
         persist()
     }
 
     func skipRest() {
         restTimer = nil
+        restContext = nil
+        restNotifications.cancel()
         persist()
     }
 
@@ -235,6 +327,8 @@ final class ActiveWorkoutStore {
         guard pausedAt == nil else { return }
         if let restTimer, restTimer.isExpired {
             self.restTimer = nil
+            restContext = nil
+            restNotifications.cancel()
             persist()
         }
     }
@@ -278,6 +372,7 @@ final class ActiveWorkoutStore {
     private struct Snapshot: Codable {
         var workout: LocalWorkout?
         var restTimer: RestTimer?
+        var restContext: RestContext?
         var pausedAt: Date?
         var pausedSeconds: TimeInterval?
     }
@@ -292,6 +387,7 @@ final class ActiveWorkoutStore {
         let snapshot = Snapshot(
             workout: workout,
             restTimer: restTimer,
+            restContext: restContext,
             pausedAt: pausedAt,
             pausedSeconds: pausedSeconds
         )
@@ -308,8 +404,11 @@ final class ActiveWorkoutStore {
         pausedSeconds = snapshot.workout == nil ? 0 : (snapshot.pausedSeconds ?? 0)
         if let timer = snapshot.restTimer, timer.endsAt > (pausedAt ?? .now) {
             restTimer = timer
+            restContext = snapshot.restContext
         } else {
             restTimer = nil
+            restContext = nil
+            restNotifications.cancel()
         }
     }
 }

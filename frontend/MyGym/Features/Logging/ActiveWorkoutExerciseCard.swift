@@ -2,8 +2,12 @@ import SwiftUI
 
 struct ActiveWorkoutExerciseCard: View {
     let entry: LocalWorkoutExercise
+    var superset: SupersetDecoration?
     var onOpenSettings: () -> Void
     var onRemove: () -> Void
+    var onAddToSuperset: (() -> Void)?
+    var onUnlinkSuperset: (() -> Void)?
+    var onFocusEntry: (String) -> Void = { _ in }
 
     @Environment(AppSession.self) private var session
     @Environment(LocalStore.self) private var store
@@ -11,24 +15,37 @@ struct ActiveWorkoutExerciseCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: superset == nil ? .top : .center, spacing: 8) {
+                if let superset {
+                    SupersetBadge(letter: superset.letter, isActive: superset.isActive)
+                }
                 Text(exerciseName)
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
-                Menu {
-                    Button(action: onOpenSettings) {
-                        Label("Machine settings", systemImage: "slider.horizontal.3")
+                if let chip = superset?.chip {
+                    SupersetChipView(chip: chip)
+                } else {
+                    Menu {
+                        Button(action: onOpenSettings) {
+                            Label("Machine settings", systemImage: "slider.horizontal.3")
+                        }
+                        if let onAddToSuperset {
+                            Button("Add to superset", action: onAddToSuperset)
+                        }
+                        if let onUnlinkSuperset {
+                            Button("Unlink superset", action: onUnlinkSuperset)
+                        }
+                        Button(role: .destructive, action: onRemove) {
+                            Label("Remove exercise", systemImage: "trash")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color(hex: 0xC4C9CF))
+                            .frame(width: 32, height: 22, alignment: .trailing)
+                            .contentShape(Rectangle())
                     }
-                    Button(role: .destructive, action: onRemove) {
-                        Label("Remove exercise", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0xC4C9CF))
-                        .frame(width: 32, height: 22, alignment: .trailing)
-                        .contentShape(Rectangle())
                 }
             }
             .padding(.bottom, 4)
@@ -53,7 +70,8 @@ struct ActiveWorkoutExerciseCard: View {
                     ActiveWorkoutSetRow(
                         entryId: entry.id,
                         set: set,
-                        unit: session.weightUnit
+                        unit: session.weightUnit,
+                        onFocus: onFocusEntry
                     )
                 }
             }
@@ -65,7 +83,11 @@ struct ActiveWorkoutExerciseCard: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .card(radius: 18)
+        .card(
+            radius: 18,
+            border: superset?.isHighlighted == true ? Theme.accentBlue : Theme.hairline,
+            borderWidth: superset?.isHighlighted == true ? 1.5 : 1
+        )
     }
 
     private var exerciseName: String {
@@ -82,6 +104,7 @@ struct ActiveWorkoutSetRow: View {
     let entryId: String
     let set: LocalSet
     let unit: WeightUnit
+    var onFocus: (String) -> Void
 
     @Environment(AppSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
@@ -95,10 +118,11 @@ struct ActiveWorkoutSetRow: View {
     @State private var touched: Set<SetField> = []
     @FocusState private var focusedField: SetField?
 
-    init(entryId: String, set: LocalSet, unit: WeightUnit) {
+    init(entryId: String, set: LocalSet, unit: WeightUnit, onFocus: @escaping (String) -> Void = { _ in }) {
         self.entryId = entryId
         self.set = set
         self.unit = unit
+        self.onFocus = onFocus
         _weightText = State(initialValue: set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "")
         _repsText = State(initialValue: set.reps.map(String.init) ?? "")
     }
@@ -204,12 +228,15 @@ struct ActiveWorkoutSetRow: View {
 
     private func toggleCompleted() {
         focusedField = nil
-        activeWorkout.setCompleted(
+        let focusEntryId = activeWorkout.setCompleted(
             entryId: entryId,
             setId: set.id,
             completed: !set.isCompleted,
             restSeconds: session.restTimerSeconds
         )
+        if let focusEntryId, focusEntryId != entryId {
+            onFocus(focusEntryId)
+        }
     }
 
     private func parseNumber(_ text: String) -> Double? {
@@ -222,6 +249,7 @@ struct ActiveWorkoutSetRow: View {
 
 struct ActiveWorkoutCondensedCard: View {
     let entry: LocalWorkoutExercise
+    var superset: SupersetDecoration?
     var onTap: () -> Void
 
     @Environment(AppSession.self) private var session
@@ -230,11 +258,20 @@ struct ActiveWorkoutCondensedCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(exerciseName)
-                    .font(Theme.font(15, .bold))
-                    .foregroundStyle(Theme.ink)
+                HStack(alignment: .center, spacing: 8) {
+                    if let superset {
+                        SupersetBadge(letter: superset.letter, isActive: superset.isActive)
+                    }
+                    Text(exerciseName)
+                        .font(Theme.font(15, .bold))
+                        .foregroundStyle(Theme.ink)
+                    if let chip = superset?.chip {
+                        Spacer(minLength: 8)
+                        SupersetChipView(chip: chip)
+                    }
+                }
                 ActiveWorkoutBrandLine(exerciseId: entry.exerciseId)
-                    .padding(.top, 2)
+                    .padding(.top, superset == nil ? 2 : 4)
                 Text(summary)
                     .font(Theme.font(12))
                     .foregroundStyle(Theme.muted2)
@@ -244,7 +281,7 @@ struct ActiveWorkoutCondensedCard: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
             .card(radius: 18)
-            .opacity(0.96)
+            .opacity(superset == nil ? 0.96 : 1)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

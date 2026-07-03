@@ -37,6 +37,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
     var position: Int
     var notes: String?
     var settings: [String: JSONValue]?
+    var supersetId: String?
     var sets: [LocalSet]
 
     init(
@@ -45,6 +46,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
         position: Int,
         notes: String? = nil,
         settings: [String: JSONValue]? = nil,
+        supersetId: String? = nil,
         sets: [LocalSet] = []
     ) {
         self.id = id
@@ -52,6 +54,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
         self.position = position
         self.notes = notes
         self.settings = settings
+        self.supersetId = supersetId
         self.sets = sets
     }
 }
@@ -137,6 +140,64 @@ extension LocalSet {
     }
 }
 
+enum Superset {
+    enum Grouping: Identifiable {
+        case single(LocalWorkoutExercise)
+        case pair(id: String, members: [LocalWorkoutExercise])
+
+        var id: String {
+            switch self {
+            case .single(let entry): entry.id
+            case .pair(let id, _): "superset-\(id)"
+            }
+        }
+    }
+
+    static func groupings(in workout: LocalWorkout) -> [Grouping] {
+        var pairedIds: Set<String> = []
+        var items: [Grouping] = []
+        for entry in workout.exercises.sorted(by: { $0.position < $1.position }) {
+            guard let supersetId = entry.supersetId else {
+                items.append(.single(entry))
+                continue
+            }
+            if pairedIds.contains(supersetId) { continue }
+            let members = members(of: supersetId, in: workout)
+            if members.count == 2 {
+                pairedIds.insert(supersetId)
+                items.append(.pair(id: supersetId, members: members))
+            } else {
+                items.append(.single(entry))
+            }
+        }
+        return items
+    }
+
+    static func members(of supersetId: String, in workout: LocalWorkout) -> [LocalWorkoutExercise] {
+        workout.exercises
+            .filter { $0.supersetId == supersetId }
+            .sorted { $0.position < $1.position }
+    }
+
+    static func nextIncompleteSet(in members: [LocalWorkoutExercise]) -> (entryId: String, setIndex: Int)? {
+        let roundCount = members.map(\.sets.count).max() ?? 0
+        for index in 0..<roundCount {
+            for member in members {
+                if index < member.sets.count, !member.sets[index].isCompleted {
+                    return (member.id, index)
+                }
+            }
+        }
+        return nil
+    }
+
+    static func isRoundComplete(in members: [LocalWorkoutExercise], setIndex: Int) -> Bool {
+        members.allSatisfy { member in
+            setIndex >= member.sets.count || member.sets[setIndex].isCompleted
+        }
+    }
+}
+
 extension LocalWorkout {
     var totalVolume: Double {
         exercises.flatMap(\.sets)
@@ -173,6 +234,7 @@ extension WorkoutDetail {
                         position: entry.position,
                         notes: entry.notes,
                         settings: entry.settings,
+                        supersetId: entry.supersetId,
                         sets: entry.sets
                             .sorted { $0.setNumber < $1.setNumber }
                             .map { set in
