@@ -36,11 +36,11 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
     if (request.query.groupId !== undefined) {
         where.groupId = request.query.groupId;
     }
-    if (request.query.equipmentId !== undefined) {
-        where.equipmentId = request.query.equipmentId;
+    if (request.query.equipment !== undefined) {
+        where.equipment = request.query.equipment;
     }
     if (request.query.brandId !== undefined) {
-        where.equipment = { brandId: request.query.brandId };
+        where.brandId = request.query.brandId;
     }
     if (request.query.muscle !== undefined) {
         where.OR = [
@@ -59,7 +59,8 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             name: true,
             primaryMuscle: true,
             secondaryMuscles: true,
-            equipmentId: true,
+            equipment: true,
+            brandId: true,
             groupId: true,
             isFavorite: true,
             isArchived: true,
@@ -89,7 +90,8 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             name: true,
             primaryMuscle: true,
             secondaryMuscles: true,
-            equipmentId: true,
+            equipment: true,
+            brandId: true,
             groupId: true,
             isFavorite: true,
             isArchived: true,
@@ -107,7 +109,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
 
 /**
  * @function createExercise
- * @description Creates an exercise, optionally linked to a piece of equipment and a movement group.
+ * @description Creates an exercise, optionally linked to a brand and a movement group.
  *
  * @returns {Promise<void>} Resolves when the exercise is created.
  */
@@ -118,11 +120,11 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
         throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
     }
 
-    if (request.body.equipmentId !== undefined) {
-        const equipment = await request.server.prisma.equipment.findUnique({ where: { id: request.body.equipmentId } });
+    if (request.body.brandId !== undefined) {
+        const brand = await request.server.prisma.brand.findUnique({ where: { id: request.body.brandId } });
 
-        if (equipment === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Equipment not found');
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
     if (request.body.groupId !== undefined) {
@@ -138,7 +140,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             name: request.body.name,
             primaryMuscle: request.body.primaryMuscle,
             secondaryMuscles: request.body.secondaryMuscles,
-            equipmentId: request.body.equipmentId,
+            equipment: request.body.equipment,
+            brandId: request.body.brandId,
             groupId: request.body.groupId
         },
         select: {
@@ -146,7 +149,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             name: true,
             primaryMuscle: true,
             secondaryMuscles: true,
-            equipmentId: true,
+            equipment: true,
+            brandId: true,
             groupId: true,
             isFavorite: true,
             isArchived: true,
@@ -180,11 +184,11 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
         }
     }
-    if (request.body.equipmentId !== undefined && request.body.equipmentId !== null) {
-        const equipment = await request.server.prisma.equipment.findUnique({ where: { id: request.body.equipmentId } });
+    if (request.body.brandId !== undefined && request.body.brandId !== null) {
+        const brand = await request.server.prisma.brand.findUnique({ where: { id: request.body.brandId } });
 
-        if (equipment === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Equipment not found');
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
     if (request.body.groupId !== undefined && request.body.groupId !== null) {
@@ -206,8 +210,11 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.secondaryMuscles !== undefined) {
         data.secondaryMuscles = request.body.secondaryMuscles;
     }
-    if (request.body.equipmentId !== undefined) {
-        data.equipmentId = request.body.equipmentId;
+    if (request.body.equipment !== undefined) {
+        data.equipment = request.body.equipment;
+    }
+    if (request.body.brandId !== undefined) {
+        data.brandId = request.body.brandId;
     }
     if (request.body.groupId !== undefined) {
         data.groupId = request.body.groupId;
@@ -227,7 +234,8 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             name: true,
             primaryMuscle: true,
             secondaryMuscles: true,
-            equipmentId: true,
+            equipment: true,
+            brandId: true,
             groupId: true,
             isFavorite: true,
             isArchived: true,
@@ -403,19 +411,12 @@ async function getExerciseLast(request: FastifyRequest<ExerciseLastRequest>, rep
         orderBy: { workout: { startedAt: 'desc' } }
     });
 
-    const gymForSettings = request.query.gymId ?? last?.workout.gymId ?? null;
-    let settings: Prisma.JsonValue = null;
+    const setting = await request.server.prisma.exerciseSetting.findUnique({
+        where: { userId_exerciseId: { userId: request.user.id, exerciseId: request.params.id } },
+        select: { settings: true }
+    });
 
-    if (gymForSettings !== null) {
-        const setting = await request.server.prisma.exerciseSetting.findUnique({
-            where: { userId_exerciseId_gymId: { userId: request.user.id, exerciseId: request.params.id, gymId: gymForSettings } },
-            select: { settings: true }
-        });
-
-        if (setting !== null) {
-            settings = setting.settings;
-        }
-    }
+    const settings: Prisma.JsonValue = setting !== null ? setting.settings : null;
 
     const lastSession = last !== null
         ? { workoutExerciseId: last.id, workoutId: last.workout.id, date: last.workout.startedAt, gymId: last.workout.gymId, notes: last.notes, sets: last.sets }

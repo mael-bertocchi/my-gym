@@ -61,7 +61,6 @@ export const SyncWorkoutSchema = z.object({
 export const SyncSettingSchema = z.object({
     id: z.uuid(),
     exerciseId: z.uuid(),
-    gymId: z.uuid(),
     settings: SettingsSchema,
     updatedAt: z.coerce.date()
 });

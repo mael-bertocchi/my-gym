@@ -4,20 +4,18 @@ import { z } from 'zod';
 
 /**
  * @constant ListExerciseSettingsQuerySchema
- * @description Zod schema for the list-settings query string (cursor pagination plus exercise/gym filters).
+ * @description Zod schema for the list-settings query string (cursor pagination plus an exercise filter).
  */
 export const ListExerciseSettingsQuerySchema = CursorQuerySchema.extend({
-    exerciseId: z.uuid().optional(),
-    gymId: z.uuid().optional()
+    exerciseId: z.uuid().optional()
 });
 
 /**
  * @constant UpsertExerciseSettingSchema
- * @description Zod schema for the upsert-settings request body (keyed by exercise + gym for the caller).
+ * @description Zod schema for the upsert-settings request body (keyed by exercise for the caller).
  */
 export const UpsertExerciseSettingSchema = z.object({
     exerciseId: z.uuid(),
-    gymId: z.uuid(),
     settings: SettingsSchema
 });
 
@@ -36,7 +34,6 @@ export type UpsertExerciseSettingBody = z.infer<typeof UpsertExerciseSettingSche
 export interface ListExerciseSettingsRequest extends RequestGenericInterface {
     Querystring: {
         exerciseId?: string; /*!< Optional exercise filter */
-        gymId?: string; /*!< Optional gym filter */
         limit?: number; /*!< Optional page size (1..MAX_LIMIT) */
         cursor?: string; /*!< Optional id of the previous page's last item */
     };

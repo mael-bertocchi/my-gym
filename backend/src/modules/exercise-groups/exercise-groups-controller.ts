@@ -58,7 +58,8 @@ async function getExerciseGroup(request: FastifyRequest<ExerciseGroupParamsReque
                     name: true,
                     primaryMuscle: true,
                     secondaryMuscles: true,
-                    equipmentId: true,
+                    equipment: true,
+                    brandId: true,
                     isFavorite: true,
                     isArchived: true
                 }

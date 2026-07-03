@@ -6,7 +6,6 @@ import { StatusCodes } from 'http-status-codes';
 import accountRoutes from 'src/modules/account/account-routes';
 import assistantRoutes from 'src/modules/assistant/assistant-routes';
 import brandsRoutes from 'src/modules/brands/brands-routes';
-import equipmentRoutes from 'src/modules/equipment/equipment-routes';
 import exerciseGroupsRoutes from 'src/modules/exercise-groups/exercise-groups-routes';
 import exerciseSettingsRoutes from 'src/modules/exercise-settings/exercise-settings-routes';
 import exercisesRoutes from 'src/modules/exercises/exercises-routes';
@@ -130,7 +129,6 @@ async function startServer(): Promise<void> {
     await fastify.register(accountRoutes, { prefix: '/api/v1/me' });
     await fastify.register(assistantRoutes, { prefix: '/api/v1/assistant' });
     await fastify.register(brandsRoutes, { prefix: '/api/v1/brands' });
-    await fastify.register(equipmentRoutes, { prefix: '/api/v1/equipment' });
     await fastify.register(exerciseGroupsRoutes, { prefix: '/api/v1/exercise-groups' });
     await fastify.register(exerciseSettingsRoutes, { prefix: '/api/v1/exercise-settings' });
     await fastify.register(exercisesRoutes, { prefix: '/api/v1/exercises' });

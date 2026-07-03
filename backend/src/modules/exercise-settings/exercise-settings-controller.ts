@@ -7,7 +7,7 @@ import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
  * @function listExerciseSettings
- * @description Lists the caller's remembered settings with optional exercise/gym filters and cursor pagination.
+ * @description Lists the caller's remembered settings with an optional exercise filter and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
@@ -19,16 +19,12 @@ async function listExerciseSettings(request: FastifyRequest<ListExerciseSettings
     if (request.query.exerciseId !== undefined) {
         where.exerciseId = request.query.exerciseId;
     }
-    if (request.query.gymId !== undefined) {
-        where.gymId = request.query.gymId;
-    }
 
     const rows = await request.server.prisma.exerciseSetting.findMany({
         where,
         select: {
             id: true,
             exerciseId: true,
-            gymId: true,
             settings: true,
             createdAt: true,
             updatedAt: true
@@ -44,7 +40,7 @@ async function listExerciseSettings(request: FastifyRequest<ListExerciseSettings
 
 /**
  * @function upsertExerciseSetting
- * @description Creates or replaces the caller's remembered settings for an exercise at a gym.
+ * @description Creates or replaces the caller's remembered settings for an exercise.
  *
  * @returns {Promise<void>} Resolves when the settings are saved.
  */
@@ -55,24 +51,17 @@ async function upsertExerciseSetting(request: FastifyRequest<UpsertExerciseSetti
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');
     }
 
-    const gym = await request.server.prisma.gym.findUnique({ where: { id: request.body.gymId } });
-
-    if (gym === null) {
-        throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');
-    }
-
     const settings = request.body.settings as unknown as Prisma.InputJsonValue;
 
     const saved = await request.server.prisma.exerciseSetting.upsert({
         where: {
-            userId_exerciseId_gymId: { userId: request.user.id, exerciseId: request.body.exerciseId, gymId: request.body.gymId }
+            userId_exerciseId: { userId: request.user.id, exerciseId: request.body.exerciseId }
         },
         update: { settings },
-        create: { userId: request.user.id, exerciseId: request.body.exerciseId, gymId: request.body.gymId, settings },
+        create: { userId: request.user.id, exerciseId: request.body.exerciseId, settings },
         select: {
             id: true,
             exerciseId: true,
-            gymId: true,
             settings: true,
             createdAt: true,
             updatedAt: true

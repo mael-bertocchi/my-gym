@@ -14,9 +14,8 @@ import type { PushBody, SyncDeletionInput, SyncSettingInput, SyncWorkoutInput } 
 export async function pullChanges(prisma: PrismaClient, userId: string, since: Date | undefined) {
     const changed: Prisma.DateTimeFilter | undefined = since !== undefined ? { gt: since } : undefined;
 
-    const [brands, equipment, exerciseGroups, exercises, gyms, workouts, exerciseSettings, deletions] = await Promise.all([
+    const [brands, exerciseGroups, exercises, gyms, workouts, exerciseSettings, deletions] = await Promise.all([
         prisma.brand.findMany({ where: { updatedAt: changed } }),
-        prisma.equipment.findMany({ where: { updatedAt: changed } }),
         prisma.exerciseGroup.findMany({ where: { updatedAt: changed } }),
         prisma.exercise.findMany({ where: { updatedAt: changed } }),
         prisma.gym.findMany({ where: { updatedAt: changed } }),
@@ -62,7 +61,6 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
             where: { userId, updatedAt: changed }, select: {
                 id: true,
                 exerciseId: true,
-                gymId: true,
                 settings: true,
                 createdAt: true,
                 updatedAt: true
@@ -76,7 +74,7 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
     ]);
 
     return {
-        catalog: { brands, equipment, exerciseGroups, exercises, gyms },
+        catalog: { brands, exerciseGroups, exercises, gyms },
         workouts,
         exerciseSettings,
         deletions
@@ -243,7 +241,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
 
 /**
  * @function applySetting
- * @description Upserts a pushed remembered setting under last-write-wins, resolved by its (user, exercise, gym) natural key.
+ * @description Upserts a pushed remembered setting under last-write-wins, resolved by its (user, exercise) natural key.
  *
  * @param {PrismaClient} prisma The Prisma client.
  * @param {string} userId The caller's id.
@@ -257,12 +255,7 @@ async function applySetting(prisma: PrismaClient, userId: string, setting: SyncS
             return { id: setting.id, status: 'error', message: 'Exercise not found' };
         }
 
-        const gym = await prisma.gym.findUnique({ where: { id: setting.gymId }, select: { id: true } });
-        if (gym === null) {
-            return { id: setting.id, status: 'error', message: 'Gym not found' };
-        }
-
-        const key = { userId_exerciseId_gymId: { userId, exerciseId: setting.exerciseId, gymId: setting.gymId } };
+        const key = { userId_exerciseId: { userId, exerciseId: setting.exerciseId } };
         const existing = await prisma.exerciseSetting.findUnique({ where: key, select: { id: true, updatedAt: true } });
 
         if (existing !== null && resolveConflict(existing.updatedAt, setting.updatedAt) === 'keep') {
@@ -270,7 +263,6 @@ async function applySetting(prisma: PrismaClient, userId: string, setting: SyncS
                 where: key, select: {
                     id: true,
                     exerciseId: true,
-                    gymId: true,
                     settings: true,
                     createdAt: true,
                     updatedAt: true
@@ -283,11 +275,10 @@ async function applySetting(prisma: PrismaClient, userId: string, setting: SyncS
         const saved = await prisma.exerciseSetting.upsert({
             where: key,
             update: { settings, updatedAt: setting.updatedAt },
-            create: { id: setting.id, userId, exerciseId: setting.exerciseId, gymId: setting.gymId, settings, updatedAt: setting.updatedAt },
+            create: { id: setting.id, userId, exerciseId: setting.exerciseId, settings, updatedAt: setting.updatedAt },
             select: {
                 id: true,
                 exerciseId: true,
-                gymId: true,
                 settings: true,
                 createdAt: true,
                 updatedAt: true

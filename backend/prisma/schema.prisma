@@ -1,9 +1,9 @@
 // my-gym — workout tracker backend.
 // Conventions: UUID string PKs, camelCase fields mapped to snake_case columns/tables,
 // created/updated timestamps. The datasource connection URL is supplied at runtime
-// via prisma.config.ts. The catalog (brands, equipment, exercise groups, exercises,
-// gyms) is shared and administrator-managed; workouts, remembered settings, and
-// assistant conversations are per-user.
+// via prisma.config.ts. The catalog (brands, exercise groups, exercises, gyms) is
+// shared and administrator-managed; workouts, remembered settings, and assistant
+// conversations are per-user.
 
 generator client {
   provider            = "prisma-client"
@@ -73,8 +73,6 @@ enum SyncEntityType {
   EXERCISE_SETTING
 }
 
-/// An application account. The administrator curates the shared catalog and manages
-/// other accounts; every user owns their own workouts, settings, and conversations.
 model User {
   id              String     @id @default(uuid())
   email           String     @unique
@@ -115,28 +113,12 @@ model Brand {
   id   String @id @default(uuid())
   name String @unique
 
-  equipment Equipment[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("brands")
-}
-
-model Equipment {
-  id      String        @id @default(uuid())
-  name    String
-  type    EquipmentType
-  brandId String?       @map("brand_id")
-  brand   Brand?        @relation(fields: [brandId], references: [id], onDelete: Restrict)
-
   exercises Exercise[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([brandId])
-  @@map("equipment")
+  @@map("brands")
 }
 
 model ExerciseGroup {
@@ -156,8 +138,9 @@ model Exercise {
   name             String         @unique
   primaryMuscle    MuscleGroup    @map("primary_muscle")
   secondaryMuscles MuscleGroup[]  @map("secondary_muscles")
-  equipmentId      String?        @map("equipment_id")
-  equipment        Equipment?     @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  equipment        EquipmentType  @default(OTHER)
+  brandId          String?        @map("brand_id")
+  brand            Brand?         @relation(fields: [brandId], references: [id], onDelete: Restrict)
   groupId          String?        @map("group_id")
   group            ExerciseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   isFavorite       Boolean        @default(false) @map("is_favorite")
@@ -170,7 +153,7 @@ model Exercise {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([primaryMuscle])
-  @@index([equipmentId])
+  @@index([brandId])
   @@index([groupId])
   @@map("exercises")
 }
@@ -181,9 +164,8 @@ model Gym {
   address String?
   notes   String?
 
-  workouts         Workout[]
-  exerciseSettings ExerciseSetting[]
-  defaultForUsers  User[]            @relation("UserDefaultGym")
+  workouts        Workout[]
+  defaultForUsers User[]    @relation("UserDefaultGym")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -256,17 +238,14 @@ model ExerciseSetting {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exerciseId String   @map("exercise_id")
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  gymId      String   @map("gym_id")
-  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
   settings   Json
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([userId, exerciseId, gymId])
+  @@unique([userId, exerciseId])
   @@index([userId])
   @@index([exerciseId])
-  @@index([gymId])
   @@map("exercise_settings")
 }
 
@@ -298,8 +277,6 @@ model Message {
   @@map("messages")
 }
 
-/// A tombstone recording a caller-owned deletion, so offline clients can reconcile
-/// deletes on their next pull.
 model SyncDeletion {
   id         String         @id @default(uuid())
   userId     String         @map("user_id")
