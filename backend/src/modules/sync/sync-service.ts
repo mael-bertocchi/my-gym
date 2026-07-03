@@ -3,59 +3,6 @@ import { resolveConflict } from 'src/modules/sync/sync-conflict';
 import type { PushBody, SyncDeletionInput, SyncSettingInput, SyncWorkoutInput } from 'src/modules/sync/sync-models';
 
 /**
- * @constant WORKOUT_SYNC_SELECT
- * @description Field selection for a synced workout aggregate (workout plus its ordered exercises and sets).
- */
-const WORKOUT_SYNC_SELECT = {
-    id: true,
-    gymId: true,
-    name: true,
-    startedAt: true,
-    endedAt: true,
-    notes: true,
-    createdAt: true,
-    updatedAt: true,
-    entries: {
-        orderBy: { position: Prisma.SortOrder.asc },
-        select: {
-            id: true,
-            exerciseId: true,
-            position: true,
-            notes: true,
-            settings: true,
-            createdAt: true,
-            sets: {
-                orderBy: { setNumber: Prisma.SortOrder.asc },
-                select: {
-                    id: true,
-                    setNumber: true,
-                    setType: true,
-                    weightKg: true,
-                    reps: true,
-                    distanceM: true,
-                    durationSeconds: true,
-                    isCompleted: true,
-                    createdAt: true
-                }
-            }
-        }
-    }
-} satisfies Prisma.WorkoutSelect;
-
-/**
- * @constant SETTING_SYNC_SELECT
- * @description Field selection for a synced remembered setting.
- */
-const SETTING_SYNC_SELECT = {
-    id: true,
-    exerciseId: true,
-    gymId: true,
-    settings: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.ExerciseSettingSelect;
-
-/**
  * @function pullChanges
  * @description Returns the catalog and the caller's own logs/settings changed since a timestamp, plus deletion tombstones. An undefined `since` returns a full snapshot.
  *
@@ -73,8 +20,54 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
         prisma.exerciseGroup.findMany({ where: { updatedAt: changed } }),
         prisma.exercise.findMany({ where: { updatedAt: changed } }),
         prisma.gym.findMany({ where: { updatedAt: changed } }),
-        prisma.workout.findMany({ where: { userId, updatedAt: changed }, select: WORKOUT_SYNC_SELECT, orderBy: { updatedAt: 'asc' } }),
-        prisma.exerciseSetting.findMany({ where: { userId, updatedAt: changed }, select: SETTING_SYNC_SELECT, orderBy: { updatedAt: 'asc' } }),
+        prisma.workout.findMany({
+            where: { userId, updatedAt: changed }, select: {
+                id: true,
+                gymId: true,
+                name: true,
+                startedAt: true,
+                endedAt: true,
+                notes: true,
+                createdAt: true,
+                updatedAt: true,
+                entries: {
+                    orderBy: { position: Prisma.SortOrder.asc },
+                    select: {
+                        id: true,
+                        exerciseId: true,
+                        position: true,
+                        notes: true,
+                        settings: true,
+                        supersetId: true,
+                        createdAt: true,
+                        sets: {
+                            orderBy: { setNumber: Prisma.SortOrder.asc },
+                            select: {
+                                id: true,
+                                setNumber: true,
+                                setType: true,
+                                weightKg: true,
+                                reps: true,
+                                distanceM: true,
+                                durationSeconds: true,
+                                isCompleted: true,
+                                createdAt: true
+                            }
+                        }
+                    }
+                }
+            }, orderBy: { updatedAt: 'asc' }
+        }),
+        prisma.exerciseSetting.findMany({
+            where: { userId, updatedAt: changed }, select: {
+                id: true,
+                exerciseId: true,
+                gymId: true,
+                settings: true,
+                createdAt: true,
+                updatedAt: true
+            }, orderBy: { updatedAt: 'asc' }
+        }),
         prisma.syncDeletion.findMany({
             where: { userId, deletedAt: changed },
             select: { entityType: true, entityId: true, deletedAt: true },
@@ -125,7 +118,44 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
         }
 
         if (existing !== null && resolveConflict(existing.updatedAt, workout.updatedAt) === 'keep') {
-            const current = await prisma.workout.findUnique({ where: { id: workout.id }, select: WORKOUT_SYNC_SELECT });
+            const current = await prisma.workout.findUnique({
+                where: { id: workout.id }, select: {
+                    id: true,
+                    gymId: true,
+                    name: true,
+                    startedAt: true,
+                    endedAt: true,
+                    notes: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    entries: {
+                        orderBy: { position: Prisma.SortOrder.asc },
+                        select: {
+                            id: true,
+                            exerciseId: true,
+                            position: true,
+                            notes: true,
+                            settings: true,
+                            supersetId: true,
+                            createdAt: true,
+                            sets: {
+                                orderBy: { setNumber: Prisma.SortOrder.asc },
+                                select: {
+                                    id: true,
+                                    setNumber: true,
+                                    setType: true,
+                                    weightKg: true,
+                                    reps: true,
+                                    distanceM: true,
+                                    durationSeconds: true,
+                                    isCompleted: true,
+                                    createdAt: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
             return { id: workout.id, status: 'kept_server', workout: current };
         }
 
@@ -149,6 +179,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                         position: entry.position,
                         notes: entry.notes ?? null,
                         settings: settings !== null ? (settings as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+                        supersetId: entry.supersetId ?? null,
                         sets: {
                             create: entry.sets.map((set) => ({
                                 id: set.id,
@@ -166,7 +197,44 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
             }
         });
 
-        const saved = await prisma.workout.findUnique({ where: { id: workout.id }, select: WORKOUT_SYNC_SELECT });
+        const saved = await prisma.workout.findUnique({
+            where: { id: workout.id }, select: {
+                id: true,
+                gymId: true,
+                name: true,
+                startedAt: true,
+                endedAt: true,
+                notes: true,
+                createdAt: true,
+                updatedAt: true,
+                entries: {
+                    orderBy: { position: Prisma.SortOrder.asc },
+                    select: {
+                        id: true,
+                        exerciseId: true,
+                        position: true,
+                        notes: true,
+                        settings: true,
+                        supersetId: true,
+                        createdAt: true,
+                        sets: {
+                            orderBy: { setNumber: Prisma.SortOrder.asc },
+                            select: {
+                                id: true,
+                                setNumber: true,
+                                setType: true,
+                                weightKg: true,
+                                reps: true,
+                                distanceM: true,
+                                durationSeconds: true,
+                                isCompleted: true,
+                                createdAt: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
         return { id: workout.id, status: 'applied', workout: saved };
     } catch (error: unknown) {
         return { id: workout.id, status: 'error', message: error instanceof Error ? error.message : 'Failed to apply workout' };
@@ -198,17 +266,32 @@ async function applySetting(prisma: PrismaClient, userId: string, setting: SyncS
         const existing = await prisma.exerciseSetting.findUnique({ where: key, select: { id: true, updatedAt: true } });
 
         if (existing !== null && resolveConflict(existing.updatedAt, setting.updatedAt) === 'keep') {
-            const current = await prisma.exerciseSetting.findUnique({ where: key, select: SETTING_SYNC_SELECT });
+            const current = await prisma.exerciseSetting.findUnique({
+                where: key, select: {
+                    id: true,
+                    exerciseId: true,
+                    gymId: true,
+                    settings: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            });
             return { id: existing.id, status: 'kept_server', setting: current };
         }
 
         const settings = setting.settings as unknown as Prisma.InputJsonValue;
-
         const saved = await prisma.exerciseSetting.upsert({
             where: key,
             update: { settings, updatedAt: setting.updatedAt },
             create: { id: setting.id, userId, exerciseId: setting.exerciseId, gymId: setting.gymId, settings, updatedAt: setting.updatedAt },
-            select: SETTING_SYNC_SELECT
+            select: {
+                id: true,
+                exerciseId: true,
+                gymId: true,
+                settings: true,
+                createdAt: true,
+                updatedAt: true
+            }
         });
 
         return { id: saved.id, status: 'applied', setting: saved };
@@ -242,16 +325,16 @@ async function applyDeletion(prisma: PrismaClient, userId: string, deletion: Syn
     }
 
     const existing = await prisma.exerciseSetting.findFirst({ where: { id: deletion.entityId, userId }, select: { id: true } });
-    if (existing === null) {
-        return { entityType: deletion.entityType, entityId: deletion.entityId, status: 'not_found' };
+    if (existing !== null) {
+        await prisma.$transaction([
+            prisma.exerciseSetting.delete({ where: { id: deletion.entityId } }),
+            prisma.syncDeletion.create({ data: { userId, entityType: SyncEntityType.EXERCISE_SETTING, entityId: deletion.entityId } })
+        ]);
+
+        return { entityType: deletion.entityType, entityId: deletion.entityId, status: 'deleted' };
     }
 
-    await prisma.$transaction([
-        prisma.exerciseSetting.delete({ where: { id: deletion.entityId } }),
-        prisma.syncDeletion.create({ data: { userId, entityType: SyncEntityType.EXERCISE_SETTING, entityId: deletion.entityId } })
-    ]);
-
-    return { entityType: deletion.entityType, entityId: deletion.entityId, status: 'deleted' };
+    return { entityType: deletion.entityType, entityId: deletion.entityId, status: 'not_found' };
 }
 
 /**

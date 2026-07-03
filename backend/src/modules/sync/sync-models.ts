@@ -35,6 +35,7 @@ export const SyncWorkoutExerciseSchema = z.object({
     position: z.number().int().positive(),
     notes: z.string().max(2000).nullable().optional(),
     settings: SettingsSchema.nullable().optional(),
+    supersetId: z.uuid().nullable().optional(),
     sets: z.array(SyncSetSchema).max(MAX_BATCH)
 });
 

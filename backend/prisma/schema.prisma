@@ -221,6 +221,7 @@ model WorkoutExercise {
   position   Int
   notes      String?
   settings   Json?
+  supersetId String?  @map("superset_id")
 
   sets WorkoutSet[]
 

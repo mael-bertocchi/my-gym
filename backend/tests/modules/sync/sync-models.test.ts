@@ -6,6 +6,7 @@ const WORKOUT_EXERCISE_ID = '22222222-2222-4222-8222-222222222222';
 const EXERCISE_ID = '33333333-3333-4333-8333-333333333333';
 const SET_ID = '44444444-4444-4444-8444-444444444444';
 const GYM_ID = '55555555-5555-4555-8555-555555555555';
+const SUPERSET_ID = '66666666-6666-4666-8666-666666666666';
 
 function aggregate(): unknown {
     return {
@@ -42,6 +43,22 @@ describe('SyncWorkoutSchema', () => {
     it('rejects an exercise entry missing its exerciseId', () => {
         const bad = aggregate() as { exercises: { exerciseId?: string }[] };
         delete bad.exercises[0].exerciseId;
+        expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
+    });
+
+    it('accepts an exercise entry with a supersetId and keeps it', () => {
+        const linked = aggregate() as { exercises: { supersetId?: string | null }[] };
+        linked.exercises[0].supersetId = SUPERSET_ID;
+        const result = SyncWorkoutSchema.safeParse(linked);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.exercises[0].supersetId).toBe(SUPERSET_ID);
+        }
+    });
+
+    it('rejects a non-uuid supersetId', () => {
+        const bad = aggregate() as { exercises: { supersetId?: string }[] };
+        bad.exercises[0].supersetId = 'pair-1';
         expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
     });
 });

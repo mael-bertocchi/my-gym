@@ -5,20 +5,6 @@ import type { CreateWorkoutExerciseRequest, UpdateWorkoutExerciseRequest, Workou
 import { RequestError } from 'src/shared/models';
 
 /**
- * @constant WORKOUT_EXERCISE_SELECT
- * @description Shared field selection for workout exercise lookups exposed by the API.
- */
-const WORKOUT_EXERCISE_SELECT = {
-    id: true,
-    workoutId: true,
-    exerciseId: true,
-    position: true,
-    notes: true,
-    settings: true,
-    createdAt: true
-} satisfies Prisma.WorkoutExerciseSelect;
-
-/**
  * @function createWorkoutExercise
  * @description Adds an exercise to one of the caller's workouts (position auto-assigned when omitted).
  *
@@ -52,7 +38,8 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
         workoutId: request.params.workoutId,
         exerciseId: request.body.exerciseId,
         position,
-        notes: request.body.notes
+        notes: request.body.notes,
+        supersetId: request.body.supersetId
     };
 
     if (request.body.settings !== undefined) {
@@ -61,7 +48,16 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
 
     const created = await request.server.prisma.workoutExercise.create({
         data,
-        select: WORKOUT_EXERCISE_SELECT
+        select: {
+            id: true,
+            workoutId: true,
+            exerciseId: true,
+            position: true,
+            notes: true,
+            settings: true,
+            supersetId: true,
+            createdAt: true
+        }
     });
 
     await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
@@ -71,7 +67,7 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
 
 /**
  * @function updateWorkoutExercise
- * @description Updates a workout exercise's order, notes, or session settings. Only the provided fields change.
+ * @description Updates a workout exercise's order, notes, session settings, or superset link. Only the provided fields change.
  *
  * @returns {Promise<void>} Resolves when the workout exercise is updated.
  */
@@ -95,11 +91,23 @@ async function updateWorkoutExercise(request: FastifyRequest<UpdateWorkoutExerci
     if (request.body.settings !== undefined) {
         data.settings = request.body.settings !== null ? request.body.settings as unknown as Prisma.InputJsonValue : Prisma.DbNull;
     }
+    if (request.body.supersetId !== undefined) {
+        data.supersetId = request.body.supersetId;
+    }
 
     const updated = await request.server.prisma.workoutExercise.update({
         where: { id: request.params.workoutExerciseId },
         data,
-        select: WORKOUT_EXERCISE_SELECT
+        select: {
+            id: true,
+            workoutId: true,
+            exerciseId: true,
+            position: true,
+            notes: true,
+            settings: true,
+            supersetId: true,
+            createdAt: true
+        }
     });
 
     await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });

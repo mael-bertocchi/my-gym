@@ -6,64 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant WORKOUT_SUMMARY_SELECT
- * @description Field selection for workout list/create/update responses (no nested entries).
- */
-const WORKOUT_SUMMARY_SELECT = {
-    id: true,
-    gymId: true,
-    name: true,
-    startedAt: true,
-    endedAt: true,
-    notes: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.WorkoutSelect;
-
-/**
- * @constant WORKOUT_DETAIL_SELECT
- * @description Field selection for a single workout, including its ordered exercises (with catalog context) and their sets.
- */
-const WORKOUT_DETAIL_SELECT = {
-    id: true,
-    gymId: true,
-    name: true,
-    startedAt: true,
-    endedAt: true,
-    notes: true,
-    createdAt: true,
-    updatedAt: true,
-    entries: {
-        orderBy: { position: Prisma.SortOrder.asc },
-        select: {
-            id: true,
-            exerciseId: true,
-            position: true,
-            notes: true,
-            settings: true,
-            createdAt: true,
-            exercise: {
-                select: { id: true, name: true, primaryMuscle: true, equipmentId: true, groupId: true }
-            },
-            sets: {
-                orderBy: { setNumber: Prisma.SortOrder.asc },
-                select: {
-                    id: true,
-                    setNumber: true,
-                    setType: true,
-                    weightKg: true,
-                    reps: true,
-                    distanceM: true,
-                    durationSeconds: true,
-                    isCompleted: true,
-                    createdAt: true
-                }
-            }
-        }
-    }
-} satisfies Prisma.WorkoutSelect;
-
-/**
  * @function listWorkouts
  * @description Lists the caller's workouts (summary only) with optional date-range and gym filters and cursor pagination.
  *
@@ -83,7 +25,16 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
 
     const rows = await request.server.prisma.workout.findMany({
         where,
-        select: WORKOUT_SUMMARY_SELECT,
+        select: {
+            id: true,
+            gymId: true,
+            name: true,
+            startedAt: true,
+            endedAt: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
         take,
         cursor,
@@ -102,7 +53,45 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
 async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: FastifyReply): Promise<void> {
     const workout = await request.server.prisma.workout.findFirst({
         where: { id: request.params.workoutId, userId: request.user.id },
-        select: WORKOUT_DETAIL_SELECT
+        select: {
+            id: true,
+            gymId: true,
+            name: true,
+            startedAt: true,
+            endedAt: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+            entries: {
+                orderBy: { position: Prisma.SortOrder.asc },
+                select: {
+                    id: true,
+                    exerciseId: true,
+                    position: true,
+                    notes: true,
+                    settings: true,
+                    supersetId: true,
+                    createdAt: true,
+                    exercise: {
+                        select: { id: true, name: true, primaryMuscle: true, equipmentId: true, groupId: true }
+                    },
+                    sets: {
+                        orderBy: { setNumber: Prisma.SortOrder.asc },
+                        select: {
+                            id: true,
+                            setNumber: true,
+                            setType: true,
+                            weightKg: true,
+                            reps: true,
+                            distanceM: true,
+                            durationSeconds: true,
+                            isCompleted: true,
+                            createdAt: true
+                        }
+                    }
+                }
+            }
+        }
     });
 
     if (workout === null) {
@@ -135,7 +124,16 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             startedAt: request.body.startedAt ?? new Date(),
             notes: request.body.notes
         },
-        select: WORKOUT_SUMMARY_SELECT
+        select: {
+            id: true,
+            gymId: true,
+            name: true,
+            startedAt: true,
+            endedAt: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -184,7 +182,16 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
     const updated = await request.server.prisma.workout.update({
         where: { id: request.params.workoutId },
         data,
-        select: WORKOUT_SUMMARY_SELECT
+        select: {
+            id: true,
+            gymId: true,
+            name: true,
+            startedAt: true,
+            endedAt: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });
