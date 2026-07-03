@@ -264,11 +264,12 @@ private struct HistoryWorkoutCard: View {
     }
 
     private func metric(number: String, unit: String) -> Text {
-        Text(number)
+        let value = Text(number)
             .font(Theme.font(13, .bold))
             .foregroundStyle(Theme.ink)
-        + Text(" \(unit)")
+        let suffix = Text(unit)
             .font(Theme.font(13))
             .foregroundStyle(Theme.muted)
+        return Text("\(value) \(suffix)")
     }
 }

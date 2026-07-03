@@ -19,8 +19,8 @@ struct AdministratorCatalogView: View {
 
                 LazyVGrid(columns: tileColumns, spacing: 12) {
                     AdministratorCountTile(value: store.brands.count, caption: "Brands")
-                    AdministratorCountTile(value: store.equipment.count, caption: "Equipment")
                     AdministratorCountTile(value: store.exercises.count, caption: "Exercises")
+                    AdministratorCountTile(value: store.exerciseGroups.count, caption: "Groups")
                     AdministratorCountTile(value: store.gyms.count, caption: "Gyms")
                 }
                 .padding(.bottom, 20)
@@ -32,10 +32,6 @@ struct AdministratorCatalogView: View {
                 VStack(spacing: 0) {
                     AdministratorHubRow(title: "Brands") {
                         AdministratorBrandsView()
-                    }
-                    RowDivider()
-                    AdministratorHubRow(title: "Equipment") {
-                        AdministratorEquipmentView()
                     }
                     RowDivider()
                     AdministratorHubRow(title: "Exercises & groups") {

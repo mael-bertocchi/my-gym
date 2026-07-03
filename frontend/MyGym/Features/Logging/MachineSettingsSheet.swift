@@ -17,10 +17,7 @@ struct MachineSettingsSheet: View {
     @State private var hasLoaded = false
     @State private var showAddField = false
     @State private var newFieldName = ""
-    @State private var showCopySheet = false
     @State private var showClearConfirm = false
-
-    private var gymId: String? { activeWorkout.workout?.gymId }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,22 +31,6 @@ struct MachineSettingsSheet: View {
                     contextHeader
                         .padding(.bottom, 18)
 
-                    Text("Remembered for this machine at this gym — pre-filled automatically next session.")
-                        .font(Theme.font(12))
-                        .foregroundStyle(Theme.inkSecondary)
-                        .lineSpacing(3)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .tintedCard(radius: 14)
-
-                    if gymId == nil {
-                        Text("This workout has no gym, so settings can't be remembered.")
-                            .font(Theme.font(12))
-                            .foregroundStyle(Theme.muted2)
-                            .padding(.top, 8)
-                    }
-
                     settingsRows
                         .padding(.top, 6)
 
@@ -58,9 +39,6 @@ struct MachineSettingsSheet: View {
                         showAddField = true
                     }
                     .padding(.top, 20)
-
-                    copyRow
-                        .padding(.top, 28)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 18)
@@ -82,12 +60,7 @@ struct MachineSettingsSheet: View {
             Button("Cancel", role: .cancel) {}
             Button("Clear", role: .destructive) { clear() }
         } message: {
-            Text("Removes the remembered configuration for this machine at this gym.")
-        }
-        .sheet(isPresented: $showCopySheet) {
-            MachineSettingsCopySheet(options: copyOptions) { setting in
-                adopt(setting)
-            }
+            Text("Removes the remembered configuration for this machine.")
         }
     }
 
@@ -106,8 +79,6 @@ struct MachineSettingsSheet: View {
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(Theme.accentBlue)
                     .buttonStyle(.plain)
-                    .disabled(gymId == nil)
-                    .opacity(gymId == nil ? 0.4 : 1)
             }
         }
     }
@@ -129,14 +100,8 @@ struct MachineSettingsSheet: View {
     }
 
     private var contextLine: String {
-        var parts: [String] = []
-        if let exercise = store.exercise(id: entry.exerciseId) {
-            parts.append(store.brandLine(for: exercise).text)
-        }
-        if let gym = store.gym(id: gymId) {
-            parts.append(gym.name.uppercased())
-        }
-        return parts.joined(separator: " · ")
+        guard let exercise = store.exercise(id: entry.exerciseId) else { return "" }
+        return store.brandLine(for: exercise).text
     }
 
     private var settingsRows: some View {
@@ -174,34 +139,6 @@ struct MachineSettingsSheet: View {
         }
     }
 
-    private var copyRow: some View {
-        Button {
-            showCopySheet = true
-        } label: {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Theme.divider)
-                    .frame(width: 30, height: 30)
-                    .overlay(
-                        Image(systemName: "square.on.square")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.muted)
-                    )
-                Text("Copy from another gym's machine")
-                    .font(Theme.font(13))
-                    .foregroundStyle(Theme.muted)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0xC4C9CF))
-            }
-            .padding(14)
-            .card(radius: 14)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
     private var footer: some View {
         Button {
             showClearConfirm = true
@@ -218,19 +155,11 @@ struct MachineSettingsSheet: View {
         .background(Color.white)
     }
 
-    private var copyOptions: [MachineSettingsCopySheet.Option] {
-        store.settings(exerciseId: entry.exerciseId)
-            .filter { $0.gymId != gymId }
-            .map { setting in
-                .init(setting: setting, gymName: store.gym(id: setting.gymId)?.name ?? "Unknown gym")
-            }
-    }
-
     private func load() {
         guard !hasLoaded else { return }
         hasLoaded = true
         let source = entry.settings
-            ?? store.setting(exerciseId: entry.exerciseId, gymId: gymId)?.settings
+            ?? store.setting(exerciseId: entry.exerciseId)?.settings
             ?? [:]
         fields = source
             .sorted { $0.key < $1.key }
@@ -243,12 +172,6 @@ struct MachineSettingsSheet: View {
               !fields.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame })
         else { return }
         fields.append(MachineSettingsFieldModel(name: name, text: ""))
-    }
-
-    private func adopt(_ setting: LocalExerciseSetting) {
-        fields = setting.settings
-            .sorted { $0.key < $1.key }
-            .map { MachineSettingsFieldModel(name: $0.key, text: $0.value.displayString) }
     }
 
     private func settingsDictionary() -> [String: JSONValue] {
@@ -267,104 +190,15 @@ struct MachineSettingsSheet: View {
     }
 
     private func save() {
-        guard let gymId else { return }
         let dictionary = settingsDictionary()
-        store.upsertSetting(exerciseId: entry.exerciseId, gymId: gymId, settings: dictionary)
+        store.upsertSetting(exerciseId: entry.exerciseId, settings: dictionary)
         activeWorkout.updateEntrySettings(entryId: entry.id, settings: dictionary.isEmpty ? nil : dictionary)
         dismiss()
     }
 
     private func clear() {
-        if let gymId {
-            store.deleteSetting(exerciseId: entry.exerciseId, gymId: gymId)
-        }
+        store.deleteSetting(exerciseId: entry.exerciseId)
         activeWorkout.updateEntrySettings(entryId: entry.id, settings: nil)
         dismiss()
-    }
-}
-
-struct MachineSettingsCopySheet: View {
-    struct Option: Identifiable {
-        var setting: LocalExerciseSetting
-        var gymName: String
-        var id: String { setting.id }
-    }
-
-    let options: [Option]
-    var onPick: (LocalExerciseSetting) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                Text("Copy settings")
-                    .font(Theme.font(16, .bold))
-                    .foregroundStyle(Theme.ink)
-                HStack {
-                    Button("Close") { dismiss() }
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                        .buttonStyle(.plain)
-                    Spacer()
-                }
-            }
-            .padding(.top, 16)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 18)
-
-            if options.isEmpty {
-                VStack(spacing: 6) {
-                    Text("No other machines remembered")
-                        .font(Theme.font(15, .semibold))
-                        .foregroundStyle(Theme.ink)
-                    Text("Settings you save at other gyms will show up here.")
-                        .font(Theme.font(13))
-                        .foregroundStyle(Theme.muted2)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
-                .padding(.top, 48)
-                Spacer(minLength: 0)
-            } else {
-                ScrollView {
-                    VStack(spacing: 10) {
-                        ForEach(options) { option in
-                            Button {
-                                onPick(option.setting)
-                                dismiss()
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(option.gymName)
-                                        .font(Theme.font(15, .semibold))
-                                        .foregroundStyle(Theme.ink)
-                                    Text(preview(option.setting))
-                                        .font(Theme.mono(11))
-                                        .foregroundStyle(Theme.muted2)
-                                        .lineLimit(2)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(14)
-                                .card(radius: 14)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
-                }
-            }
-        }
-        .background(Color.white.ignoresSafeArea())
-        .presentationDetents([.medium])
-    }
-
-    private func preview(_ setting: LocalExerciseSetting) -> String {
-        setting.settings
-            .sorted { $0.key < $1.key }
-            .map { "\($0.key) \($0.value.displayString)" }
-            .joined(separator: " · ")
     }
 }

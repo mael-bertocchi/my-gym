@@ -109,20 +109,17 @@ struct BodyweightEntry: Codable, Identifiable, Equatable {
 struct LocalExerciseSetting: Codable, Identifiable, Equatable {
     var id: String
     var exerciseId: String
-    var gymId: String
     var settings: [String: JSONValue]
     var updatedAt: Date
 
     init(
         id: String = UUID().uuidString.lowercased(),
         exerciseId: String,
-        gymId: String,
         settings: [String: JSONValue],
         updatedAt: Date = .now
     ) {
         self.id = id
         self.exerciseId = exerciseId
-        self.gymId = gymId
         self.settings = settings
         self.updatedAt = updatedAt
     }

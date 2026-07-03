@@ -8,6 +8,7 @@ struct NewExerciseFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(LocalStore.self) private var store
 
+    @State private var exerciseName: String
     @State private var selectedGroupId: String?
     @State private var equipmentType: EquipmentType = .machine
     @State private var selectedBrandId: String?
@@ -30,6 +31,7 @@ struct NewExerciseFormView: View {
         self.prefilledGroup = prefilledGroup
         self.suggestedGroupName = suggestedGroupName
         self.onCreated = onCreated
+        _exerciseName = State(initialValue: suggestedGroupName ?? prefilledGroup?.name ?? "")
         _selectedGroupId = State(initialValue: prefilledGroup?.id)
     }
 
@@ -45,6 +47,7 @@ struct NewExerciseFormView: View {
                         infoBanner(groupName: group.name)
                             .padding(.bottom, 4)
                     }
+                    nameField
                     groupField
                     equipmentTypeField
                     brandField
@@ -90,7 +93,7 @@ struct NewExerciseFormView: View {
         PrimaryButton(
             title: "Create & add to workout",
             isLoading: isCreating,
-            isDisabled: selectedGroup == nil || primaryMuscle == nil
+            isDisabled: trimmedName.isEmpty || selectedGroup == nil || primaryMuscle == nil
         ) {
             create()
         }
@@ -100,9 +103,7 @@ struct NewExerciseFormView: View {
     }
 
     private func infoBanner(groupName: String) -> some View {
-        (Text("Reuses the ")
-            + Text(groupName).fontWeight(.bold)
-            + Text(" movement group, so it joins the cross-machine comparison automatically."))
+        Text("Reuses the \(Text(groupName).fontWeight(.bold)) movement group, so it joins the cross-machine comparison automatically.")
             .font(Theme.font(12))
             .foregroundStyle(Theme.inkSecondary)
             .lineSpacing(4)
@@ -110,6 +111,24 @@ struct NewExerciseFormView: View {
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
             .tintedCard(radius: 14)
+    }
+
+    private var nameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NewExerciseFieldLabel("NAME")
+            TextField("e.g. Chest Press", text: $exerciseName)
+                .font(Theme.font(15, .semibold))
+                .foregroundStyle(Theme.ink)
+                .textInputAutocapitalization(.words)
+                .submitLabel(.done)
+                .padding(.horizontal, 16)
+                .frame(height: 50)
+                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .strokeBorder(Theme.fieldBorder, lineWidth: 1)
+                )
+        }
     }
 
     private var groupField: some View {
@@ -266,44 +285,39 @@ struct NewExerciseFormView: View {
         }
     }
 
+    private var trimmedName: String {
+        exerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func create() {
-        guard let group = selectedGroup, let muscle = primaryMuscle, !isCreating else { return }
+        let name = trimmedName
+        guard !name.isEmpty, let group = selectedGroup, let muscle = primaryMuscle, !isCreating else { return }
+        guard !store.exercises.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) else {
+            errorMessage = "An exercise named \u{201C}\(name)\u{201D} already exists."
+            showsError = true
+            return
+        }
         let brand = selectedBrand
         isCreating = true
         Task {
             do {
-                let equipmentName = group.name + (brand.map { " · " + $0.name } ?? "")
-                let newEquipment = try await API.createEquipment(
-                    .init(name: equipmentName, type: equipmentType, brandId: brand?.id)
+                let exercise = try await API.createExercise(
+                    .init(
+                        name: name,
+                        primaryMuscle: muscle,
+                        secondaryMuscles: nil,
+                        equipment: equipmentType,
+                        brandId: brand?.id,
+                        groupId: group.id
+                    )
                 )
-                store.insert(equipment: newEquipment)
-
-                let exercise: Exercise
-                do {
-                    exercise = try await API.createExercise(
-                        .init(
-                            name: group.name,
-                            primaryMuscle: muscle,
-                            secondaryMuscles: nil,
-                            equipmentId: newEquipment.id,
-                            groupId: group.id
-                        )
-                    )
-                } catch let error as APIError where error.statusCode == 409 {
-                    let fallbackName = "\(group.name) (\(brand?.name ?? equipmentType.label))"
-                    exercise = try await API.createExercise(
-                        .init(
-                            name: fallbackName,
-                            primaryMuscle: muscle,
-                            secondaryMuscles: nil,
-                            equipmentId: newEquipment.id,
-                            groupId: group.id
-                        )
-                    )
-                }
                 store.insert(exercise: exercise)
                 isCreating = false
                 onCreated(exercise)
+            } catch let error as APIError where error.statusCode == 409 {
+                isCreating = false
+                errorMessage = "An exercise named \u{201C}\(name)\u{201D} already exists."
+                showsError = true
             } catch {
                 isCreating = false
                 presentError(error)

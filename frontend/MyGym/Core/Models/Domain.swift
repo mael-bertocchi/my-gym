@@ -112,15 +112,6 @@ struct Brand: Codable, Identifiable, Equatable, Hashable {
     var updatedAt: Date
 }
 
-struct Equipment: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var name: String
-    var type: EquipmentType
-    var brandId: String?
-    var createdAt: Date
-    var updatedAt: Date
-}
-
 struct ExerciseGroup: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var name: String
@@ -133,7 +124,8 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var name: String
     var primaryMuscle: MuscleGroup
     var secondaryMuscles: [MuscleGroup]
-    var equipmentId: String?
+    var equipment: EquipmentType
+    var brandId: String?
     var groupId: String?
     var isFavorite: Bool
     var isArchived: Bool
@@ -177,7 +169,8 @@ struct WorkoutEntryExercise: Codable, Equatable, Hashable {
     var id: String
     var name: String
     var primaryMuscle: MuscleGroup
-    var equipmentId: String?
+    var equipment: EquipmentType
+    var brandId: String?
     var groupId: String?
 }
 
@@ -229,7 +222,6 @@ struct PersonalRecordHit: Codable, Equatable {
 struct ExerciseSetting: Codable, Identifiable, Equatable {
     var id: String
     var exerciseId: String
-    var gymId: String
     var settings: [String: JSONValue]
     var createdAt: Date
     var updatedAt: Date

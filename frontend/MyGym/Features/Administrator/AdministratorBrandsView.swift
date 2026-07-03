@@ -53,7 +53,7 @@ struct AdministratorBrandsView: View {
             Button("Cancel", role: .cancel) {}
             Button("Create") { createBrand() }
         } message: {
-            Text("Equipment references a brand for cross-machine comparisons.")
+            Text("Exercises reference a brand for cross-machine comparisons.")
         }
         .administratorInfoAlert($alert)
     }

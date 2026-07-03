@@ -3,7 +3,6 @@ import Foundation
 struct SyncPull: Codable {
     struct Catalog: Codable {
         var brands: [Brand]
-        var equipment: [Equipment]
         var exerciseGroups: [ExerciseGroup]
         var exercises: [Exercise]
         var gyms: [Gym]

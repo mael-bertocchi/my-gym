@@ -85,68 +85,53 @@ enum DebugSeed {
         let squatGroup = mkGroup("Squat")
         let shoulderPressGroup = mkGroup("Shoulder Press")
 
-        let hsChestPress = mkEquipment("Chest Press · Hammer Strength", .machine, brandId: hammerStrength.id)
-        let tgChestPress = mkEquipment("Chest Press · Technogym", .machine, brandId: technogym.id)
-        let barbell = mkEquipment("Barbell", .barbell, brandId: nil)
-        let dumbbells = mkEquipment("Dumbbells", .dumbbell, brandId: nil)
-        let tgCableFly = mkEquipment("Cable Fly · Technogym", .cable, brandId: technogym.id)
-        let tgLegPress = mkEquipment("Leg Press · Technogym", .machine, brandId: technogym.id)
-        let cybexLegCurl = mkEquipment("Leg Curl · Cybex", .machine, brandId: cybex.id)
-        let hsLatPulldown = mkEquipment("Lat Pulldown · Hammer Strength", .machine, brandId: hammerStrength.id)
-        let tgSeatedRow = mkEquipment("Seated Row · Technogym", .cable, brandId: technogym.id)
-        let cybexShoulderPress = mkEquipment("Shoulder Press · Cybex", .machine, brandId: cybex.id)
-
         let chestPress = mkExercise(
             "Chest Press", .chest, secondary: [.triceps, .frontDelts],
-            equipmentId: hsChestPress.id, groupId: chestPressGroup.id, favorite: true
+            equipment: .machine, brandId: hammerStrength.id, groupId: chestPressGroup.id, favorite: true
         )
         let chestPressTechnogym = mkExercise(
             "Chest Press (Technogym)", .chest, secondary: [.triceps, .frontDelts],
-            equipmentId: tgChestPress.id, groupId: chestPressGroup.id
+            equipment: .machine, brandId: technogym.id, groupId: chestPressGroup.id
         )
         let benchPress = mkExercise(
             "Barbell Bench Press", .chest, secondary: [.triceps],
-            equipmentId: barbell.id, groupId: benchPressGroup.id
+            equipment: .barbell, brandId: nil, groupId: benchPressGroup.id
         )
         let inclineDumbbellPress = mkExercise(
             "Incline DB Press", .chest, secondary: [.frontDelts],
-            equipmentId: dumbbells.id, groupId: inclinePressGroup.id
+            equipment: .dumbbell, brandId: nil, groupId: inclinePressGroup.id
         )
         let cableFly = mkExercise(
             "Cable Fly", .chest,
-            equipmentId: tgCableFly.id, groupId: cableFlyGroup.id
+            equipment: .cable, brandId: technogym.id, groupId: cableFlyGroup.id
         )
         let legPress = mkExercise(
             "Leg Press", .quadriceps, secondary: [.glutes],
-            equipmentId: tgLegPress.id, groupId: legPressGroup.id
+            equipment: .machine, brandId: technogym.id, groupId: legPressGroup.id
         )
         let legCurl = mkExercise(
             "Leg Curl", .hamstrings,
-            equipmentId: cybexLegCurl.id, groupId: legCurlGroup.id
+            equipment: .machine, brandId: cybex.id, groupId: legCurlGroup.id
         )
         let latPulldown = mkExercise(
             "Lat Pulldown", .lats, secondary: [.biceps],
-            equipmentId: hsLatPulldown.id, groupId: latPulldownGroup.id
+            equipment: .machine, brandId: hammerStrength.id, groupId: latPulldownGroup.id
         )
         let seatedRow = mkExercise(
             "Seated Row", .upperBack, secondary: [.biceps],
-            equipmentId: tgSeatedRow.id, groupId: seatedRowGroup.id
+            equipment: .cable, brandId: technogym.id, groupId: seatedRowGroup.id
         )
         let squat = mkExercise(
             "Squat", .quadriceps, secondary: [.glutes],
-            equipmentId: barbell.id, groupId: squatGroup.id
+            equipment: .barbell, brandId: nil, groupId: squatGroup.id
         )
         let shoulderPress = mkExercise(
             "Shoulder Press", .frontDelts, secondary: [.sideDelts, .triceps],
-            equipmentId: cybexShoulderPress.id, groupId: shoulderPressGroup.id
+            equipment: .machine, brandId: cybex.id, groupId: shoulderPressGroup.id
         )
 
         store.applyCatalog(SyncPull.Catalog(
             brands: [hammerStrength, technogym, cybex],
-            equipment: [
-                hsChestPress, tgChestPress, barbell, dumbbells, tgCableFly,
-                tgLegPress, cybexLegCurl, hsLatPulldown, tgSeatedRow, cybexShoulderPress,
-            ],
             exerciseGroups: [
                 chestPressGroup, inclinePressGroup, cableFlyGroup, benchPressGroup,
                 legPressGroup, legCurlGroup, latPulldownGroup, seatedRowGroup,
@@ -218,12 +203,12 @@ enum DebugSeed {
         }
         store.replaceBodyweight(entries: bodyweight)
 
-        store.upsertSetting(exerciseId: chestPress.id, gymId: ironTemple.id, settings: [
+        store.upsertSetting(exerciseId: chestPress.id, settings: [
             "Seat height": .number(4),
             "Back pad": .string("B"),
             "Weight pin": .number(7),
         ])
-        store.upsertSetting(exerciseId: legPress.id, gymId: downtown.id, settings: [
+        store.upsertSetting(exerciseId: legPress.id, settings: [
             "Seat": .number(3),
         ])
 
@@ -481,15 +466,12 @@ enum DebugSeed {
         ExerciseGroup(id: newId(), name: name, createdAt: catalogBirth, updatedAt: catalogBirth)
     }
 
-    private static func mkEquipment(_ name: String, _ type: EquipmentType, brandId: String?) -> Equipment {
-        Equipment(id: newId(), name: name, type: type, brandId: brandId, createdAt: catalogBirth, updatedAt: catalogBirth)
-    }
-
     private static func mkExercise(
         _ name: String,
         _ primary: MuscleGroup,
         secondary: [MuscleGroup] = [],
-        equipmentId: String,
+        equipment: EquipmentType,
+        brandId: String?,
         groupId: String,
         favorite: Bool = false
     ) -> Exercise {
@@ -498,7 +480,8 @@ enum DebugSeed {
             name: name,
             primaryMuscle: primary,
             secondaryMuscles: secondary,
-            equipmentId: equipmentId,
+            equipment: equipment,
+            brandId: brandId,
             groupId: groupId,
             isFavorite: favorite,
             isArchived: false,

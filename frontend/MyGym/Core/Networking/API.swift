@@ -103,35 +103,6 @@ enum API {
         let _: Message = try await client.delete("brands/\(id)")
     }
 
-    static func equipment(
-        brandId: String? = nil,
-        type: EquipmentType? = nil,
-        search: String? = nil,
-        cursor: String? = nil
-    ) async throws -> Page<Equipment> {
-        try await client.page("equipment", query: [
-            "brandId": brandId,
-            "type": type?.rawValue,
-            "search": search,
-            "cursor": cursor,
-            "limit": "100",
-        ])
-    }
-
-    struct EquipmentRequest: Encodable {
-        var name: String
-        var type: EquipmentType
-        var brandId: String?
-    }
-
-    static func createEquipment(_ request: EquipmentRequest) async throws -> Equipment {
-        try await client.post("equipment", body: request)
-    }
-
-    static func deleteEquipment(id: String) async throws {
-        let _: Message = try await client.delete("equipment/\(id)")
-    }
-
     static func exerciseGroups(search: String? = nil, cursor: String? = nil) async throws -> Page<ExerciseGroup> {
         try await client.page("exercise-groups", query: ["search": search, "cursor": cursor, "limit": "100"])
     }
@@ -142,7 +113,7 @@ enum API {
 
     static func exercises(
         groupId: String? = nil,
-        equipmentId: String? = nil,
+        equipment: EquipmentType? = nil,
         brandId: String? = nil,
         muscle: MuscleGroup? = nil,
         search: String? = nil,
@@ -150,7 +121,7 @@ enum API {
     ) async throws -> Page<Exercise> {
         try await client.page("exercises", query: [
             "groupId": groupId,
-            "equipmentId": equipmentId,
+            "equipment": equipment?.rawValue,
             "brandId": brandId,
             "muscle": muscle?.rawValue,
             "q": search,
@@ -163,7 +134,8 @@ enum API {
         var name: String
         var primaryMuscle: MuscleGroup
         var secondaryMuscles: [MuscleGroup]?
-        var equipmentId: String?
+        var equipment: EquipmentType
+        var brandId: String?
         var groupId: String?
     }
 
@@ -240,20 +212,15 @@ enum API {
         let _: Message = try await client.delete("workouts/\(id)")
     }
 
-    static func exerciseSettings(
-        exerciseId: String? = nil,
-        gymId: String? = nil
-    ) async throws -> Page<ExerciseSetting> {
+    static func exerciseSettings(exerciseId: String? = nil) async throws -> Page<ExerciseSetting> {
         try await client.page("exercise-settings", query: [
             "exerciseId": exerciseId,
-            "gymId": gymId,
             "limit": "100",
         ])
     }
 
     struct UpsertSettingRequest: Encodable {
         var exerciseId: String
-        var gymId: String
         var settings: [String: JSONValue]
     }
 

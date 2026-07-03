@@ -116,7 +116,6 @@ struct HistoryWorkoutDetailView: View {
     private func prLine(for hit: HistoryPRIndex.Hit) -> Text {
         let exercise = store.exercise(id: hit.exerciseId)
         let brand = exercise
-            .flatMap { store.equipment(id: $0.equipmentId) }
             .flatMap { store.brand(id: $0.brandId) }?
             .name
         var descriptor = exercise?.name ?? "Exercise"
@@ -127,11 +126,10 @@ struct HistoryWorkoutDetailView: View {
         if let reps = hit.reps {
             value += " × \(reps)"
         }
-        return (
-            Text("New Record").font(Theme.font(13, .bold))
-            + Text(" · \(descriptor) with \(value)").font(Theme.font(13))
-        )
-        .foregroundStyle(Theme.inkSecondary)
+        let title = Text("New Record").font(Theme.font(13, .bold))
+        let details = Text(" · \(descriptor) with \(value)").font(Theme.font(13))
+        return Text("\(title)\(details)")
+            .foregroundStyle(Theme.inkSecondary)
     }
 
     private func exerciseList(for workout: LocalWorkout) -> some View {

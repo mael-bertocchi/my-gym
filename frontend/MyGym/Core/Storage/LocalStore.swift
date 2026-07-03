@@ -5,7 +5,6 @@ import Observation
 @Observable
 final class LocalStore {
     private(set) var brands: [Brand] = []
-    private(set) var equipment: [Equipment] = []
     private(set) var exerciseGroups: [ExerciseGroup] = []
     private(set) var exercises: [Exercise] = []
     private(set) var gyms: [Gym] = []
@@ -30,7 +29,6 @@ final class LocalStore {
 
     func applyCatalog(_ catalog: SyncPull.Catalog) {
         brands = merge(brands, with: catalog.brands)
-        equipment = merge(equipment, with: catalog.equipment)
         exerciseGroups = merge(exerciseGroups, with: catalog.exerciseGroups)
         exercises = merge(exercises, with: catalog.exercises)
         gyms = merge(gyms, with: catalog.gyms)
@@ -39,23 +37,17 @@ final class LocalStore {
     }
 
     func insert(brand: Brand) { brands = merge(brands, with: [brand]); sortCatalog(); save() }
-    func insert(equipment item: Equipment) { equipment = merge(equipment, with: [item]); sortCatalog(); save() }
     func insert(group: ExerciseGroup) { exerciseGroups = merge(exerciseGroups, with: [group]); sortCatalog(); save() }
     func insert(exercise: Exercise) { exercises = merge(exercises, with: [exercise]); sortCatalog(); save() }
     func insert(gym: Gym) { gyms = merge(gyms, with: [gym]); sortCatalog(); save() }
 
     func removeBrand(id: String) { brands.removeAll { $0.id == id }; save() }
-    func removeEquipment(id: String) { equipment.removeAll { $0.id == id }; save() }
     func removeGroup(id: String) { exerciseGroups.removeAll { $0.id == id }; save() }
     func removeExercise(id: String) { exercises.removeAll { $0.id == id }; save() }
     func removeGym(id: String) { gyms.removeAll { $0.id == id }; save() }
 
     func brand(id: String?) -> Brand? {
         id.flatMap { id in brands.first { $0.id == id } }
-    }
-
-    func equipment(id: String?) -> Equipment? {
-        id.flatMap { id in equipment.first { $0.id == id } }
     }
 
     func exercise(id: String) -> Exercise? {
@@ -67,13 +59,10 @@ final class LocalStore {
     }
 
     func brandLine(for exercise: Exercise) -> (text: String, isBranded: Bool) {
-        guard let equipment = equipment(id: exercise.equipmentId) else {
-            return ("NO EQUIPMENT", false)
-        }
-        if let brand = brand(id: equipment.brandId) {
+        if let brand = brand(id: exercise.brandId) {
             return (brand.name.uppercased(), true)
         }
-        return ("\(equipment.type.rawValue) · no brand", false)
+        return ("\(exercise.equipment.rawValue) · no brand", false)
     }
 
     func upsertWorkout(_ workout: LocalWorkout, markDirty: Bool = true) {
@@ -102,35 +91,29 @@ final class LocalStore {
         workouts.first { $0.id == id }
     }
 
-    func upsertSetting(exerciseId: String, gymId: String, settings: [String: JSONValue]) {
-        if let index = exerciseSettings.firstIndex(where: {
-            $0.exerciseId == exerciseId && $0.gymId == gymId
-        }) {
+    func upsertSetting(exerciseId: String, settings: [String: JSONValue]) {
+        if let index = exerciseSettings.firstIndex(where: { $0.exerciseId == exerciseId }) {
             exerciseSettings[index].settings = settings
             exerciseSettings[index].updatedAt = .now
             dirtySettingIds.insert(exerciseSettings[index].id)
         } else {
-            let setting = LocalExerciseSetting(exerciseId: exerciseId, gymId: gymId, settings: settings)
+            let setting = LocalExerciseSetting(exerciseId: exerciseId, settings: settings)
             exerciseSettings.append(setting)
             dirtySettingIds.insert(setting.id)
         }
         save()
     }
 
-    func deleteSetting(exerciseId: String, gymId: String) {
-        guard let setting = setting(exerciseId: exerciseId, gymId: gymId) else { return }
+    func deleteSetting(exerciseId: String) {
+        guard let setting = setting(exerciseId: exerciseId) else { return }
         exerciseSettings.removeAll { $0.id == setting.id }
         dirtySettingIds.remove(setting.id)
         pendingDeletions.append(.init(entityType: .exerciseSetting, entityId: setting.id))
         save()
     }
 
-    func setting(exerciseId: String, gymId: String?) -> LocalExerciseSetting? {
-        exerciseSettings.first { $0.exerciseId == exerciseId && $0.gymId == gymId }
-    }
-
-    func settings(exerciseId: String) -> [LocalExerciseSetting] {
-        exerciseSettings.filter { $0.exerciseId == exerciseId }
+    func setting(exerciseId: String) -> LocalExerciseSetting? {
+        exerciseSettings.first { $0.exerciseId == exerciseId }
     }
 
     func addBodyweight(_ entry: BodyweightEntry) {
@@ -169,13 +152,10 @@ final class LocalStore {
         for outcome in result.results.exerciseSettings {
             dirtySettingIds.remove(outcome.id)
             if outcome.status == "kept_server", let server = outcome.setting {
-                exerciseSettings.removeAll {
-                    $0.exerciseId == server.exerciseId && $0.gymId == server.gymId
-                }
+                exerciseSettings.removeAll { $0.exerciseId == server.exerciseId }
                 exerciseSettings.append(LocalExerciseSetting(
                     id: server.id,
                     exerciseId: server.exerciseId,
-                    gymId: server.gymId,
                     settings: server.settings,
                     updatedAt: server.updatedAt
                 ))
@@ -194,13 +174,10 @@ final class LocalStore {
         }
         for setting in pull.exerciseSettings {
             guard !dirtySettingIds.contains(setting.id) else { continue }
-            exerciseSettings.removeAll {
-                $0.exerciseId == setting.exerciseId && $0.gymId == setting.gymId
-            }
+            exerciseSettings.removeAll { $0.exerciseId == setting.exerciseId }
             exerciseSettings.append(LocalExerciseSetting(
                 id: setting.id,
                 exerciseId: setting.exerciseId,
-                gymId: setting.gymId,
                 settings: setting.settings,
                 updatedAt: setting.updatedAt
             ))
@@ -219,7 +196,6 @@ final class LocalStore {
 
     func clearAll() {
         brands = []
-        equipment = []
         exerciseGroups = []
         exercises = []
         gyms = []
@@ -235,7 +211,6 @@ final class LocalStore {
 
     private struct Snapshot: Codable {
         var brands: [Brand]
-        var equipment: [Equipment]
         var exerciseGroups: [ExerciseGroup]
         var exercises: [Exercise]
         var gyms: [Gym]
@@ -258,7 +233,6 @@ final class LocalStore {
         guard let data = try? Data(contentsOf: Self.fileURL),
               let snapshot = try? APIClient.decoder.decode(Snapshot.self, from: data) else { return }
         brands = snapshot.brands
-        equipment = snapshot.equipment
         exerciseGroups = snapshot.exerciseGroups
         exercises = snapshot.exercises
         gyms = snapshot.gyms
@@ -274,7 +248,6 @@ final class LocalStore {
     func save() {
         let snapshot = Snapshot(
             brands: brands,
-            equipment: equipment,
             exerciseGroups: exerciseGroups,
             exercises: exercises,
             gyms: gyms,
@@ -301,7 +274,6 @@ final class LocalStore {
 
     private func sortCatalog() {
         brands.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        equipment.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         exerciseGroups.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         exercises.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         gyms.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
