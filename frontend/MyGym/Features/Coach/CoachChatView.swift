@@ -12,8 +12,15 @@ struct CoachChatView: View {
     @State private var isSending = false
     @State private var failedContent: String?
     @State private var isOffline = false
+    @State private var bootstrapFailed = false
 
     private static let greeting = "Ask me about your training — I only use your own data."
+
+    private static let starterPrompts = [
+        "Am I progressing on my main lifts?",
+        "What should I train today?",
+        "Where am I plateauing?",
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,11 +44,12 @@ struct CoachChatView: View {
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(hex: 0x8A9099))
-                    .frame(width: 30, height: 34, alignment: .leading)
+                    .foregroundStyle(Theme.muted2)
+                    .frame(width: 44, height: 44, alignment: .leading)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Back")
 
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Theme.accentBlue)
@@ -64,8 +72,8 @@ struct CoachChatView: View {
             Spacer()
         }
         .padding(.top, 6)
-        .padding(.horizontal, 22)
-        .padding(.bottom, 14)
+        .padding(.horizontal, Theme.screenPadding)
+        .padding(.bottom, 8)
     }
 
     private var messageList: some View {
@@ -83,6 +91,20 @@ struct CoachChatView: View {
                     } else {
                         if messages.isEmpty {
                             CoachChatBubble(role: .assistant, content: Self.greeting)
+                            if !isOffline {
+                                starterPromptRow
+                            }
+                        }
+
+                        if bootstrapFailed {
+                            Button(action: retryBootstrap) {
+                                Text("Couldn't load your conversation — tap to retry")
+                                    .font(Theme.font(12))
+                                    .foregroundStyle(Theme.danger)
+                                    .frame(maxWidth: .infinity)
+                                    .expandedTapTarget(vertical: 10)
+                            }
+                            .buttonStyle(.plain)
                         }
 
                         ForEach(messages) { message in
@@ -108,8 +130,7 @@ struct CoachChatView: View {
                                     .font(Theme.font(12))
                                     .foregroundStyle(Theme.danger)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 4)
-                                    .contentShape(Rectangle())
+                                    .expandedTapTarget(vertical: 10)
                             }
                             .buttonStyle(.plain)
                         }
@@ -119,7 +140,8 @@ struct CoachChatView: View {
                         .frame(height: 1)
                         .id("bottom")
                 }
-                .padding(18)
+                .padding(.vertical, 18)
+                .padding(.horizontal, Theme.screenPadding)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { scrollToBottom(proxy) }
@@ -127,6 +149,21 @@ struct CoachChatView: View {
             .onChange(of: failedContent) { scrollToBottom(proxy) }
             .onChange(of: isBootstrapping) { scrollToBottom(proxy, animated: false) }
         }
+    }
+
+    private var starterPromptRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Self.starterPrompts, id: \.self) { prompt in
+                Button {
+                    input = prompt
+                    send()
+                } label: {
+                    CoachSuggestionChip(title: prompt)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 2)
     }
 
     private var latestAssistantId: String? {
@@ -190,6 +227,7 @@ struct CoachChatView: View {
                     .buttonStyle(.plain)
                     .disabled(!canSend)
                     .opacity(canSend ? 1 : 0.5)
+                    .accessibilityLabel("Send")
                 }
                 .opacity(isOffline ? 0.55 : 1)
 
@@ -201,7 +239,7 @@ struct CoachChatView: View {
                 }
             }
             .padding(.top, 14)
-            .padding(.horizontal, 18)
+            .padding(.horizontal, Theme.screenPadding)
             .padding(.bottom, 12)
         }
         .background(Theme.screenBackground)
@@ -226,10 +264,19 @@ struct CoachChatView: View {
             let detail = try await API.conversation(id: latest.id)
             messages = detail.messages
             isOffline = false
+            bootstrapFailed = false
         } catch NetworkError.offline {
             isOffline = true
         } catch {
+            bootstrapFailed = true
         }
+    }
+
+    private func retryBootstrap() {
+        hasBootstrapped = false
+        bootstrapFailed = false
+        isBootstrapping = true
+        Task { await bootstrap() }
     }
 
     private func send() {
@@ -307,6 +354,7 @@ struct CoachChatBubble: View {
 }
 
 struct CoachTypingIndicator: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulsing = false
 
     var body: some View {
@@ -315,9 +363,9 @@ struct CoachTypingIndicator: View {
                 Circle()
                     .fill(Theme.muted2)
                     .frame(width: 7, height: 7)
-                    .opacity(pulsing ? 1 : 0.25)
+                    .opacity(reduceMotion ? 0.6 : (pulsing ? 1 : 0.25))
                     .animation(
-                        .easeInOut(duration: 0.45)
+                        reduceMotion ? nil : .easeInOut(duration: 0.45)
                             .repeatForever(autoreverses: true)
                             .delay(Double(index) * 0.15),
                         value: pulsing
@@ -329,6 +377,7 @@ struct CoachTypingIndicator: View {
         .background(Theme.surface, in: shape)
         .overlay(shape.strokeBorder(Theme.hairline, lineWidth: 1))
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel("Coach is typing")
         .onAppear { pulsing = true }
     }
 

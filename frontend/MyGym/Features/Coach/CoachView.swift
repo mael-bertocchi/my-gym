@@ -151,7 +151,7 @@ struct CoachInsight: Identifiable {
         categoryLabel: "COACH",
         dotColor: Theme.muted2,
         title: "Your coach is warming up",
-        body: "insights appear once you have a few workouts synced."
+        body: "Insights appear once you have a few workouts synced."
     )
 
     static func parse(_ text: String) -> CoachInsight {
@@ -206,10 +206,7 @@ struct CoachInsightCard: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 StatusDot(color: insight.dotColor, size: 8)
-                Text(insight.categoryLabel)
-                    .font(Theme.mono(11, .semibold))
-                    .kerning(1)
-                    .foregroundStyle(Theme.muted2)
+                EyebrowText(insight.categoryLabel)
             }
 
             Text(insight.title)
@@ -225,6 +222,7 @@ struct CoachInsightCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .card(radius: 20)
+        .card()
+        .accessibilityElement(children: .combine)
     }
 }
