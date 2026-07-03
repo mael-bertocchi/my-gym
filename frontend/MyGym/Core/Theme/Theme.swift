@@ -1,8 +1,10 @@
 import SwiftUI
+import UIKit
 
 enum Theme {
 
     static let accentBlue = Color(hex: 0x2F6FED)
+    static let accentBlueSoft = Color(hex: 0x5E8BE6)
     static let accentBlueTint = Color(hex: 0xEAF1FE)
     static let accentBlueTintBorder = Color(hex: 0xD4E2FC)
     static let resumeRing = Color(hex: 0x9DBEF5)
@@ -19,22 +21,42 @@ enum Theme {
     static let surface = Color.white
     static let fieldFill = Color(hex: 0xF1F3F6)
     static let fieldBorder = Color(hex: 0xE4E7EB)
+    static let controlOutline = Color(hex: 0xD2D6DB)
 
     static let positive = Color(hex: 0x2E7D32)
     static let positiveTint = Color(hex: 0xEEF6EE)
     static let positiveBorder = Color(hex: 0xCFE8CF)
     static let warning = Color(hex: 0xE8A33D)
+    static let warningText = Color(hex: 0xB2731B)
     static let danger = Color(hex: 0xD14343)
 
-    static let tabInactive = Color(hex: 0xB6BCC4)
+    static let tabInactive = Color(hex: 0x8A9099)
     static let chartMuted = Color(hex: 0xE1E5EA)
+    static let chartSoft = Color(hex: 0xC9D7F2)
 
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight)
+        .system(size: scaled(size), weight: weight)
     }
 
     static func mono(_ size: CGFloat, _ weight: Font.Weight = .medium) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        .system(size: scaled(size), weight: weight, design: .monospaced)
+    }
+
+    private static func scaled(_ size: CGFloat) -> CGFloat {
+        let metrics = UIFontMetrics(forTextStyle: textStyle(for: size))
+        return min(metrics.scaledValue(for: size), size * 1.5)
+    }
+
+    private static func textStyle(for size: CGFloat) -> UIFont.TextStyle {
+        switch size {
+        case ..<11: return .caption2
+        case ..<13: return .caption1
+        case ..<15: return .footnote
+        case ..<17: return .body
+        case ..<22: return .title3
+        case ..<28: return .title1
+        default: return .largeTitle
+        }
     }
 
     static let screenPadding: CGFloat = 20
