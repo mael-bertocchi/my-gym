@@ -28,9 +28,9 @@
 		<true/>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>MyGym does not read your Health data.</string>
+	<string>My Gym can read the relevant data from Apple Health, such as your bodyweight.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>MyGym can save your finished workouts to Apple Health so they show up alongside your other activity.</string>
+	<string>My Gym can save your finished workouts to Apple Health so they show up alongside your other activity.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

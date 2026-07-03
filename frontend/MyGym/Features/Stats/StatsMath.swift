@@ -149,27 +149,6 @@ enum StatsMath {
         return shares
     }
 
-    static func dayStreak(workouts: [LocalWorkout], now: Date = .now) -> Int {
-        let calendar = Calendar.current
-        let days = Set(workouts.map { calendar.startOfDay(for: $0.startedAt) })
-        guard !days.isEmpty else { return 0 }
-
-        var cursor = calendar.startOfDay(for: now)
-        if !days.contains(cursor) {
-            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: cursor),
-                  days.contains(yesterday) else { return 0 }
-            cursor = yesterday
-        }
-
-        var streak = 0
-        while days.contains(cursor) {
-            streak += 1
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
-            cursor = previous
-        }
-        return streak
-    }
-
     static func workoutsPerWeek(
         workouts allWorkouts: [LocalWorkout],
         weekCount: Int = 4,
@@ -197,39 +176,6 @@ enum StatsMath {
                 return nil
             }
         }
-    }
-
-    struct PushPullSplit {
-        let pushPercent: Int
-        let pullPercent: Int
-        let legsPercent: Int
-    }
-
-    static func pushPullSplit(
-        workouts: [LocalWorkout],
-        exercises: [Exercise]
-    ) -> PushPullSplit? {
-        let byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        var totals: [ExerciseCategory: Double] = [:]
-        for workout in workouts {
-            for entry in workout.exercises {
-                guard let exercise = byId[entry.exerciseId],
-                      let category = ExerciseCategory(muscle: exercise.primaryMuscle) else { continue }
-                let volume = entry.sets
-                    .filter { $0.isCompleted && $0.setType == .normal }
-                    .reduce(0) { $0 + $1.volume }
-                totals[category, default: 0] += volume
-            }
-        }
-        let sum = totals.values.reduce(0, +)
-        guard sum > 0 else { return nil }
-        let pushPercent = Int(((totals[.push] ?? 0) / sum * 100).rounded())
-        let legsPercent = Int(((totals[.legs] ?? 0) / sum * 100).rounded())
-        return PushPullSplit(
-            pushPercent: pushPercent,
-            pullPercent: 100 - pushPercent - legsPercent,
-            legsPercent: legsPercent
-        )
     }
 
     static func categoryContribution(

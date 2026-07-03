@@ -90,22 +90,6 @@ struct LocalSet: Codable, Identifiable, Equatable {
     }
 }
 
-struct BodyweightEntry: Codable, Identifiable, Equatable {
-    var id: String
-    var date: Date
-    var weightKg: Double
-
-    init(
-        id: String = UUID().uuidString.lowercased(),
-        date: Date = .now,
-        weightKg: Double
-    ) {
-        self.id = id
-        self.date = date
-        self.weightKg = weightKg
-    }
-}
-
 struct LocalExerciseSetting: Codable, Identifiable, Equatable {
     var id: String
     var exerciseId: String

@@ -4,8 +4,10 @@ import Foundation
 
 enum DebugSeed {
     @MainActor
-    static func enterDemoEmpty(store: LocalStore, session: AppSession, activeWorkout: ActiveWorkoutStore) {
+    static func enterDemoEmpty(store: LocalStore, session: AppSession, healthKit: HealthKitService, activeWorkout: ActiveWorkoutStore) {
         store.clearAll()
+        InsightCache.clear()
+        healthKit.demoBodyweight = []
         let now = Date.now
         session.enterDemo(profile: UserProfile(
             id: UUID().uuidString.lowercased(),
@@ -63,7 +65,7 @@ enum DebugSeed {
     }
 
     @MainActor
-    static func enterDemo(store: LocalStore, session: AppSession) {
+    static func enterDemo(store: LocalStore, session: AppSession, healthKit: HealthKitService) {
         store.clearAll()
 
         let ironTemple = mkGym("Iron Temple")
@@ -192,16 +194,15 @@ enum DebugSeed {
             store.upsertWorkout(workout, markDirty: false)
         }
 
-        let bodyweight = (0...11).reversed().map { week -> BodyweightEntry in
+        healthKit.demoBodyweight = (0...11).reversed().map { week -> BodyweightSample in
             let daysAgo = week * 7 + 1
             let progress = Double(84 - daysAgo) / 84
             let wobble = sin(Double(week) * 1.3) * 0.3
-            return BodyweightEntry(
+            return BodyweightSample(
                 date: sessionStart(daysAgo: daysAgo),
                 weightKg: ((77.0 + 1.8 * progress + wobble) * 10).rounded() / 10
             )
         }
-        store.replaceBodyweight(entries: bodyweight)
 
         store.upsertSetting(exerciseId: chestPress.id, settings: [
             "Seat height": .number(4),

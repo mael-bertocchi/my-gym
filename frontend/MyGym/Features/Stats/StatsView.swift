@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatsView: View {
+    var onStartWorkout: () -> Void = {}
+
     @Environment(LocalStore.self) private var store
 
     @State private var tab: ProgressTab = .statistics
@@ -29,6 +31,11 @@ struct StatsView: View {
 
                     tabPicker
                         .padding(.bottom, 16)
+
+                    if !store.workouts.contains(where: { $0.endedAt != nil }) {
+                        statsEmptyCard
+                            .padding(.bottom, 16)
+                    }
 
                     switch tab {
                     case .statistics:
@@ -85,26 +92,24 @@ struct StatsView: View {
     }
 
     private var tabPicker: some View {
-        HStack(spacing: 6) {
-            ForEach(ProgressTab.allCases, id: \.self) { candidate in
-                Button {
-                    tab = candidate
-                } label: {
-                    Text(candidate.rawValue)
-                        .font(Theme.font(13, .bold))
-                        .foregroundStyle(tab == candidate ? Theme.ink : Theme.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(
-                            tab == candidate ? Theme.surface : .clear,
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+        SegmentedPicker(
+            options: ProgressTab.allCases.map { (value: $0, label: $0.rawValue) },
+            selection: $tab
+        )
+    }
+
+    private var statsEmptyCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Finish a workout and your progress starts charting here.")
+                .font(Theme.font(13))
+                .foregroundStyle(Theme.muted)
+                .lineSpacing(3)
+            InlineLink(title: "Start a workout", systemImage: "plus", action: onStartWorkout)
         }
-        .padding(3)
-        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .tintedCard()
     }
 
     private func openWeek(_ week: StatsMath.WeekVolume) {
@@ -134,20 +139,13 @@ struct StatsRangeChips: View {
     var body: some View {
         HStack(spacing: 6) {
             ForEach(StatsMath.Range.allCases) { candidate in
-                Button {
+                FilterChip(
+                    title: candidate.rawValue,
+                    isActive: selection == candidate,
+                    expands: true
+                ) {
                     selection = candidate
-                } label: {
-                    Text(candidate.rawValue)
-                        .font(Theme.font(12, .bold))
-                        .foregroundStyle(selection == candidate ? .white : Theme.muted)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
-                        .background(
-                            selection == candidate ? Theme.ink : Theme.fieldFill,
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        )
                 }
-                .buttonStyle(.plain)
             }
         }
     }

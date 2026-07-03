@@ -12,8 +12,6 @@ final class LocalStore {
     private(set) var workouts: [LocalWorkout] = []
     private(set) var exerciseSettings: [LocalExerciseSetting] = []
 
-    private(set) var bodyweightEntries: [BodyweightEntry] = []
-
     private(set) var lastSyncAt: Date?
     private(set) var dirtyWorkoutIds: Set<String> = []
     private(set) var dirtySettingIds: Set<String> = []
@@ -116,17 +114,6 @@ final class LocalStore {
         exerciseSettings.first { $0.exerciseId == exerciseId }
     }
 
-    func addBodyweight(_ entry: BodyweightEntry) {
-        bodyweightEntries.append(entry)
-        bodyweightEntries.sort { $0.date < $1.date }
-        save()
-    }
-
-    func replaceBodyweight(entries: [BodyweightEntry]) {
-        bodyweightEntries = entries.sorted { $0.date < $1.date }
-        save()
-    }
-
     func snapshotForPush() -> SyncPush {
         SyncPush(
             workouts: workouts.filter { dirtyWorkoutIds.contains($0.id) },
@@ -201,7 +188,6 @@ final class LocalStore {
         gyms = []
         workouts = []
         exerciseSettings = []
-        bodyweightEntries = []
         lastSyncAt = nil
         dirtyWorkoutIds = []
         dirtySettingIds = []
@@ -216,7 +202,6 @@ final class LocalStore {
         var gyms: [Gym]
         var workouts: [LocalWorkout]
         var exerciseSettings: [LocalExerciseSetting]
-        var bodyweightEntries: [BodyweightEntry]?
         var lastSyncAt: Date?
         var dirtyWorkoutIds: Set<String>
         var dirtySettingIds: Set<String>
@@ -238,7 +223,6 @@ final class LocalStore {
         gyms = snapshot.gyms
         workouts = snapshot.workouts
         exerciseSettings = snapshot.exerciseSettings
-        bodyweightEntries = snapshot.bodyweightEntries ?? []
         lastSyncAt = snapshot.lastSyncAt
         dirtyWorkoutIds = snapshot.dirtyWorkoutIds
         dirtySettingIds = snapshot.dirtySettingIds
@@ -253,7 +237,6 @@ final class LocalStore {
             gyms: gyms,
             workouts: workouts,
             exerciseSettings: exerciseSettings,
-            bodyweightEntries: bodyweightEntries,
             lastSyncAt: lastSyncAt,
             dirtyWorkoutIds: dirtyWorkoutIds,
             dirtySettingIds: dirtySettingIds,

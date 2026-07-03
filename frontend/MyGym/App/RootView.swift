@@ -4,13 +4,14 @@ struct RootView: View {
     @Environment(AppSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
+    @Environment(HealthKitService.self) private var healthKit
 
     var body: some View {
         Group {
             switch session.identityState {
             case .loading:
                 ZStack {
-                    Color.white.ignoresSafeArea()
+                    Theme.screenBackground.ignoresSafeArea()
                     LogoMark()
                 }
             case .signedOut:
@@ -22,11 +23,11 @@ struct RootView: View {
         .task {
             #if DEBUG
             if CommandLine.arguments.contains("-demo-empty") {
-                DebugSeed.enterDemoEmpty(store: store, session: session, activeWorkout: activeWorkout)
+                DebugSeed.enterDemoEmpty(store: store, session: session, healthKit: healthKit, activeWorkout: activeWorkout)
                 return
             }
             if CommandLine.arguments.contains("-demo") {
-                DebugSeed.enterDemo(store: store, session: session)
+                DebugSeed.enterDemo(store: store, session: session, healthKit: healthKit)
                 if CommandLine.arguments.contains("-demo-active") {
                     DebugSeed.startDemoActiveWorkout(
                         store: store,
@@ -82,6 +83,7 @@ struct MainShell: View {
                             isPaused: activeWorkout.isPaused,
                             exerciseCount: workout.exercises.count,
                             elapsed: { activeWorkout.elapsed(at: $0) },
+                            restRemaining: { activeWorkout.restTimer?.remainingSeconds },
                             onResume: { showActiveWorkout = true }
                         )
                         .padding(.horizontal, 14)
@@ -102,6 +104,7 @@ struct MainShell: View {
                 .animation(.snappy(duration: 0.25), value: activeWorkout.isActive)
                 .animation(.snappy(duration: 0.25), value: activeWorkout.isPaused)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
         }
         .animation(.snappy(duration: 0.22), value: tabChrome.isHidden)
@@ -112,7 +115,6 @@ struct MainShell: View {
                     Theme.screenBackground.ignoresSafeArea(edges: .top)
                 }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $showStartWorkout) {
             StartWorkoutSheet(onStarted: {
                 showStartWorkout = false
@@ -164,12 +166,13 @@ struct MainShell: View {
             HomeView(
                 onOpenCoach: { selection = .coach },
                 onOpenStats: { selection = .stats },
-                onOpenHistory: { selection = .history }
+                onOpenHistory: { selection = .history },
+                onStartWorkout: { showStartWorkout = true }
             )
         case .history:
             HistoryView()
         case .stats:
-            StatsView()
+            StatsView(onStartWorkout: { showStartWorkout = true })
         case .coach:
             CoachView()
         }

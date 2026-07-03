@@ -24,10 +24,6 @@ struct StatsStatisticsBody: View {
 
             splitRow(windowed: windowed)
 
-            StatsPushPullCard(
-                split: StatsMath.pushPullSplit(workouts: windowed, exercises: store.exercises)
-            )
-
             StatsMonthCompareCard(
                 comparison: StatsMath.monthComparison(workouts: store.workouts),
                 unit: session.weightUnit
@@ -44,16 +40,10 @@ struct StatsStatisticsBody: View {
             )
             .frame(maxWidth: .infinity)
 
-            VStack(spacing: 14) {
-                StatsValueCard(
-                    value: "\(StatsMath.dayStreak(workouts: store.workouts))",
-                    caption: "day streak"
-                )
-                StatsValueCard(
-                    value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: store.workouts)),
-                    caption: "workouts / week"
-                )
-            }
+            StatsValueCard(
+                value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: store.workouts)),
+                caption: "workouts / week"
+            )
             .frame(maxWidth: .infinity)
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -64,6 +54,22 @@ struct ChartHover: Equatable {
     let value: String
     let label: String
     let location: CGPoint
+}
+
+struct TrendDeltaText: View {
+    let percent: Int
+
+    var body: some View {
+        Text(label)
+            .font(Theme.mono(11, .bold))
+            .foregroundStyle(percent > 0 ? Theme.positive : Theme.muted2)
+    }
+
+    private var label: String {
+        if percent > 0 { return "↑ \(percent)%" }
+        if percent < 0 { return "↓ \(-percent)%" }
+        return "· 0%"
+    }
 }
 
 struct ChartTooltip: View {
@@ -105,9 +111,7 @@ private struct StatsVolumeCard: View {
                 EyebrowText("VOLUME · \(rangeLabel)", size: 10)
                 Spacer()
                 if let trend = StatsMath.weeklyTrendPercent(weeks: weeks) {
-                    Text(trend >= 0 ? "↑ \(trend)%" : "↓ \(-trend)%")
-                        .font(Theme.font(11, .bold))
-                        .foregroundStyle(trend >= 0 ? Theme.positive : Theme.muted2)
+                    TrendDeltaText(percent: trend)
                 }
             }
             if weeks.contains(where: { $0.volumeKg > 0 }) {
@@ -201,7 +205,7 @@ private struct StatsMuscleSplitCard: View {
     private static let palette: [Color] = [
         Theme.accentBlue,
         Theme.resumeRing,
-        Color(hex: 0xC9D7F2),
+        Theme.chartSoft,
         Theme.chartMuted,
     ]
 
@@ -241,13 +245,14 @@ private struct StatsMuscleSplitCard: View {
                                 .frame(width: 6, height: 6)
                             Text(item.share.label)
                                 .font(Theme.mono(10))
-                                .foregroundStyle(Theme.muted2)
+                                .foregroundStyle(Theme.muted)
                                 .lineLimit(1)
                             Spacer(minLength: 4)
                             Text("\(item.share.percent)%")
                                 .font(Theme.mono(10))
-                                .foregroundStyle(Theme.muted2)
+                                .foregroundStyle(Theme.muted)
                         }
+                        .accessibilityElement(children: .combine)
                     }
                 }
             }
@@ -269,64 +274,12 @@ private struct StatsValueCard: View {
                 .foregroundStyle(Theme.ink)
             Text(caption)
                 .font(Theme.font(11))
-                .foregroundStyle(Theme.muted2)
+                .foregroundStyle(Theme.muted)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(14)
-        .card(radius: 20)
-    }
-}
-
-private struct StatsPushPullCard: View {
-    let split: StatsMath.PushPullSplit?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            EyebrowText("PUSH / PULL BALANCE", size: 10)
-                .padding(.bottom, 14)
-            if let split {
-                bar(for: split)
-                    .padding(.bottom, 10)
-                HStack(spacing: 16) {
-                    legendItem("Push", percent: split.pushPercent, color: Theme.accentBlue)
-                    legendItem("Pull", percent: split.pullPercent, color: Theme.resumeRing)
-                    legendItem("Legs", percent: split.legsPercent, color: Theme.chartMuted)
-                }
-            } else {
-                StatsEmptyNote(height: 40)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .card(radius: 20)
-    }
-
-    private func bar(for split: StatsMath.PushPullSplit) -> some View {
-        GeometryReader { geo in
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(Theme.accentBlue)
-                    .frame(width: geo.size.width * CGFloat(split.pushPercent) / 100)
-                Rectangle()
-                    .fill(Theme.resumeRing)
-                    .frame(width: geo.size.width * CGFloat(split.pullPercent) / 100)
-                Rectangle()
-                    .fill(Theme.chartMuted)
-            }
-        }
-        .frame(height: 14)
-        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-    }
-
-    private func legendItem(_ label: String, percent: Int, color: Color) -> some View {
-        HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(color)
-                .frame(width: 7, height: 7)
-            Text("\(label) \(percent)%")
-                .font(Theme.font(11))
-                .foregroundStyle(Theme.muted)
-        }
+        .card()
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -384,9 +337,7 @@ private struct StatsMonthCompareCard: View {
                 Text(value)
                     .font(Theme.mono(13))
                     .foregroundStyle(Theme.ink)
-                Text(delta >= 0 ? "↑ \(delta)%" : "↓ \(-delta)%")
-                    .font(Theme.mono(11, .bold))
-                    .foregroundStyle(delta >= 0 ? Theme.positive : Theme.muted2)
+                TrendDeltaText(percent: delta)
             }
         }
     }
@@ -395,29 +346,24 @@ private struct StatsMonthCompareCard: View {
 private struct StatsBodyweightCard: View {
     let unit: WeightUnit
 
-    @Environment(LocalStore.self) private var store
+    @Environment(HealthKitService.self) private var healthKit
 
+    @State private var entries: [BodyweightSample] = []
     @State private var isAdding = false
     @State private var input = ""
     @FocusState private var inputFocused: Bool
     @State private var hover: ChartHover?
 
     var body: some View {
-        let entries = store.bodyweightEntries
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 EyebrowText("BODYWEIGHT", size: 10)
                 Spacer()
-                Button {
+                InlineLink(title: "Add", systemImage: "plus") {
                     isAdding.toggle()
                     input = ""
                     inputFocused = isAdding
-                } label: {
-                    Text("+ Add")
-                        .font(Theme.font(11, .bold))
-                        .foregroundStyle(Theme.accentBlue)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.bottom, 14)
 
@@ -431,9 +377,9 @@ private struct StatsBodyweightCard: View {
                     .font(Theme.font(22, .heavy))
                     .foregroundStyle(Theme.ink)
                 if let delta = latestDelta(entries) {
-                    Text(delta.label)
+                    Text(delta)
                         .font(Theme.mono(11, .bold))
-                        .foregroundStyle(delta.isGain ? Theme.positive : Theme.muted2)
+                        .foregroundStyle(Theme.muted)
                 }
             }
             .padding(.bottom, 10)
@@ -447,6 +393,7 @@ private struct StatsBodyweightCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .card(radius: 20)
+        .task { entries = await healthKit.bodyweightHistory() }
     }
 
     private var inputRow: some View {
@@ -457,18 +404,20 @@ private struct StatsBodyweightCard: View {
                 .focused($inputFocused)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 10)
-                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                         .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                 )
+                .accessibilityLabel("Bodyweight in \(unit.label)")
             Button(action: submit) {
                 Text("Add")
                     .font(Theme.font(12, .bold))
                     .foregroundStyle(.white)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 14)
-                    .background(Theme.ink, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Theme.ink, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                    .expandedTapTarget(vertical: 6, horizontal: 2)
             }
             .buttonStyle(.plain)
         }
@@ -476,25 +425,26 @@ private struct StatsBodyweightCard: View {
 
     private func submit() {
         guard let value = Double(input.replacingOccurrences(of: ",", with: ".")), value > 0 else {
+            Haptics.warning()
             return
         }
         let kilograms = unit == .kilograms ? value : value * Formatting.kilogramsPerPound
-        store.addBodyweight(BodyweightEntry(weightKg: (kilograms * 10).rounded() / 10))
         isAdding = false
         input = ""
+        Task {
+            await healthKit.saveBodyweight(kilograms: (kilograms * 10).rounded() / 10)
+            entries = await healthKit.bodyweightHistory()
+        }
     }
 
-    private func latestDelta(_ entries: [BodyweightEntry]) -> (label: String, isGain: Bool)? {
+    private func latestDelta(_ entries: [BodyweightSample]) -> String? {
         guard entries.count >= 2 else { return nil }
         let deltaKg = entries[entries.count - 1].weightKg - entries[entries.count - 2].weightKg
         let number = Formatting.weightNumber(abs(deltaKg), unit: unit)
-        return (
-            label: "\(deltaKg >= 0 ? "+" : "-")\(number)\(unit.suffix)",
-            isGain: deltaKg >= 0
-        )
+        return "\(deltaKg >= 0 ? "+" : "-")\(number)\(unit.suffix)"
     }
 
-    private func chart(entries: [BodyweightEntry]) -> some View {
+    private func chart(entries: [BodyweightSample]) -> some View {
         Chart(entries) { entry in
             LineMark(
                 x: .value("Date", entry.date),
@@ -543,10 +493,10 @@ private struct StatsBodyweightCard: View {
 
     private func entry(
         at location: CGPoint,
-        entries: [BodyweightEntry],
+        entries: [BodyweightSample],
         proxy: ChartProxy,
         geo: GeometryProxy
-    ) -> BodyweightEntry? {
+    ) -> BodyweightSample? {
         guard let plotFrame = proxy.plotFrame else { return nil }
         let frame = geo[plotFrame]
         guard let date = proxy.value(atX: location.x - frame.origin.x, as: Date.self) else {

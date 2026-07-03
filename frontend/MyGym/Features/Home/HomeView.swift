@@ -4,6 +4,7 @@ struct HomeView: View {
     var onOpenCoach: () -> Void = {}
     var onOpenStats: () -> Void = {}
     var onOpenHistory: () -> Void = {}
+    var onStartWorkout: () -> Void = {}
 
     @Environment(AppSession.self) private var session
     @Environment(LocalStore.self) private var store
@@ -11,41 +12,44 @@ struct HomeView: View {
     @State private var showProfile = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                headerRow
-                    .padding(.bottom, 24)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    headerRow
+                        .padding(.bottom, 24)
 
-                thisWeekCard
-                    .padding(.bottom, 16)
+                    thisWeekCard
+                        .padding(.bottom, 16)
 
-                weeklyVolumeCard
-                    .padding(.bottom, 16)
+                    weeklyVolumeCard
+                        .padding(.bottom, 16)
 
-                coachInsightCard
+                    coachInsightCard
 
-                SectionLabel("RECENT WORKOUTS")
-                    .padding(.top, 22)
-                    .padding(.bottom, 12)
-                    .padding(.horizontal, 4)
+                    SectionLabel("RECENT WORKOUTS")
+                        .padding(.top, 22)
+                        .padding(.bottom, 12)
+                        .padding(.horizontal, 4)
 
-                recentWorkoutsSection
+                    recentWorkoutsSection
+                }
+                .padding(.top, 8)
+                .padding(.horizontal, Theme.screenPadding)
             }
-            .padding(.top, 8)
-            .padding(.horizontal, Theme.screenPadding)
-        }
-        .contentMargins(.bottom, Theme.tabBarClearance, for: .scrollContent)
-        .defaultScrollAnchor(debugScrollToBottom ? .bottom : .top)
-        .background(Theme.screenBackground.ignoresSafeArea())
-        .sheet(isPresented: $showProfile) {
-            ProfileView()
-        }
-        .onAppear {
-            #if DEBUG
-            if UserDefaults.standard.string(forKey: "open") == "profile" {
-                showProfile = true
+            .contentMargins(.bottom, Theme.tabBarClearance, for: .scrollContent)
+            .defaultScrollAnchor(debugScrollToBottom ? .bottom : .top)
+            .background(Theme.screenBackground.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showProfile) {
+                ProfileView()
             }
-            #endif
+            .onAppear {
+                #if DEBUG
+                if UserDefaults.standard.string(forKey: "open") == "profile" {
+                    showProfile = true
+                }
+                #endif
+            }
         }
     }
 
@@ -76,6 +80,7 @@ struct HomeView: View {
                 AvatarView(name: session.currentUser?.displayName ?? "", size: 42)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Profile")
         }
     }
 
@@ -96,12 +101,11 @@ struct HomeView: View {
                     value: Formatting.compactVolume(weekVolume, unit: session.weightUnit),
                     caption: "\(session.weightUnit.label) volume"
                 )
-                HomeStatColumn(value: "\(dayStreak)", caption: "day streak", isAccent: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .card(radius: 22)
+        .card()
     }
 
     private var mondayCalendar: Calendar {
@@ -119,39 +123,18 @@ struct HomeView: View {
         weekWorkouts.reduce(0) { $0 + $1.totalVolume }
     }
 
-    private var dayStreak: Int {
-        let calendar = Calendar.current
-        let days = Set(store.workouts.map { calendar.startOfDay(for: $0.startedAt) })
-        guard !days.isEmpty else { return 0 }
-
-        var cursor = calendar.startOfDay(for: .now)
-        if !days.contains(cursor) {
-            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: cursor),
-                  days.contains(yesterday) else { return 0 }
-            cursor = yesterday
-        }
-
-        var streak = 0
-        while days.contains(cursor) {
-            streak += 1
-            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
-            cursor = previous
-        }
-        return streak
-    }
-
     private var weeklyVolumeCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 EyebrowText("WEEKLY VOLUME")
                 Spacer()
-                InlineLink(title: "View →", action: onOpenStats)
+                InlineLink(title: "View all", action: onOpenStats)
             }
             HomeVolumeBars(volumes: weeklyVolumes)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .card(radius: 22)
+        .card()
     }
 
     private var weeklyVolumes: [Double] {
@@ -178,10 +161,7 @@ struct HomeView: View {
                     Image(systemName: "bubble.left")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Theme.accentBlue)
-                    Text("COACH INSIGHT")
-                        .font(Theme.mono(11, .bold))
-                        .kerning(1)
-                        .foregroundStyle(Theme.accentBlue)
+                    EyebrowText("COACH INSIGHT", color: Theme.accentBlue)
                 }
                 Text(coachInsight)
                     .font(Theme.font(14))
@@ -191,7 +171,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
-            .tintedCard(radius: 22)
+            .tintedCard()
         }
         .buttonStyle(.plain)
     }
@@ -210,22 +190,29 @@ struct HomeView: View {
     @ViewBuilder
     private var recentWorkoutsSection: some View {
         if recentWorkouts.isEmpty {
-            Text("No workouts yet.")
-                .font(Theme.font(13))
-                .foregroundStyle(Theme.muted)
-                .lineSpacing(3)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
-                .card(radius: 18)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("No workouts yet. Your three latest sessions will show up here.")
+                    .font(Theme.font(13))
+                    .foregroundStyle(Theme.muted)
+                    .lineSpacing(3)
+                InlineLink(title: "Start your first workout", systemImage: "plus", action: onStartWorkout)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .card()
         } else {
             VStack(spacing: 10) {
                 ForEach(recentWorkouts) { workout in
-                    HomeRecentWorkoutRow(
-                        title: workout.name ?? "Workout",
-                        subtitle: subtitle(for: workout),
-                        action: onOpenHistory
-                    )
+                    NavigationLink {
+                        HistoryWorkoutDetailView(workoutId: workout.id)
+                    } label: {
+                        HomeRecentWorkoutRow(
+                            title: workout.name ?? "Workout",
+                            subtitle: subtitle(for: workout)
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -245,18 +232,18 @@ struct HomeView: View {
 private struct HomeStatColumn: View {
     let value: String
     let caption: String
-    var isAccent = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(value)
                 .font(Theme.font(24, .heavy))
-                .foregroundStyle(isAccent ? Theme.accentBlue : Theme.ink)
+                .foregroundStyle(Theme.ink)
             Text(caption)
                 .font(Theme.font(12))
-                .foregroundStyle(Theme.muted2)
+                .foregroundStyle(Theme.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -288,28 +275,25 @@ private struct HomeVolumeBars: View {
 private struct HomeRecentWorkoutRow: View {
     let title: String
     let subtitle: String
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(Theme.font(15, .bold))
-                        .foregroundStyle(Theme.ink)
-                    Text(subtitle)
-                        .font(Theme.font(12))
-                        .foregroundStyle(Theme.muted2)
-                }
-                Spacer(minLength: 0)
-                Text("›")
-                    .font(Theme.font(18))
-                    .foregroundStyle(Color(hex: 0xC4C9CF))
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(Theme.font(15, .bold))
+                    .foregroundStyle(Theme.ink)
+                Text(subtitle)
+                    .font(Theme.font(12))
+                    .foregroundStyle(Theme.muted)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
-            .card(radius: 18)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.tabInactive)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .card()
+        .contentShape(Rectangle())
     }
 }

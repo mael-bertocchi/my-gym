@@ -18,8 +18,13 @@ final class HealthKitService {
 
     private static let enabledKey = "healthKitSyncEnabled"
     private static let workoutType = HKObjectType.workoutType()
+    private static let bodyMassType = HKQuantityType(.bodyMass)
 
     private var uuidMap: [String: String] = [:]
+
+    #if DEBUG
+    var demoBodyweight: [BodyweightSample]?
+    #endif
 
     init() {
         uuidMap = Self.loadUUIDMap()
@@ -28,10 +33,24 @@ final class HealthKitService {
     func requestAuthorization() async {
         guard Self.isHealthDataAvailable else { return }
         do {
-            try await healthStore.requestAuthorization(toShare: [Self.workoutType], read: [])
+            try await healthStore.requestAuthorization(
+                toShare: [Self.workoutType, Self.bodyMassType],
+                read: [Self.bodyMassType]
+            )
         } catch {
             logger.error("HealthKit authorization request failed: \(error.localizedDescription)")
         }
+    }
+
+    func enableSync() async -> Bool {
+        guard Self.isHealthDataAvailable else {
+            isEnabled = false
+            return false
+        }
+        await requestAuthorization()
+        let granted = healthStore.authorizationStatus(for: Self.workoutType) == .sharingAuthorized
+        isEnabled = granted
+        return granted
     }
 
     func logWorkout(_ workout: LocalWorkout, exerciseNames: [String]) async {
@@ -88,6 +107,67 @@ final class HealthKitService {
         }
     }
 
+    func bodyweightHistory() async -> [BodyweightSample] {
+        #if DEBUG
+        if let demoBodyweight {
+            return Self.collapsePerDay(demoBodyweight)
+        }
+        #endif
+        guard Self.isHealthDataAvailable else { return [] }
+        await requestAuthorization()
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: Self.bodyMassType)],
+            sortDescriptors: [SortDescriptor(\.endDate, order: .reverse)],
+            limit: 120
+        )
+        do {
+            let samples = try await descriptor.result(for: healthStore)
+            return Self.collapsePerDay(samples.map { sample in
+                BodyweightSample(
+                    date: sample.endDate,
+                    weightKg: sample.quantity.doubleValue(for: .gramUnit(with: .kilo))
+                )
+            })
+        } catch {
+            logger.error("HealthKit body mass fetch failed: \(error.localizedDescription)")
+            return []
+        }
+    }
+
+    func saveBodyweight(kilograms: Double) async {
+        #if DEBUG
+        if demoBodyweight != nil {
+            demoBodyweight?.append(BodyweightSample(date: .now, weightKg: kilograms))
+            return
+        }
+        #endif
+        guard Self.isHealthDataAvailable else { return }
+        await requestAuthorization()
+        let now = Date.now
+        let sample = HKQuantitySample(
+            type: Self.bodyMassType,
+            quantity: HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kilograms),
+            start: now,
+            end: now
+        )
+        do {
+            try await healthStore.save(sample)
+        } catch {
+            logger.error("HealthKit body mass save failed: \(error.localizedDescription)")
+        }
+    }
+
+    private static func collapsePerDay(_ samples: [BodyweightSample]) -> [BodyweightSample] {
+        let calendar = Calendar.current
+        var latestByDay: [Date: BodyweightSample] = [:]
+        for sample in samples {
+            let day = calendar.startOfDay(for: sample.date)
+            if let current = latestByDay[day], current.date > sample.date { continue }
+            latestByDay[day] = sample
+        }
+        return latestByDay.values.sorted { $0.date < $1.date }
+    }
+
     private static var mapFileURL: URL {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -104,4 +184,11 @@ final class HealthKitService {
         guard let data = try? JSONEncoder().encode(uuidMap) else { return }
         try? data.write(to: Self.mapFileURL, options: .atomic)
     }
+}
+
+struct BodyweightSample: Identifiable, Equatable {
+    let date: Date
+    let weightKg: Double
+
+    var id: Date { date }
 }
