@@ -173,7 +173,7 @@ final class ActiveWorkoutStore {
             sets = [LocalSet(setNumber: 1)]
         }
 
-        let remembered = store.setting(exerciseId: exercise.id, gymId: current.gymId)
+        let remembered = store.setting(exerciseId: exercise.id)
         let entry = LocalWorkoutExercise(
             exerciseId: exercise.id,
             position: (current.exercises.map(\.position).max() ?? 0) + 1,
@@ -265,6 +265,11 @@ final class ActiveWorkoutStore {
     func removeSet(entryId: String, setId: String) {
         guard let entryIndex = entryIndex(entryId) else { return }
         workout?.exercises[entryIndex].sets.removeAll { $0.id == setId }
+        if let sets = workout?.exercises[entryIndex].sets {
+            for setIndex in sets.indices {
+                workout?.exercises[entryIndex].sets[setIndex].setNumber = setIndex + 1
+            }
+        }
         persist()
     }
 

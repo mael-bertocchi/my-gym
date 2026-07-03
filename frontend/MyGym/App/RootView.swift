@@ -109,11 +109,7 @@ struct MainShell: View {
             Color.clear
                 .frame(height: 0)
                 .background {
-                    ZStack {
-                        Rectangle().fill(.ultraThinMaterial)
-                        Theme.screenBackground.opacity(0.75)
-                    }
-                    .ignoresSafeArea(edges: .top)
+                    Theme.screenBackground.ignoresSafeArea(edges: .top)
                 }
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)

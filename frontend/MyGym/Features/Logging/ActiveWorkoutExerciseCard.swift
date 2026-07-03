@@ -27,18 +27,14 @@ struct ActiveWorkoutExerciseCard: View {
                     SupersetChipView(chip: chip)
                 } else {
                     Menu {
-                        Button(action: onOpenSettings) {
-                            Label("Machine settings", systemImage: "slider.horizontal.3")
-                        }
+                        Button("Machine settings", action: onOpenSettings)
                         if let onAddToSuperset {
                             Button("Add to superset", action: onAddToSuperset)
                         }
                         if let onUnlinkSuperset {
                             Button("Unlink superset", action: onUnlinkSuperset)
                         }
-                        Button(role: .destructive, action: onRemove) {
-                            Label("Remove exercise", systemImage: "trash")
-                        }
+                        Button("Remove exercise", role: .destructive, action: onRemove)
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 15, weight: .semibold))
@@ -116,7 +112,11 @@ struct ActiveWorkoutSetRow: View {
     @State private var weightText: String
     @State private var repsText: String
     @State private var touched: Set<SetField> = []
+    @State private var dragOffset: CGFloat = 0
+    @State private var isSwipedOpen = false
     @FocusState private var focusedField: SetField?
+
+    private static let revealWidth: CGFloat = 84
 
     init(entryId: String, set: LocalSet, unit: WeightUnit, onFocus: @escaping (String) -> Void = { _ in }) {
         self.entryId = entryId
@@ -128,6 +128,46 @@ struct ActiveWorkoutSetRow: View {
     }
 
     var body: some View {
+        ZStack(alignment: .trailing) {
+            if dragOffset < 0 {
+                Button(action: remove) {
+                    Text("Remove")
+                        .font(Theme.font(13, .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: Self.revealWidth - 10, height: 38)
+                        .background(Theme.danger, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+            row
+                .offset(x: dragOffset)
+                .overlay {
+                    if isSwipedOpen {
+                        Color.black.opacity(0.001)
+                            .contentShape(Rectangle())
+                            .onTapGesture(perform: closeSwipe)
+                            .offset(x: dragOffset)
+                    }
+                }
+        }
+        .gesture(swipeGesture)
+        .onChange(of: weightText) { _, newValue in
+            touched.insert(.weight)
+            var updated = set
+            updated.weightKg = parseNumber(newValue).map { value in
+                unit == .pounds ? value * Formatting.kilogramsPerPound : value
+            }
+            activeWorkout.updateSet(entryId: entryId, set: updated)
+        }
+        .onChange(of: repsText) { _, newValue in
+            touched.insert(.reps)
+            var updated = set
+            updated.reps = Int(newValue.trimmingCharacters(in: .whitespaces))
+            activeWorkout.updateSet(entryId: entryId, set: updated)
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 8) {
             Text("\(set.setNumber)")
                 .font(Theme.font(13, .bold))
@@ -165,26 +205,37 @@ struct ActiveWorkoutSetRow: View {
             .buttonStyle(.plain)
         }
         .contextMenu {
-            Button(role: .destructive) {
-                activeWorkout.removeSet(entryId: entryId, setId: set.id)
-            } label: {
-                Label("Remove set", systemImage: "minus.circle")
+            Button("Remove set", role: .destructive, action: remove)
+        }
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 25)
+            .onChanged { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                let base: CGFloat = isSwipedOpen ? -Self.revealWidth : 0
+                dragOffset = min(0, max(-Self.revealWidth, base + value.translation.width))
             }
-        }
-        .onChange(of: weightText) { _, newValue in
-            touched.insert(.weight)
-            var updated = set
-            updated.weightKg = parseNumber(newValue).map { value in
-                unit == .pounds ? value * Formatting.kilogramsPerPound : value
+            .onEnded { _ in
+                let shouldOpen = dragOffset < -Self.revealWidth / 2
+                withAnimation(.snappy(duration: 0.22)) {
+                    dragOffset = shouldOpen ? -Self.revealWidth : 0
+                }
+                isSwipedOpen = shouldOpen
             }
-            activeWorkout.updateSet(entryId: entryId, set: updated)
+    }
+
+    private func remove() {
+        withAnimation(.snappy(duration: 0.22)) {
+            activeWorkout.removeSet(entryId: entryId, setId: set.id)
         }
-        .onChange(of: repsText) { _, newValue in
-            touched.insert(.reps)
-            var updated = set
-            updated.reps = Int(newValue.trimmingCharacters(in: .whitespaces))
-            activeWorkout.updateSet(entryId: entryId, set: updated)
+    }
+
+    private func closeSwipe() {
+        withAnimation(.snappy(duration: 0.22)) {
+            dragOffset = 0
         }
+        isSwipedOpen = false
     }
 
     private func editableCell(
