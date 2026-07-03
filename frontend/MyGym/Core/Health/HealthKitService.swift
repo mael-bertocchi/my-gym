@@ -7,7 +7,7 @@ import os
 @Observable
 final class HealthKitService {
     private let healthStore = HKHealthStore()
-    private let logger = Logger(subsystem: "fr.mael-bertocchi.MyGym", category: "HealthKit")
+    private let logger = Logger(subsystem: "fr.mael-bertocchi.my-gym", category: "HealthKit")
 
     var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: Self.enabledKey) }

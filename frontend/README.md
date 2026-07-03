@@ -25,7 +25,7 @@ xcodebuild -project MyGym.xcodeproj -scheme MyGym -configuration Debug -destinat
 3. Remove the application
 
 ```bash
-xcrun simctl uninstall fr.mael-bertocchi.MyGym
+xcrun simctl uninstall fr.mael-bertocchi.my-gym
 ```
 
 > Note: To run the simulator, go to Xcode and press the run button.
