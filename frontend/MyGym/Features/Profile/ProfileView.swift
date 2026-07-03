@@ -147,7 +147,8 @@ struct ProfileView: View {
                         (value: WeightUnit.kilograms, label: "kg"),
                         (value: WeightUnit.pounds, label: "lb"),
                     ],
-                    selection: $selectedUnit
+                    selection: $selectedUnit,
+                    fillsWidth: false
                 )
             }
             .padding(.vertical, 10)

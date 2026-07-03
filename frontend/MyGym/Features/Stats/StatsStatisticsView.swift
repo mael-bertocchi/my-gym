@@ -29,7 +29,10 @@ struct StatsStatisticsBody: View {
                 unit: session.weightUnit
             )
 
-            StatsBodyweightCard(unit: session.weightUnit)
+            StatsBodyweightCard(
+                unit: session.weightUnit,
+                windowStart: range == .all ? nil : StatsMath.windowStart(weekCount: weekCount)
+            )
         }
     }
 
@@ -41,8 +44,9 @@ struct StatsStatisticsBody: View {
             .frame(maxWidth: .infinity)
 
             StatsValueCard(
+                eyebrow: "FREQUENCY",
                 value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: store.workouts)),
-                caption: "workouts / week"
+                caption: "workouts per week"
             )
             .frame(maxWidth: .infinity)
         }
@@ -264,21 +268,25 @@ private struct StatsMuscleSplitCard: View {
 }
 
 private struct StatsValueCard: View {
+    let eyebrow: String
     let value: String
     let caption: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(Theme.font(22, .heavy))
-                .foregroundStyle(Theme.ink)
-            Text(caption)
-                .font(Theme.font(11))
-                .foregroundStyle(Theme.muted)
+        VStack(alignment: .leading, spacing: 12) {
+            EyebrowText(eyebrow, size: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(Theme.font(22, .heavy))
+                    .foregroundStyle(Theme.ink)
+                Text(caption)
+                    .font(Theme.font(11))
+                    .foregroundStyle(Theme.muted)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(14)
-        .card()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+        .card(radius: 20)
         .accessibilityElement(children: .combine)
     }
 }
@@ -345,6 +353,7 @@ private struct StatsMonthCompareCard: View {
 
 private struct StatsBodyweightCard: View {
     let unit: WeightUnit
+    let windowStart: Date?
 
     @Environment(HealthKitService.self) private var healthKit
 
@@ -352,9 +361,15 @@ private struct StatsBodyweightCard: View {
     @State private var isAdding = false
     @State private var input = ""
     @FocusState private var inputFocused: Bool
-    @State private var hover: ChartHover?
+    @State private var selectedDate: Date?
+
+    private var visibleEntries: [BodyweightSample] {
+        guard let windowStart else { return entries }
+        return entries.filter { $0.date >= windowStart }
+    }
 
     var body: some View {
+        let visible = visibleEntries
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 EyebrowText("BODYWEIGHT", size: 10)
@@ -373,10 +388,10 @@ private struct StatsBodyweightCard: View {
             }
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(entries.last.map { Formatting.weight($0.weightKg, unit: unit) } ?? "—")
+                Text(visible.last.map { Formatting.weight($0.weightKg, unit: unit) } ?? "—")
                     .font(Theme.font(22, .heavy))
                     .foregroundStyle(Theme.ink)
-                if let delta = latestDelta(entries) {
+                if let delta = latestDelta(visible) {
                     Text(delta)
                         .font(Theme.mono(11, .bold))
                         .foregroundStyle(Theme.muted)
@@ -384,9 +399,9 @@ private struct StatsBodyweightCard: View {
             }
             .padding(.bottom, 10)
 
-            if entries.count >= 2 {
-                chart(entries: entries)
-            } else if entries.isEmpty {
+            if visible.count >= 2 {
+                chart(entries: visible)
+            } else if visible.isEmpty {
                 StatsEmptyNote(height: 60)
             }
         }
@@ -445,7 +460,8 @@ private struct StatsBodyweightCard: View {
     }
 
     private func chart(entries: [BodyweightSample]) -> some View {
-        Chart(entries) { entry in
+        let selected = selectedDate.flatMap { nearestEntry(to: $0, in: entries) }
+        return Chart(entries) { entry in
             LineMark(
                 x: .value("Date", entry.date),
                 y: .value("Weight", entry.weightKg)
@@ -457,54 +473,47 @@ private struct StatsBodyweightCard: View {
                 y: .value("Weight", entry.weightKg)
             )
             .foregroundStyle(Theme.accentBlue)
-            .symbolSize(28)
+            .symbolSize(entry.id == selected?.id ? 72 : 28)
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartYScale(domain: yDomain(for: entries.map(\.weightKg)))
+        .chartXSelection(value: $selectedDate)
         .frame(height: 60)
         .chartOverlay { proxy in
             GeometryReader { geo in
-                Rectangle()
-                    .fill(.clear)
-                    .contentShape(Rectangle())
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case .active(let location):
-                            guard let entry = entry(at: location, entries: entries, proxy: proxy, geo: geo) else {
-                                hover = nil
-                                return
-                            }
-                            hover = ChartHover(
-                                value: Formatting.weight(entry.weightKg, unit: unit),
-                                label: Formatting.shortDate(entry.date),
-                                location: location
-                            )
-                        case .ended:
-                            hover = nil
-                        }
-                    }
-                if let hover {
-                    ChartTooltip(hover: hover, bounds: geo.size)
+                if let selected, let location = dotLocation(for: selected, proxy: proxy, geo: geo) {
+                    ChartTooltip(
+                        hover: ChartHover(
+                            value: Formatting.weight(selected.weightKg, unit: unit),
+                            label: Formatting.shortDate(selected.date),
+                            location: location
+                        ),
+                        bounds: geo.size
+                    )
                 }
             }
         }
     }
 
-    private func entry(
-        at location: CGPoint,
-        entries: [BodyweightSample],
-        proxy: ChartProxy,
-        geo: GeometryProxy
-    ) -> BodyweightSample? {
-        guard let plotFrame = proxy.plotFrame else { return nil }
-        let frame = geo[plotFrame]
-        guard let date = proxy.value(atX: location.x - frame.origin.x, as: Date.self) else {
-            return nil
-        }
-        return entries.min {
+    private func nearestEntry(to date: Date, in entries: [BodyweightSample]) -> BodyweightSample? {
+        entries.min {
             abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
         }
+    }
+
+    private func dotLocation(
+        for entry: BodyweightSample,
+        proxy: ChartProxy,
+        geo: GeometryProxy
+    ) -> CGPoint? {
+        guard let plotFrame = proxy.plotFrame,
+              let x = proxy.position(forX: entry.date),
+              let y = proxy.position(forY: entry.weightKg) else {
+            return nil
+        }
+        let frame = geo[plotFrame]
+        return CGPoint(x: frame.origin.x + x, y: frame.origin.y + y)
     }
 
     private func yDomain(for values: [Double]) -> ClosedRange<Double> {

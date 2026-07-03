@@ -80,18 +80,20 @@ enum StatsMath {
         return Int(((latest - previous) / previous * 100).rounded())
     }
 
+    static func windowStart(weekCount: Int, now: Date = .now) -> Date? {
+        let calendar = weekCalendar
+        guard let currentStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
+            return nil
+        }
+        return calendar.date(byAdding: .weekOfYear, value: -(weekCount - 1), to: currentStart)
+    }
+
     static func workouts(
         _ workouts: [LocalWorkout],
         inLastWeeks weekCount: Int,
         now: Date = .now
     ) -> [LocalWorkout] {
-        let calendar = weekCalendar
-        guard let currentStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start,
-              let windowStart = calendar.date(
-                byAdding: .weekOfYear, value: -(weekCount - 1), to: currentStart
-              ) else {
-            return []
-        }
+        guard let windowStart = windowStart(weekCount: weekCount, now: now) else { return [] }
         return workouts.filter { $0.startedAt >= windowStart }
     }
 
