@@ -6,19 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant EQUIPMENT_SELECT
- * @description Shared field selection for equipment lookups exposed by the API.
- */
-const EQUIPMENT_SELECT = {
-    id: true,
-    name: true,
-    type: true,
-    brandId: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.EquipmentSelect;
-
-/**
  * @function listEquipment
  * @description Lists equipment with optional brand/type/name filters and cursor pagination.
  *
@@ -41,7 +28,14 @@ async function listEquipment(request: FastifyRequest<ListEquipmentRequest>, repl
 
     const rows = await request.server.prisma.equipment.findMany({
         where,
-        select: EQUIPMENT_SELECT,
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            brandId: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -60,7 +54,14 @@ async function listEquipment(request: FastifyRequest<ListEquipmentRequest>, repl
 async function getEquipment(request: FastifyRequest<EquipmentParamsRequest>, reply: FastifyReply): Promise<void> {
     const equipment = await request.server.prisma.equipment.findUnique({
         where: { id: request.params.id },
-        select: EQUIPMENT_SELECT
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            brandId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (equipment === null) {
@@ -91,7 +92,14 @@ async function createEquipment(request: FastifyRequest<CreateEquipmentRequest>, 
             type: request.body.type,
             brandId: request.body.brandId
         },
-        select: EQUIPMENT_SELECT
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            brandId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -132,7 +140,14 @@ async function updateEquipment(request: FastifyRequest<UpdateEquipmentRequest>, 
     const updated = await request.server.prisma.equipment.update({
         where: { id: request.params.id },
         data,
-        select: EQUIPMENT_SELECT
+        select: {
+            id: true,
+            name: true,
+            type: true,
+            brandId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });

@@ -7,22 +7,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant USER_SELECT
- * @description Shared field selection for accounts exposed by the API (never the password hash).
- */
-const USER_SELECT = {
-    id: true,
-    email: true,
-    displayName: true,
-    isAdministrator: true,
-    isActive: true,
-    weightUnit: true,
-    defaultGymId: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.UserSelect;
-
-/**
  * @function listUsers
  * @description Lists all accounts with optional search and cursor pagination.
  *
@@ -43,7 +27,17 @@ async function listUsers(request: FastifyRequest<ListUsersRequest>, reply: Fasti
 
     const rows = await request.server.prisma.user.findMany({
         where,
-        select: USER_SELECT,
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ displayName: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -62,7 +56,17 @@ async function listUsers(request: FastifyRequest<ListUsersRequest>, reply: Fasti
 async function getUser(request: FastifyRequest<UserParamsRequest>, reply: FastifyReply): Promise<void> {
     const user = await request.server.prisma.user.findUnique({
         where: { id: request.params.id },
-        select: USER_SELECT
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (user === null) {
@@ -95,7 +99,17 @@ async function createUser(request: FastifyRequest<CreateUserRequest>, reply: Fas
             isAdministrator: request.body.isAdministrator,
             weightUnit: request.body.weightUnit
         },
-        select: USER_SELECT
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -141,7 +155,17 @@ async function updateUser(request: FastifyRequest<UpdateUserRequest>, reply: Fas
     const updated = await request.server.prisma.user.update({
         where: { id: request.params.id },
         data,
-        select: USER_SELECT
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });

@@ -1,48 +1,11 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import { MessageRole, type Prisma } from 'prisma/generated/prisma/client';
+import { MessageRole } from 'prisma/generated/prisma/client';
 import { generateInsights, generateReply } from 'src/modules/assistant/assistant-advice';
 import { loadAssistantContext } from 'src/modules/assistant/assistant-context';
 import type { ConversationParamsRequest, CreateConversationRequest, ListConversationsRequest, SendMessageRequest } from 'src/modules/assistant/assistant-models';
 import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
-
-/**
- * @constant CONVERSATION_SELECT
- * @description Field selection for conversation list/create responses (no messages).
- */
-const CONVERSATION_SELECT = {
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.ConversationSelect;
-
-/**
- * @constant CONVERSATION_DETAIL_SELECT
- * @description Field selection for a single conversation, including its messages in order.
- */
-const CONVERSATION_DETAIL_SELECT = {
-    id: true,
-    title: true,
-    createdAt: true,
-    updatedAt: true,
-    messages: {
-        orderBy: { createdAt: 'asc' },
-        select: { id: true, role: true, content: true, createdAt: true }
-    }
-} satisfies Prisma.ConversationSelect;
-
-/**
- * @constant MESSAGE_SELECT
- * @description Field selection for a single message exposed by the API.
- */
-const MESSAGE_SELECT = {
-    id: true,
-    role: true,
-    content: true,
-    createdAt: true
-} satisfies Prisma.MessageSelect;
 
 /**
  * @function listConversations
@@ -55,7 +18,12 @@ async function listConversations(request: FastifyRequest<ListConversationsReques
 
     const rows = await request.server.prisma.conversation.findMany({
         where: { userId: request.user.id },
-        select: CONVERSATION_SELECT,
+        select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         take,
         cursor,
@@ -74,7 +42,12 @@ async function listConversations(request: FastifyRequest<ListConversationsReques
 async function createConversation(request: FastifyRequest<CreateConversationRequest>, reply: FastifyReply): Promise<void> {
     const created = await request.server.prisma.conversation.create({
         data: { userId: request.user.id, title: request.body.title },
-        select: CONVERSATION_SELECT
+        select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -89,7 +62,16 @@ async function createConversation(request: FastifyRequest<CreateConversationRequ
 async function getConversation(request: FastifyRequest<ConversationParamsRequest>, reply: FastifyReply): Promise<void> {
     const conversation = await request.server.prisma.conversation.findFirst({
         where: { id: request.params.id, userId: request.user.id },
-        select: CONVERSATION_DETAIL_SELECT
+        select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            updatedAt: true,
+            messages: {
+                orderBy: { createdAt: 'asc' },
+                select: { id: true, role: true, content: true, createdAt: true }
+            }
+        }
     });
 
     if (conversation === null) {
@@ -135,7 +117,12 @@ async function sendMessage(request: FastifyRequest<SendMessageRequest>, reply: F
 
     const assistantMessage = await request.server.prisma.message.create({
         data: { conversationId: request.params.id, role: MessageRole.ASSISTANT, content: replyText },
-        select: MESSAGE_SELECT
+        select: {
+            id: true,
+            role: true,
+            content: true,
+            createdAt: true
+        }
     });
 
     await request.server.prisma.conversation.update({

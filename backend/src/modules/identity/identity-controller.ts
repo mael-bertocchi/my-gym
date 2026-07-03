@@ -1,25 +1,8 @@
 import argon2 from 'argon2';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
-import type { Prisma } from 'prisma/generated/prisma/client';
 import type { LoginRequest, LogoutRequest, RefreshRequest } from 'src/modules/identity/identity-models';
 import { RequestError } from 'src/shared/models';
-
-/**
- * @constant PROFILE_SELECT
- * @description Shared field selection for the profile exposed by the API (never the password hash).
- */
-const PROFILE_SELECT = {
-    id: true,
-    email: true,
-    displayName: true,
-    isAdministrator: true,
-    isActive: true,
-    weightUnit: true,
-    defaultGymId: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.UserSelect;
 
 /**
  * @function login
@@ -72,7 +55,17 @@ async function logout(request: FastifyRequest<LogoutRequest>, reply: FastifyRepl
 async function me(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const user = await request.server.prisma.user.findUnique({
         where: { id: request.user.id },
-        select: PROFILE_SELECT
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (user === null) {

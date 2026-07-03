@@ -6,40 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant EXERCISE_GROUP_SELECT
- * @description Shared field selection for group list/create/update responses (no members).
- */
-const EXERCISE_GROUP_SELECT = {
-    id: true,
-    name: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.ExerciseGroupSelect;
-
-/**
- * @constant EXERCISE_GROUP_DETAIL_SELECT
- * @description Field selection for a single group, including its member exercises.
- */
-const EXERCISE_GROUP_DETAIL_SELECT = {
-    id: true,
-    name: true,
-    createdAt: true,
-    updatedAt: true,
-    exercises: {
-        orderBy: { name: Prisma.SortOrder.asc },
-        select: {
-            id: true,
-            name: true,
-            primaryMuscle: true,
-            secondaryMuscles: true,
-            equipmentId: true,
-            isFavorite: true,
-            isArchived: true
-        }
-    }
-} satisfies Prisma.ExerciseGroupSelect;
-
-/**
  * @function listExerciseGroups
  * @description Lists exercise groups with optional search and cursor pagination.
  *
@@ -56,7 +22,12 @@ async function listExerciseGroups(request: FastifyRequest<ListExerciseGroupsRequ
 
     const rows = await request.server.prisma.exerciseGroup.findMany({
         where,
-        select: EXERCISE_GROUP_SELECT,
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -75,7 +46,24 @@ async function listExerciseGroups(request: FastifyRequest<ListExerciseGroupsRequ
 async function getExerciseGroup(request: FastifyRequest<ExerciseGroupParamsRequest>, reply: FastifyReply): Promise<void> {
     const group = await request.server.prisma.exerciseGroup.findUnique({
         where: { id: request.params.id },
-        select: EXERCISE_GROUP_DETAIL_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true,
+            exercises: {
+                orderBy: { name: Prisma.SortOrder.asc },
+                select: {
+                    id: true,
+                    name: true,
+                    primaryMuscle: true,
+                    secondaryMuscles: true,
+                    equipmentId: true,
+                    isFavorite: true,
+                    isArchived: true
+                }
+            }
+        }
     });
 
     if (group === null) {
@@ -100,7 +88,12 @@ async function createExerciseGroup(request: FastifyRequest<CreateExerciseGroupRe
 
     const created = await request.server.prisma.exerciseGroup.create({
         data: { name: request.body.name },
-        select: EXERCISE_GROUP_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -130,7 +123,12 @@ async function updateExerciseGroup(request: FastifyRequest<UpdateExerciseGroupRe
     const updated = await request.server.prisma.exerciseGroup.update({
         where: { id: request.params.id },
         data: { name: request.body.name },
-        select: EXERCISE_GROUP_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });

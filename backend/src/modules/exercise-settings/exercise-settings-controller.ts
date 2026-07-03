@@ -6,19 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant EXERCISE_SETTING_SELECT
- * @description Shared field selection for remembered-setting lookups exposed by the API.
- */
-const EXERCISE_SETTING_SELECT = {
-    id: true,
-    exerciseId: true,
-    gymId: true,
-    settings: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.ExerciseSettingSelect;
-
-/**
  * @function listExerciseSettings
  * @description Lists the caller's remembered settings with optional exercise/gym filters and cursor pagination.
  *
@@ -38,7 +25,14 @@ async function listExerciseSettings(request: FastifyRequest<ListExerciseSettings
 
     const rows = await request.server.prisma.exerciseSetting.findMany({
         where,
-        select: EXERCISE_SETTING_SELECT,
+        select: {
+            id: true,
+            exerciseId: true,
+            gymId: true,
+            settings: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         take,
         cursor,
@@ -75,7 +69,14 @@ async function upsertExerciseSetting(request: FastifyRequest<UpsertExerciseSetti
         },
         update: { settings },
         create: { userId: request.user.id, exerciseId: request.body.exerciseId, gymId: request.body.gymId, settings },
-        select: EXERCISE_SETTING_SELECT
+        select: {
+            id: true,
+            exerciseId: true,
+            gymId: true,
+            settings: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: saved });

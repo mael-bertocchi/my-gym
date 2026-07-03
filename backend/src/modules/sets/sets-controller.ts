@@ -6,23 +6,6 @@ import { detectPersonalRecords } from 'src/modules/sets/sets-records';
 import { RequestError } from 'src/shared/models';
 
 /**
- * @constant SET_SELECT
- * @description Shared field selection for set lookups exposed by the API.
- */
-const SET_SELECT = {
-    id: true,
-    workoutExerciseId: true,
-    setNumber: true,
-    setType: true,
-    weightKg: true,
-    reps: true,
-    distanceM: true,
-    durationSeconds: true,
-    isCompleted: true,
-    createdAt: true
-} satisfies Prisma.WorkoutSetSelect;
-
-/**
  * @function createSet
  * @description Logs a set under one of the caller's workout exercises (setNumber auto-assigned when omitted) and reports any personal records it sets.
  *
@@ -58,7 +41,18 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
             durationSeconds: request.body.durationSeconds,
             isCompleted: request.body.isCompleted
         },
-        select: SET_SELECT
+        select: {
+            id: true,
+            workoutExerciseId: true,
+            setNumber: true,
+            setType: true,
+            weightKg: true,
+            reps: true,
+            distanceM: true,
+            durationSeconds: true,
+            isCompleted: true,
+            createdAt: true
+        }
     });
 
     await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });
@@ -114,7 +108,18 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
     const updated = await request.server.prisma.workoutSet.update({
         where: { id: request.params.setId },
         data,
-        select: SET_SELECT
+        select: {
+            id: true,
+            workoutExerciseId: true,
+            setNumber: true,
+            setType: true,
+            weightKg: true,
+            reps: true,
+            distanceM: true,
+            durationSeconds: true,
+            isCompleted: true,
+            createdAt: true
+        }
     });
 
     await request.server.prisma.workout.update({ where: { id: request.params.workoutId }, data: { updatedAt: new Date() } });

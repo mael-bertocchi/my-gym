@@ -6,22 +6,6 @@ import type { ChangePasswordRequest, UpdateProfileRequest } from 'src/modules/ac
 import { RequestError } from 'src/shared/models';
 
 /**
- * @constant PROFILE_SELECT
- * @description Shared field selection for the profile exposed by the API (never the password hash).
- */
-const PROFILE_SELECT = {
-    id: true,
-    email: true,
-    displayName: true,
-    isAdministrator: true,
-    isActive: true,
-    weightUnit: true,
-    defaultGymId: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.UserSelect;
-
-/**
  * @function updateProfile
  * @description Updates the authenticated user's display name, units preference, and/or home gym. Only provided fields change.
  *
@@ -50,7 +34,17 @@ async function updateProfile(request: FastifyRequest<UpdateProfileRequest>, repl
     const user = await request.server.prisma.user.update({
         where: { id: request.user.id },
         data,
-        select: PROFILE_SELECT
+        select: {
+            id: true,
+            email: true,
+            displayName: true,
+            isAdministrator: true,
+            isActive: true,
+            weightUnit: true,
+            defaultGymId: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: user });

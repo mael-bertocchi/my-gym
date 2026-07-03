@@ -6,17 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant BRAND_SELECT
- * @description Shared field selection for brand lookups exposed by the API.
- */
-const BRAND_SELECT = {
-    id: true,
-    name: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.BrandSelect;
-
-/**
  * @function listBrands
  * @description Lists brands with optional search and cursor pagination.
  *
@@ -33,7 +22,12 @@ async function listBrands(request: FastifyRequest<ListBrandsRequest>, reply: Fas
 
     const rows = await request.server.prisma.brand.findMany({
         where,
-        select: BRAND_SELECT,
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -52,7 +46,12 @@ async function listBrands(request: FastifyRequest<ListBrandsRequest>, reply: Fas
 async function getBrand(request: FastifyRequest<BrandParamsRequest>, reply: FastifyReply): Promise<void> {
     const brand = await request.server.prisma.brand.findUnique({
         where: { id: request.params.id },
-        select: BRAND_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (brand === null) {
@@ -77,7 +76,12 @@ async function createBrand(request: FastifyRequest<CreateBrandRequest>, reply: F
 
     const created = await request.server.prisma.brand.create({
         data: { name: request.body.name },
-        select: BRAND_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -107,7 +111,12 @@ async function updateBrand(request: FastifyRequest<UpdateBrandRequest>, reply: F
     const updated = await request.server.prisma.brand.update({
         where: { id: request.params.id },
         data: { name: request.body.name },
-        select: BRAND_SELECT
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });

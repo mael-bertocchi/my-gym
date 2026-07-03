@@ -7,38 +7,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant EXERCISE_SELECT
- * @description Shared field selection for exercise lookups exposed by the API.
- */
-const EXERCISE_SELECT = {
-    id: true,
-    name: true,
-    primaryMuscle: true,
-    secondaryMuscles: true,
-    equipmentId: true,
-    groupId: true,
-    isFavorite: true,
-    isArchived: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.ExerciseSelect;
-
-/**
- * @constant HISTORY_SET_SELECT
- * @description Field selection for the sets returned by the per-exercise history endpoint.
- */
-const HISTORY_SET_SELECT = {
-    id: true,
-    setNumber: true,
-    setType: true,
-    weightKg: true,
-    reps: true,
-    distanceM: true,
-    durationSeconds: true,
-    isCompleted: true
-} satisfies Prisma.WorkoutSetSelect;
-
-/**
  * @function ensureExercise
  * @description Loads an exercise by id or throws a 404. Used by the per-user sub-routes.
  *
@@ -86,7 +54,18 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
 
     const rows = await request.server.prisma.exercise.findMany({
         where,
-        select: EXERCISE_SELECT,
+        select: {
+            id: true,
+            name: true,
+            primaryMuscle: true,
+            secondaryMuscles: true,
+            equipmentId: true,
+            groupId: true,
+            isFavorite: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -105,7 +84,18 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
 async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply: FastifyReply): Promise<void> {
     const exercise = await request.server.prisma.exercise.findUnique({
         where: { id: request.params.id },
-        select: EXERCISE_SELECT
+        select: {
+            id: true,
+            name: true,
+            primaryMuscle: true,
+            secondaryMuscles: true,
+            equipmentId: true,
+            groupId: true,
+            isFavorite: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (exercise === null) {
@@ -151,7 +141,18 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             equipmentId: request.body.equipmentId,
             groupId: request.body.groupId
         },
-        select: EXERCISE_SELECT
+        select: {
+            id: true,
+            name: true,
+            primaryMuscle: true,
+            secondaryMuscles: true,
+            equipmentId: true,
+            groupId: true,
+            isFavorite: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -221,7 +222,18 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     const updated = await request.server.prisma.exercise.update({
         where: { id: request.params.id },
         data,
-        select: EXERCISE_SELECT
+        select: {
+            id: true,
+            name: true,
+            primaryMuscle: true,
+            secondaryMuscles: true,
+            equipmentId: true,
+            groupId: true,
+            isFavorite: true,
+            isArchived: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });
@@ -275,7 +287,18 @@ async function getExerciseHistory(request: FastifyRequest<ExerciseRangeRequest>,
             id: true,
             notes: true,
             workout: { select: { id: true, startedAt: true, gymId: true } },
-            sets: { orderBy: { setNumber: 'asc' }, select: HISTORY_SET_SELECT }
+            sets: {
+                orderBy: { setNumber: 'asc' }, select: {
+                    id: true,
+                    setNumber: true,
+                    setType: true,
+                    weightKg: true,
+                    reps: true,
+                    distanceM: true,
+                    durationSeconds: true,
+                    isCompleted: true
+                }
+            }
         },
         orderBy: { workout: { startedAt: 'desc' } }
     });
@@ -364,7 +387,18 @@ async function getExerciseLast(request: FastifyRequest<ExerciseLastRequest>, rep
             id: true,
             notes: true,
             workout: { select: { id: true, startedAt: true, gymId: true } },
-            sets: { orderBy: { setNumber: 'asc' }, select: HISTORY_SET_SELECT }
+            sets: {
+                orderBy: { setNumber: 'asc' }, select: {
+                    id: true,
+                    setNumber: true,
+                    setType: true,
+                    weightKg: true,
+                    reps: true,
+                    distanceM: true,
+                    durationSeconds: true,
+                    isCompleted: true
+                }
+            }
         },
         orderBy: { workout: { startedAt: 'desc' } }
     });

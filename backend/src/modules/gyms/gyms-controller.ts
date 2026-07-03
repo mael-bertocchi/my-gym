@@ -6,19 +6,6 @@ import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
- * @constant GYM_SELECT
- * @description Shared field selection for gym lookups exposed by the API.
- */
-const GYM_SELECT = {
-    id: true,
-    name: true,
-    address: true,
-    notes: true,
-    createdAt: true,
-    updatedAt: true
-} satisfies Prisma.GymSelect;
-
-/**
  * @function listGyms
  * @description Lists gyms with optional search and cursor pagination.
  *
@@ -35,7 +22,14 @@ async function listGyms(request: FastifyRequest<ListGymsRequest>, reply: Fastify
 
     const rows = await request.server.prisma.gym.findMany({
         where,
-        select: GYM_SELECT,
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        },
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
         take,
         cursor,
@@ -54,7 +48,14 @@ async function listGyms(request: FastifyRequest<ListGymsRequest>, reply: Fastify
 async function getGym(request: FastifyRequest<GymParamsRequest>, reply: FastifyReply): Promise<void> {
     const gym = await request.server.prisma.gym.findUnique({
         where: { id: request.params.id },
-        select: GYM_SELECT
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     if (gym === null) {
@@ -83,7 +84,14 @@ async function createGym(request: FastifyRequest<CreateGymRequest>, reply: Fasti
             address: request.body.address,
             notes: request.body.notes
         },
-        select: GYM_SELECT
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.CREATED).send({ data: created });
@@ -127,7 +135,14 @@ async function updateGym(request: FastifyRequest<UpdateGymRequest>, reply: Fasti
     const updated = await request.server.prisma.gym.update({
         where: { id: request.params.id },
         data,
-        select: GYM_SELECT
+        select: {
+            id: true,
+            name: true,
+            address: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true
+        }
     });
 
     reply.status(StatusCodes.OK).send({ data: updated });
