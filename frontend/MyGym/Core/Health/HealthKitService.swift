@@ -45,18 +45,18 @@ final class HealthKitService {
             metadata["MyGymExercises"] = exerciseNames.joined(separator: ", ")
         }
 
-        let hkWorkout = HKWorkout(
-            activityType: .traditionalStrengthTraining,
-            start: workout.startedAt,
-            end: endedAt,
-            duration: endedAt.timeIntervalSince(workout.startedAt),
-            totalEnergyBurned: nil,
-            totalDistance: nil,
-            metadata: metadata
-        )
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .traditionalStrengthTraining
+        let builder = HKWorkoutBuilder(healthStore: healthStore, configuration: configuration, device: nil)
 
         do {
-            try await healthStore.save(hkWorkout)
+            try await builder.beginCollection(at: workout.startedAt)
+            try await builder.addMetadata(metadata)
+            try await builder.endCollection(at: endedAt)
+            guard let hkWorkout = try await builder.finishWorkout() else {
+                logger.error("HealthKit returned no workout for \(workout.id)")
+                return
+            }
             uuidMap[workout.id] = hkWorkout.uuid.uuidString
             saveUUIDMap()
         } catch {
