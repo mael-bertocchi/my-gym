@@ -53,36 +53,6 @@ struct LogoMark: View {
                     .foregroundStyle(.white)
             )
             .frame(width: size, height: size)
-            .shadow(color: Theme.accentBlue.opacity(0.35), radius: 14, y: 8)
-    }
-}
-
-struct StatTile: View {
-    let value: String
-    let caption: String
-    var valueSuffix: String?
-    var isAccent = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
-                Text(value)
-                    .font(Theme.font(20, .heavy))
-                    .foregroundStyle(isAccent ? Theme.accentBlue : Theme.ink)
-                if let valueSuffix {
-                    Text(valueSuffix)
-                        .font(Theme.font(12, .semibold))
-                        .foregroundStyle(Theme.muted2)
-                }
-            }
-            EyebrowText(caption, size: 10)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .card(
-            radius: Theme.controlRadius,
-            fill: isAccent ? Theme.accentBlueTint : Theme.surface,
-            border: isAccent ? Theme.accentBlueTintBorder : Theme.hairline
-        )
+            .shadow(color: Theme.accentBlue.opacity(0.35), radius: 12, y: 6)
     }
 }

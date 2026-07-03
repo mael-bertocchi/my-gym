@@ -59,8 +59,10 @@ struct StatsCalendarBody: View {
                 dayLabel(day)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Day \(day.dayNumber), workout logged")
         } else {
             dayLabel(day)
+                .accessibilityLabel(day.isFuture ? "Day \(day.dayNumber)" : "Day \(day.dayNumber), rest day")
         }
     }
 

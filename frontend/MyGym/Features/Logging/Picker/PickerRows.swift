@@ -7,22 +7,23 @@ struct PickerSearchField: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color(hex: 0xA2A8B0))
+                .foregroundStyle(Theme.muted2)
             TextField(
                 "",
                 text: $text,
-                prompt: Text("Search exercises…").foregroundStyle(Color(hex: 0xA2A8B0))
+                prompt: Text("Search exercises…").foregroundStyle(Theme.muted2)
             )
             .font(Theme.font(14))
             .foregroundStyle(Theme.ink)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
+            .accessibilityLabel("Search exercises")
         }
         .padding(.horizontal, 14)
-        .frame(height: 44)
-        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .frame(minHeight: 44)
+        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                 .strokeBorder(Theme.fieldBorder, lineWidth: 1)
         )
     }
@@ -59,10 +60,10 @@ struct PickerExerciseRow: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
-        .card(radius: 16)
+        .card()
     }
 }
 
@@ -74,7 +75,7 @@ struct PickerCreateRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 13) {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                     .fill(Theme.accentBlueTint)
                     .frame(width: 42, height: 42)
                     .overlay(
@@ -97,17 +98,17 @@ struct PickerCreateRow: View {
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                Color(hex: 0xFAFBFC),
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                Theme.screenBackground,
+                in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .strokeBorder(
-                        Color(hex: 0xD6DAE0),
+                        Theme.controlOutline,
                         style: StrokeStyle(lineWidth: 1, dash: [5, 4])
                     )
             )
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
     }

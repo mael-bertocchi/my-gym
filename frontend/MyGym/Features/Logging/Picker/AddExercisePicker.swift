@@ -15,11 +15,11 @@ struct AddExercisePicker: View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 navRow
-                    .padding(.top, 6)
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 16)
+                    .padding(.top, 18)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 10)
                 PickerSearchField(text: $searchText)
-                    .padding(.horizontal, 22)
+                    .padding(.horizontal, 24)
                 filterChips
                     .padding(.top, 14)
                 exerciseList
@@ -36,33 +36,17 @@ struct AddExercisePicker: View {
                 }
             }
         }
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(!path.isEmpty)
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("Add exercise")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Cancel")
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                }
-                .buttonStyle(.plain)
-                Spacer()
-                Button {
-                    path.append(PickerFormDestination())
-                } label: {
-                    Text("New")
-                        .font(Theme.font(15, .bold))
-                        .foregroundStyle(Theme.accentBlue)
-                }
-                .buttonStyle(.plain)
-            }
-        }
+        ModalHeader(
+            title: "Add exercise",
+            onDismiss: { dismiss() },
+            trailingTitle: "New",
+            trailingAction: { path.append(PickerFormDestination()) }
+        )
     }
 
     private var filterChips: some View {
@@ -80,7 +64,7 @@ struct AddExercisePicker: View {
                     }
                 }
             }
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 24)
         }
     }
 
@@ -114,7 +98,7 @@ struct AddExercisePicker: View {
                 }
             }
             .padding(.top, 8)
-            .padding(.horizontal, 22)
+            .padding(.horizontal, 24)
             .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -260,7 +244,7 @@ struct AddExercisePicker: View {
 
     private func prLabel(for set: LocalSet) -> String? {
         guard let weightKg = set.weightKg else { return nil }
-        var label = "Record " + Formatting.weight(weightKg, unit: session.weightUnit)
+        var label = "Best " + Formatting.weight(weightKg, unit: session.weightUnit)
         if let reps = set.reps {
             label += "\n×\(reps)"
         }

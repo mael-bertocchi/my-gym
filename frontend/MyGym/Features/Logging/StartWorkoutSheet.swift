@@ -58,6 +58,7 @@ struct StartWorkoutSheet: View {
         }
         .background(Color.white.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { footer }
+        .presentationDragIndicator(.visible)
         .onAppear(perform: preselect)
         .sheet(isPresented: $showAddGym) {
             StartWorkoutAddGymSheet { gym in
@@ -67,18 +68,7 @@ struct StartWorkoutSheet: View {
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("New workout")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button("Cancel") { dismiss() }
-                    .font(Theme.font(15))
-                    .foregroundStyle(Color(hex: 0x8A9099))
-                    .buttonStyle(.plain)
-                Spacer()
-            }
-        }
+        ModalHeader(title: "New workout", onDismiss: { dismiss() })
     }
 
     private func gymCard(_ gym: Gym) -> some View {
@@ -123,6 +113,7 @@ struct StartWorkoutSheet: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private var addGymLink: some View {
@@ -178,7 +169,7 @@ struct StartWorkoutSheet: View {
 
     private func subtitleInfo(for gym: Gym) -> (text: String, color: Color) {
         if gym.id == session.defaultGymId {
-            return ("Home gym", Color(hex: 0x5E8BE6))
+            return ("Home gym", Theme.accentBlueSoft)
         }
         if let lastUsed = store.workouts.first(where: { $0.gymId == gym.id }) {
             let formatter = RelativeDateTimeFormatter()
@@ -202,25 +193,15 @@ private struct StartWorkoutAddGymSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Text("New gym")
-                    .font(Theme.font(16, .bold))
-                    .foregroundStyle(Theme.ink)
-                HStack {
-                    Button("Cancel") { dismiss() }
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                        .buttonStyle(.plain)
-                    Spacer()
-                }
-            }
-            .padding(.top, 24)
-            .padding(.bottom, 24)
+            ModalHeader(title: "New gym", onDismiss: { dismiss() })
+                .padding(.top, 24)
+                .padding(.bottom, 24)
 
             LabeledField(
                 label: "GYM NAME",
                 placeholder: "e.g. Iron Temple",
-                text: $name
+                text: $name,
+                autocapitalization: .words
             )
             .padding(.bottom, 24)
 
@@ -237,6 +218,8 @@ private struct StartWorkoutAddGymSheet: View {
         .padding(.horizontal, 24)
         .background(Color.white.ignoresSafeArea())
         .presentationDetents([.height(280)])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isSaving || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .alert("Couldn't add gym", isPresented: Binding(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }

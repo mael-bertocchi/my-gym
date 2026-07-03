@@ -6,6 +6,7 @@ struct ResumeBanner: View {
     var isPaused: Bool
     var exerciseCount: Int
     var elapsed: (Date) -> TimeInterval
+    var restRemaining: () -> Int? = { nil }
     var onResume: () -> Void
 
     var body: some View {
@@ -20,7 +21,7 @@ struct ResumeBanner: View {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(subtitle(at: context.date))
                             .font(Theme.font(11))
-                            .foregroundStyle(Color(hex: 0x7E879A))
+                            .foregroundStyle(Theme.muted2)
                             .monospacedDigit()
                     }
                 }
@@ -42,6 +43,9 @@ struct ResumeBanner: View {
         }
         parts.append(Formatting.elapsed(elapsed(date)))
         parts.append("\(exerciseCount) exercise\(exerciseCount == 1 ? "" : "s")")
+        if !isPaused, let remaining = restRemaining(), remaining > 0 {
+            parts.append("rest \(Formatting.countdown(remaining))")
+        }
         return parts.joined(separator: " · ")
     }
 }

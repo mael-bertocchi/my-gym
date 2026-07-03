@@ -44,7 +44,7 @@ struct HistoryView: View {
             HStack {
                 Text("History")
                     .font(Theme.font(26, .heavy))
-                    .kerning(-0.4)
+                    .tracking(-0.4)
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 Menu {
@@ -53,32 +53,31 @@ struct HistoryView: View {
                     Image(systemName: "line.3.horizontal.decrease")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(Theme.muted)
-                        .frame(width: 38, height: 38)
+                        .frame(width: 44, height: 44)
                         .background(
                             Color.white,
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                                 .strokeBorder(Theme.hairline, lineWidth: 1)
                         )
                 }
+                .accessibilityLabel("Filter by gym")
             }
             HStack(spacing: 8) {
                 Menu {
                     gymMenuContent
                 } label: {
-                    HistoryFilterChipLabel(
+                    FilterChipLabel(
                         title: selectedGymName ?? "All gyms",
-                        isActive: true
+                        isActive: selectedGymId != nil
                     )
                 }
-                Button {
+                .accessibilityLabel("Gym filter: \(selectedGymName ?? "All gyms")")
+                FilterChip(title: "This month", isActive: thisMonthOnly) {
                     thisMonthOnly.toggle()
-                } label: {
-                    HistoryFilterChipLabel(title: "This month", isActive: thisMonthOnly)
                 }
-                .buttonStyle(.plain)
                 Spacer()
             }
         }
@@ -186,7 +185,7 @@ struct HistoryView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 36)
         .padding(.horizontal, 20)
-        .card(radius: 18)
+        .card()
         .padding(.top, 20)
     }
 }
@@ -196,24 +195,6 @@ private struct HistoryMonthGroup: Identifiable {
     var workouts: [LocalWorkout]
 
     var id: Date { month }
-}
-
-private struct HistoryFilterChipLabel: View {
-    let title: String
-    var isActive = false
-
-    var body: some View {
-        Text(title)
-            .font(Theme.font(12, .semibold))
-            .foregroundStyle(isActive ? .white : Theme.muted)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 13)
-            .background(isActive ? Theme.accentBlue : Color.white, in: Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(isActive ? Color.clear : Theme.hairline, lineWidth: 1)
-            )
-    }
 }
 
 private struct HistoryWorkoutCard: View {
@@ -245,16 +226,20 @@ private struct HistoryWorkoutCard: View {
                     unit: unit.suffix
                 )
                 if prCount > 0 {
-                    Text("★ \(prCount) Record\(prCount > 1 ? "s" : "")")
-                        .font(Theme.font(13, .bold))
-                        .foregroundStyle(Theme.accentBlue)
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("\(prCount) record\(prCount > 1 ? "s" : "")")
+                            .font(Theme.font(13, .bold))
+                    }
+                    .foregroundStyle(Theme.accentBlue)
                 }
                 Spacer()
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card(radius: 18)
+        .card()
         .contentShape(Rectangle())
     }
 

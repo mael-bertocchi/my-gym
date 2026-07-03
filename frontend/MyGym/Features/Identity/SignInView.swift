@@ -50,7 +50,7 @@ struct SignInView: View {
 
                     Text("No public sign-up.\nAccounts are invite-only.")
                         .font(Theme.font(13))
-                        .foregroundStyle(Color(hex: 0xA2A8B0))
+                        .foregroundStyle(Theme.muted)
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
                         .frame(maxWidth: .infinity)
@@ -83,7 +83,7 @@ struct SignInView: View {
 
             Text("Sign in to log your training.")
                 .font(Theme.font(15))
-                .foregroundStyle(Color(hex: 0x8A9099))
+                .foregroundStyle(Theme.muted2)
         }
         .frame(maxWidth: .infinity)
         .padding(.bottom, 40)

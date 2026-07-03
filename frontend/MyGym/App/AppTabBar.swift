@@ -19,7 +19,7 @@ enum AppTab: String, CaseIterable {
         switch self {
         case .home: return "house"
         case .history: return "clock.arrow.circlepath"
-        case .stats: return "chart.bar.fill"
+        case .stats: return "chart.bar"
         case .coach: return "bubble.left"
         }
     }
@@ -91,7 +91,7 @@ struct AppTabBar: View {
                     Circle()
                         .fill(Theme.accentBlue)
                         .frame(width: 56, height: 56)
-                        .shadow(color: Theme.accentBlue.opacity(0.4), radius: 10, y: 8)
+                        .shadow(color: Theme.accentBlue.opacity(0.35), radius: 12, y: 6)
                     Image(systemName: isWorkoutActive ? "play.fill" : "plus")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(.white)

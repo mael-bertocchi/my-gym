@@ -20,7 +20,7 @@ struct ExerciseDetailView: View {
     private static let palette: [Color] = [
         Theme.accentBlue,
         Theme.resumeRing,
-        Color(hex: 0xC9D7F2),
+        Theme.chartSoft,
         Theme.chartMuted,
     ]
 
@@ -62,8 +62,8 @@ struct ExerciseDetailView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text(exercise.name)
-                    .font(Theme.font(24, .heavy))
-                    .tracking(-0.3)
+                    .font(Theme.font(26, .heavy))
+                    .tracking(-0.4)
                     .foregroundStyle(Theme.ink)
                 Text(subtitle(for: exercise))
                     .font(Theme.mono(11))
@@ -75,10 +75,10 @@ struct ExerciseDetailView: View {
                     .padding(.bottom, 12)
 
                 HStack(spacing: 8) {
-                    ExerciseDetailScopeChip(title: "This machine", isActive: scope == .thisMachine) {
+                    FilterChip(title: "This machine", isActive: scope == .thisMachine) {
                         scope = .thisMachine
                     }
-                    ExerciseDetailScopeChip(title: "Compare brands", isActive: scope == .compareBrands) {
+                    FilterChip(title: "Compare brands", isActive: scope == .compareBrands) {
                         scope = .compareBrands
                     }
                 }
@@ -92,7 +92,7 @@ struct ExerciseDetailView: View {
                 }
             }
             .padding(.top, 8)
-            .padding(.horizontal, 22)
+            .padding(.horizontal, Theme.screenPadding)
             .padding(.bottom, 24)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -109,8 +109,10 @@ struct ExerciseDetailView: View {
         } label: {
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(.system(size: 18))
-                .foregroundStyle(isFavorite ? Theme.accentBlue : Color(hex: 0x8A9099))
+                .foregroundStyle(isFavorite ? Theme.accentBlue : Theme.muted2)
         }
+        .accessibilityLabel("Favorite")
+        .accessibilityAddTraits(isFavorite ? [.isSelected] : [])
     }
 
     private var favoriteAlertBinding: Binding<Bool> {
@@ -136,6 +138,10 @@ struct ExerciseDetailView: View {
                 store.insert(exercise: current)
                 if let apiError = error as? APIError {
                     favoriteError = apiError.message
+                } else if error is NetworkError {
+                    favoriteError = "You're offline — try again when you have a connection."
+                } else {
+                    favoriteError = "Something went wrong. Please try again."
                 }
             }
         }
@@ -297,7 +303,7 @@ struct ExerciseDetailView: View {
                                     .font(Theme.mono(12))
                                     .foregroundStyle(Theme.ink)
                             }
-                            .padding(.vertical, 9)
+                            .padding(.vertical, 12)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -339,7 +345,7 @@ struct ExerciseDetailView: View {
                                     .font(Theme.mono(13))
                                     .foregroundStyle(Theme.ink)
                             }
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 12)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -455,7 +461,7 @@ struct ExerciseDetailView: View {
                                 .frame(width: 6, height: 6)
                             Text(series.label)
                                 .font(Theme.mono(10))
-                                .foregroundStyle(Theme.muted2)
+                                .foregroundStyle(Theme.muted)
                                 .lineLimit(1)
                         }
                     }
@@ -515,27 +521,6 @@ struct ExerciseDetailView: View {
     }
 }
 
-private struct ExerciseDetailScopeChip: View {
-    let title: String
-    let isActive: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(Theme.font(12, isActive ? .bold : .semibold))
-                .foregroundStyle(isActive ? .white : Theme.muted)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 13)
-                .background(
-                    isActive ? Theme.ink : Theme.fieldFill,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 private struct ExerciseDetailStatTile: View {
     let label: String
     let value: String
@@ -546,10 +531,10 @@ private struct ExerciseDetailStatTile: View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
                 .font(Theme.font(11, .bold))
-                .foregroundStyle(isHighlighted ? Color(hex: 0x5E8BE6) : Theme.muted2)
+                .foregroundStyle(isHighlighted ? Theme.accentBlueSoft : Theme.muted2)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(Theme.font(19, .heavy))
+                    .font(Theme.font(20, .heavy))
                     .foregroundStyle(Theme.ink)
                 if let suffix {
                     Text(suffix)
@@ -562,8 +547,9 @@ private struct ExerciseDetailStatTile: View {
         .padding(13)
         .background(
             isHighlighted ? Theme.accentBlueTint : Theme.screenBackground,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
         )
+        .accessibilityElement(children: .combine)
     }
 }
 

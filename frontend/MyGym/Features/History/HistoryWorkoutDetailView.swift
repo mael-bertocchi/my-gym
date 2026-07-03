@@ -29,7 +29,7 @@ struct HistoryWorkoutDetailView: View {
                     } label: {
                         Text("Edit")
                             .font(Theme.font(15))
-                            .foregroundStyle(Color(hex: 0x8A9099))
+                            .foregroundStyle(Theme.muted2)
                     }
                 }
             }
@@ -52,7 +52,7 @@ struct HistoryWorkoutDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(workout.name ?? "Workout")
                     .font(Theme.font(26, .heavy))
-                    .kerning(-0.4)
+                    .tracking(-0.4)
                     .foregroundStyle(Theme.ink)
                 Text(dateLine(for: workout))
                     .font(Theme.mono(12))
@@ -84,7 +84,7 @@ struct HistoryWorkoutDetailView: View {
                 exerciseList(for: workout)
             }
             .padding(.top, 8)
-            .padding(.horizontal, 22)
+            .padding(.horizontal, Theme.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -98,9 +98,10 @@ struct HistoryWorkoutDetailView: View {
 
     private func prCallout(hits: [HistoryPRIndex.Hit]) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Text("★")
-                .font(Theme.font(18))
-                .foregroundStyle(Theme.inkSecondary)
+            Image(systemName: "star.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.accentBlue)
+                .padding(.top, 1)
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(hits) { hit in
                     prLine(for: hit)
@@ -126,7 +127,7 @@ struct HistoryWorkoutDetailView: View {
         if let reps = hit.reps {
             value += " × \(reps)"
         }
-        let title = Text("New Record").font(Theme.font(13, .bold))
+        let title = Text("New record").font(Theme.font(13, .bold))
         let details = Text(" · \(descriptor) with \(value)").font(Theme.font(13))
         return Text("\(title)\(details)")
             .foregroundStyle(Theme.inkSecondary)
@@ -179,14 +180,15 @@ private struct WorkoutDetailStatTile: View {
                 .foregroundStyle(Theme.ink)
             Text(caption)
                 .font(Theme.font(11))
-                .foregroundStyle(Theme.muted2)
+                .foregroundStyle(Theme.muted)
         }
         .frame(maxWidth: .infinity)
         .padding(12)
         .background(
             Theme.screenBackground,
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
         )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -215,7 +217,7 @@ private struct HistorySupersetCard: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .card(radius: 18)
+        .card()
     }
 
     private func memberRows(_ member: LocalWorkoutExercise, index: Int) -> some View {
@@ -236,7 +238,7 @@ private struct HistorySupersetCard: View {
                 Text(line)
                     .font(Theme.mono(11))
                     .kerning(0.5)
-                    .foregroundStyle(Theme.muted2)
+                    .foregroundStyle(Theme.muted)
                     .padding(.leading, 26)
             }
         }
@@ -294,7 +296,7 @@ private struct WorkoutDetailExerciseRow: View {
             if !completed.isEmpty {
                 Text(setLog(completed))
                     .font(Theme.mono(12))
-                    .foregroundStyle(Theme.muted2)
+                    .foregroundStyle(Theme.muted)
                     .padding(.top, 8)
             }
         }

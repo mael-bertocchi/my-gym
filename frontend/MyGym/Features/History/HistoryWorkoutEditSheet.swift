@@ -43,6 +43,8 @@ struct HistoryWorkoutEditSheet: View {
         .padding(.horizontal, 24)
         .background(Color.white.ignoresSafeArea())
         .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isDirty)
         .confirmationDialog(
             "Delete this workout?",
             isPresented: $isConfirmingDelete,
@@ -56,31 +58,16 @@ struct HistoryWorkoutEditSheet: View {
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("Edit workout")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Cancel")
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                }
-                .buttonStyle(.plain)
-                Spacer()
-                Button {
-                    save()
-                } label: {
-                    Text("Save")
-                        .font(Theme.font(15, .bold))
-                        .foregroundStyle(Theme.accentBlue)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(height: 44)
+        ModalHeader(
+            title: "Edit workout",
+            onDismiss: { dismiss() },
+            trailingTitle: "Save",
+            trailingAction: save
+        )
+    }
+
+    private var isDirty: Bool {
+        name != (workout.name ?? "") || gymId != workout.gymId
     }
 
     private var gymField: some View {
@@ -101,16 +88,16 @@ struct HistoryWorkoutEditSheet: View {
                     Spacer()
                     Image(systemName: "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0xC4C9CF))
+                        .foregroundStyle(Theme.tabInactive)
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 50)
+                .frame(minHeight: 54)
                 .background(
                     Theme.fieldFill,
-                    in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                         .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                 )
             }

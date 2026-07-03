@@ -56,7 +56,7 @@ struct StatsDrillSheet: View {
             }
         }
         .padding(.top, 18)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
         .presentationDetents([.medium, .fraction(0.78)])
         .presentationDragIndicator(.visible)
     }
@@ -67,22 +67,25 @@ struct StatsDrillSheet: View {
                 Button {
                     screen = .week(weekRef)
                 } label: {
-                    Text("←")
-                        .font(Theme.font(16, .bold))
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Theme.accentBlue)
+                        .expandedTapTarget(vertical: 12, horizontal: 10)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Back to week")
             }
             Text(title)
-                .font(Theme.font(16, .heavy))
+                .font(Theme.font(16, .bold))
                 .foregroundStyle(Theme.ink)
             Spacer()
             Button {
                 dismiss()
             } label: {
                 Text("Close")
-                    .font(Theme.font(14, .bold))
+                    .font(Theme.font(15))
                     .foregroundStyle(Theme.muted2)
+                    .expandedTapTarget(vertical: 12, horizontal: 10)
             }
             .buttonStyle(.plain)
         }
@@ -214,9 +217,11 @@ struct StatsDrillSheet: View {
                         .font(Theme.mono(12))
                         .foregroundStyle(Theme.inkSecondary)
                     Spacer(minLength: 0)
-                    Text(set.setType.label.uppercased())
-                        .font(Theme.font(10, .bold))
-                        .foregroundStyle(typeColor(for: set.setType))
+                    if set.setType != .normal {
+                        Text(set.setType.label.uppercased())
+                            .font(Theme.font(10, .bold))
+                            .foregroundStyle(typeColor(for: set.setType))
+                    }
                 }
             }
         }
@@ -236,7 +241,7 @@ struct StatsDrillSheet: View {
 
     private func typeColor(for type: SetType) -> Color {
         switch type {
-        case .warmup: return Theme.warning
+        case .warmup: return Theme.warningText
         case .failure: return Theme.danger
         case .normal, .drop: return Theme.muted2
         }
