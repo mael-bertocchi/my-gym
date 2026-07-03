@@ -15,10 +15,13 @@ final class AppSession {
 
     private let store: LocalStore
     private let syncEngine: SyncEngine
+    private let activeWorkout: ActiveWorkoutStore
 
-    init(store: LocalStore, syncEngine: SyncEngine) {
+    init(store: LocalStore, syncEngine: SyncEngine, activeWorkout: ActiveWorkoutStore) {
         self.store = store
         self.syncEngine = syncEngine
+        self.activeWorkout = activeWorkout
+        observeAuthFailures()
     }
 
     var isAdministrator: Bool { currentUser?.isAdministrator ?? false }
@@ -66,20 +69,48 @@ final class AppSession {
         let tokens = try await API.login(email: email, password: password)
         TokenStore.save(tokens)
         let profile = try await API.me()
+        if let previousUserId = UserDefaults.standard.string(forKey: Self.lastUserIdKey),
+           previousUserId != profile.id {
+            clearLocalState()
+        }
         setProfile(profile)
         identityState = .signedIn
         Task { await syncEngine.sync() }
     }
 
     func signOut() async {
+        if store.hasPendingChanges {
+            await syncEngine.sync()
+        }
         if let tokens = TokenStore.load() {
             try? await API.logout(refreshToken: tokens.refreshToken)
         }
         TokenStore.clear()
         UserDefaults.standard.removeObject(forKey: Self.profileKey)
-        store.clearAll()
+        clearLocalState()
         currentUser = nil
         identityState = .signedOut
+    }
+
+    private func clearLocalState() {
+        activeWorkout.discard()
+        InsightCache.clear()
+        store.clearAll()
+    }
+
+    private func observeAuthFailures() {
+        NotificationCenter.default.addObserver(
+            forName: APIClient.authFailedNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.identityState == .signedIn else { return }
+                UserDefaults.standard.removeObject(forKey: Self.profileKey)
+                self.currentUser = nil
+                self.identityState = .signedOut
+            }
+        }
     }
 
     func refreshProfile() async {
@@ -108,9 +139,11 @@ final class AppSession {
     #endif
 
     private static let profileKey = "cachedProfile"
+    private static let lastUserIdKey = "lastUserId"
 
     private func setProfile(_ profile: UserProfile) {
         currentUser = profile
+        UserDefaults.standard.set(profile.id, forKey: Self.lastUserIdKey)
         if let data = try? APIClient.encoder.encode(profile) {
             UserDefaults.standard.set(data, forKey: Self.profileKey)
         }

@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppSession.self) private var session
     @Environment(LocalStore.self) private var store
+    @Environment(SyncEngine.self) private var syncEngine
     @Environment(HealthKitService.self) private var healthKit
     @Environment(\.dismiss) private var dismiss
 
@@ -94,12 +95,22 @@ struct ProfileView: View {
             }
             .onChange(of: isHealthSyncEnabled) { _, newValue in
                 guard newValue != healthKit.isEnabled else { return }
-                healthKit.isEnabled = newValue
                 if newValue {
-                    Task { await healthKit.requestAuthorization() }
+                    Task {
+                        if await healthKit.enableSync() == false {
+                            isHealthSyncEnabled = false
+                            infoAlert = ProfileInfoAlert(
+                                title: "Health access needed",
+                                message: "Allow MyGym to write workouts in Settings > Health > Data Access & Devices."
+                            )
+                        }
+                    }
+                } else {
+                    healthKit.isEnabled = false
                 }
             }
         }
+        .presentationDragIndicator(.visible)
     }
 
     private var displayName: String {
@@ -147,14 +158,17 @@ struct ProfileView: View {
             Button {
                 showHomeGymSheet = true
             } label: {
-                HStack {
+                HStack(spacing: 6) {
                     Text("Home gym")
                         .font(Theme.font(15))
                         .foregroundStyle(Theme.ink)
                     Spacer()
-                    Text("\(homeGymName) ›")
+                    Text(homeGymName)
                         .font(Theme.font(14))
-                        .foregroundStyle(Theme.muted2)
+                        .foregroundStyle(Theme.muted)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.tabInactive)
                 }
                 .padding(.vertical, 15)
                 .padding(.horizontal, 16)
@@ -178,14 +192,17 @@ struct ProfileView: View {
                     }
                 }
             } label: {
-                HStack {
+                HStack(spacing: 6) {
                     Text("Rest timer")
                         .font(Theme.font(15))
                         .foregroundStyle(Theme.ink)
                     Spacer()
-                    Text("\(restSeconds)s ›")
+                    Text("\(restSeconds)s")
                         .font(Theme.font(14))
-                        .foregroundStyle(Theme.muted2)
+                        .foregroundStyle(Theme.muted)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.tabInactive)
                 }
                 .padding(.vertical, 15)
                 .padding(.horizontal, 16)
@@ -194,23 +211,22 @@ struct ProfileView: View {
 
             RowDivider()
 
-            HStack {
+            Toggle(isOn: $isHealthSyncEnabled) {
                 Text("Sync to Apple Health")
                     .font(Theme.font(15))
                     .foregroundStyle(Theme.ink)
-                Spacer()
-                Toggle("", isOn: $isHealthSyncEnabled)
-                    .labelsHidden()
-                    .tint(Theme.accentBlue)
             }
+            .tint(Theme.accentBlue)
             .padding(.vertical, 10)
             .padding(.horizontal, 16)
         }
-        .card(radius: 16)
+        .card()
     }
 
     private var accountCard: some View {
         VStack(spacing: 0) {
+            syncStatusRow
+            RowDivider()
             ProfileActionRow(title: "Change password") {
                 showChangePasswordSheet = true
             }
@@ -219,21 +235,69 @@ struct ProfileView: View {
                 showSignOutConfirm = true
             }
         }
-        .card(radius: 16)
+        .card()
     }
 
-        private var administratorConsoleRow: some View {
+    private var syncStatusRow: some View {
+        Button {
+            Task { await syncEngine.sync() }
+        } label: {
+            HStack(spacing: 8) {
+                Text("Sync")
+                    .font(Theme.font(15))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                if syncEngine.status == .syncing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Theme.muted2)
+                } else {
+                    StatusDot(color: syncStatusColor, size: 7)
+                    Text(syncStatusText)
+                        .font(Theme.font(14))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.vertical, 15)
+            .padding(.horizontal, 16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Sync now. \(syncStatusText)")
+    }
+
+    private var syncStatusText: String {
+        let pending = store.hasPendingChanges
+        switch syncEngine.status {
+        case .failed:
+            return "Failed — tap to retry"
+        case .offline:
+            return pending ? "Offline — changes pending" : "Offline"
+        default:
+            return pending ? "Changes pending" : "Up to date"
+        }
+    }
+
+    private var syncStatusColor: Color {
+        switch syncEngine.status {
+        case .failed: return Theme.danger
+        case .offline: return Theme.warning
+        default: return store.hasPendingChanges ? Theme.warning : Theme.positive
+        }
+    }
+
+    private var administratorConsoleRow: some View {
         NavigationLink {
-                AdministratorHomeView()
+            AdministratorHomeView()
         } label: {
             HStack {
                 Text("Administrator console")
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(.white)
                 Spacer()
-                Text("›")
-                    .font(Theme.font(18, .semibold))
-                    .foregroundStyle(Color(hex: 0x6B737C))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
             }
             .padding(.vertical, 15)
             .padding(.horizontal, 16)

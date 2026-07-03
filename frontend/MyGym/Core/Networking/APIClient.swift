@@ -45,6 +45,8 @@ struct EmptyBody: Encodable {}
 actor APIClient {
     static let shared = APIClient()
 
+    static let authFailedNotification = Notification.Name("APIClientAuthFailed")
+
     private let session: URLSession
     private var refreshTask: Task<Bool, Never>?
 
@@ -182,6 +184,7 @@ actor APIClient {
             } catch {
                 if let apiError = error as? APIError, apiError.isUnauthorized {
                     TokenStore.clear()
+                    NotificationCenter.default.post(name: Self.authFailedNotification, object: nil)
                 }
                 return false
             }

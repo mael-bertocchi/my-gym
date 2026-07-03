@@ -14,15 +14,20 @@ struct MyGymApp: App {
         let syncEngine = SyncEngine(store: store)
         let healthKit = HealthKitService()
         let restNotifications = RestNotificationService()
-        _store = State(initialValue: store)
-        _syncEngine = State(initialValue: syncEngine)
-        _healthKit = State(initialValue: healthKit)
-        _session = State(initialValue: AppSession(store: store, syncEngine: syncEngine))
-        _activeWorkout = State(initialValue: ActiveWorkoutStore(
+        let activeWorkout = ActiveWorkoutStore(
             store: store,
             syncEngine: syncEngine,
             healthKit: healthKit,
             restNotifications: restNotifications
+        )
+        _store = State(initialValue: store)
+        _syncEngine = State(initialValue: syncEngine)
+        _healthKit = State(initialValue: healthKit)
+        _activeWorkout = State(initialValue: activeWorkout)
+        _session = State(initialValue: AppSession(
+            store: store,
+            syncEngine: syncEngine,
+            activeWorkout: activeWorkout
         ))
     }
 
@@ -37,6 +42,7 @@ struct MyGymApp: App {
                 .environment(tabChrome)
                 .tint(Theme.accentBlue)
                 .preferredColorScheme(.light)
+                .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
     }
 }

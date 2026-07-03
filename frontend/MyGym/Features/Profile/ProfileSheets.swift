@@ -32,6 +32,7 @@ struct ProfileHomeGymSheet: View {
         }
         .background(Color.white.ignoresSafeArea())
         .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isSaving)
         .alert(
             "Couldn't update home gym",
@@ -47,27 +48,13 @@ struct ProfileHomeGymSheet: View {
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("Home gym")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Cancel")
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                }
-                .buttonStyle(.plain)
-                Spacer()
+        ModalHeader(title: "Home gym", onDismiss: { dismiss() })
+            .overlay(alignment: .trailing) {
                 if isSaving {
                     ProgressView()
                         .controlSize(.small)
                 }
             }
-        }
-        .frame(height: 44)
     }
 
     private var gymRows: some View {
@@ -82,7 +69,7 @@ struct ProfileHomeGymSheet: View {
                 select(gymId: nil)
             }
         }
-        .card(radius: 16)
+        .card()
     }
 
     private func gymRow(
@@ -108,6 +95,7 @@ struct ProfileHomeGymSheet: View {
         }
         .buttonStyle(.plain)
         .disabled(isSaving)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     private func select(gymId: String?) {
@@ -183,27 +171,16 @@ struct ProfileChangePasswordSheet: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.white.ignoresSafeArea())
-        .interactiveDismissDisabled(isLoading)
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isLoading || hasInput)
+    }
+
+    private var hasInput: Bool {
+        !currentPassword.isEmpty || !newPassword.isEmpty || !confirmPassword.isEmpty
     }
 
     private var navRow: some View {
-        ZStack {
-            Text("Change password")
-                .font(Theme.font(16, .bold))
-                .foregroundStyle(Theme.ink)
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Cancel")
-                        .font(Theme.font(15))
-                        .foregroundStyle(Color(hex: 0x8A9099))
-                }
-                .buttonStyle(.plain)
-                Spacer()
-            }
-        }
-        .frame(height: 44)
+        ModalHeader(title: "Change password", onDismiss: { dismiss() })
     }
 
     private var fields: some View {

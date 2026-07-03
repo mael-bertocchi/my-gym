@@ -16,4 +16,8 @@ enum InsightCache {
             UserDefaults.standard.set(data, forKey: key)
         }
     }
+
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
 }
