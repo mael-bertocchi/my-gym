@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct AdministratorBrandsView: View {
+struct CatalogBrandsView: View {
     @Environment(LocalStore.self) private var store
 
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
-    @State private var alert: AdministratorAlert?
+    @State private var alert: ManageAlert?
     @State private var deleteCandidate: Brand?
 
     private var brands: [Brand] {
@@ -16,33 +16,32 @@ struct AdministratorBrandsView: View {
 
     var body: some View {
         List {
-            AdministratorScreenTitle(title: "Brands", subtitle: countLine)
-                .administratorTitleRow()
+            ManageScreenTitle(title: "Brands", subtitle: countLine)
+                .manageTitleRow()
 
             if brands.isEmpty {
-                AdministratorInfoNote(text: "No brands yet.")
-                    .administratorNoteRow()
+                ManageInfoNote(text: "No brands yet.")
+                    .manageNoteRow()
             } else {
                 ForEach(brands) { brand in
-                    Text(brand.name)
-                        .font(Theme.font(15))
-                        .foregroundStyle(Theme.ink)
-                        .administratorListRow()
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                deleteCandidate = brand
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
+                    RevealActionsRow(actions: [
+                        RevealAction(title: "Delete") { deleteCandidate = brand }
+                    ]) {
+                        Text(brand.name)
+                            .font(Theme.font(15))
+                            .foregroundStyle(Theme.ink)
+                            .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .manageListRow()
                 }
             }
         }
-        .administratorPlainList()
-        .administratorNavigationChrome("Brands")
+        .managePlainList()
+        .manageNavigationChrome("Brands")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AdministratorAddButton {
+                ManageAddButton {
                     newBrandName = ""
                     showsNewBrandAlert = true
                 }
@@ -74,7 +73,7 @@ struct AdministratorBrandsView: View {
         } message: {
             Text("Exercises using this brand keep working but lose the brand label.")
         }
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
     }
 
     private var countLine: String {
@@ -90,7 +89,7 @@ struct AdministratorBrandsView: View {
                 let brand = try await API.createBrand(name: name)
                 store.insert(brand: brand)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t create brand",
                     message: ProfileSupport.message(for: error)
                 )
@@ -104,7 +103,7 @@ struct AdministratorBrandsView: View {
                 try await API.deleteBrand(id: brand.id)
                 store.removeBrand(id: brand.id)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t delete brand",
                     message: ProfileSupport.message(for: error)
                 )

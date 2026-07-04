@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct AdministratorGymsView: View {
+struct CatalogGymsView: View {
     @Environment(LocalStore.self) private var store
 
     @State private var showsAddSheet = false
-    @State private var alert: AdministratorAlert?
+    @State private var alert: ManageAlert?
     @State private var deleteCandidate: Gym?
 
     private var gyms: [Gym] {
@@ -15,36 +15,33 @@ struct AdministratorGymsView: View {
 
     var body: some View {
         List {
-            AdministratorScreenTitle(title: "Gyms", subtitle: countLine)
-                .administratorTitleRow()
+            ManageScreenTitle(title: "Gyms", subtitle: countLine)
+                .manageTitleRow()
 
             if gyms.isEmpty {
-                AdministratorInfoNote(text: "No gyms yet.")
-                    .administratorNoteRow()
+                ManageInfoNote(text: "No gyms yet.")
+                    .manageNoteRow()
             } else {
                 ForEach(gyms) { gym in
-                    row(gym)
-                        .administratorListRow()
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                deleteCandidate = gym
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
+                    RevealActionsRow(actions: [
+                        RevealAction(title: "Delete") { deleteCandidate = gym }
+                    ]) {
+                        row(gym)
+                    }
+                    .manageListRow()
                 }
             }
         }
-        .administratorPlainList()
-        .administratorNavigationChrome("Gyms")
+        .managePlainList()
+        .manageNavigationChrome("Gyms")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AdministratorAddButton { showsAddSheet = true }
+                ManageAddButton { showsAddSheet = true }
             }
             .sharedBackgroundVisibility(.hidden)
         }
         .sheet(isPresented: $showsAddSheet) {
-            AdministratorGymAddSheet()
+            CatalogGymAddSheet()
         }
         .confirmationDialog(
             "Delete \(deleteCandidate?.name ?? "gym")?",
@@ -64,7 +61,7 @@ struct AdministratorGymsView: View {
         } message: {
             Text("Workouts logged at this gym keep their history but lose the gym label.")
         }
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
     }
 
     private var countLine: String {
@@ -85,6 +82,8 @@ struct AdministratorGymsView: View {
                     .lineLimit(1)
             }
         }
+        .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private func delete(_ gym: Gym) {
@@ -93,7 +92,7 @@ struct AdministratorGymsView: View {
                 try await API.deleteGym(id: gym.id)
                 store.removeGym(id: gym.id)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t delete gym",
                     message: ProfileSupport.message(for: error)
                 )
@@ -102,7 +101,7 @@ struct AdministratorGymsView: View {
     }
 }
 
-struct AdministratorGymAddSheet: View {
+struct CatalogGymAddSheet: View {
     @Environment(LocalStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
@@ -110,11 +109,11 @@ struct AdministratorGymAddSheet: View {
     @State private var address = ""
     @State private var notes = ""
     @State private var isCreating = false
-    @State private var alert: AdministratorAlert?
+    @State private var alert: ManageAlert?
 
     var body: some View {
         VStack(spacing: 0) {
-            AdministratorModalHeader(title: "New gym") { dismiss() }
+            ManageModalHeader(title: "New gym") { dismiss() }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -155,7 +154,7 @@ struct AdministratorGymAddSheet: View {
         }
         .background(Color.white.ignoresSafeArea())
         .presentationDragIndicator(.visible)
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
         .interactiveDismissDisabled(isCreating || hasInput)
     }
 
@@ -184,7 +183,7 @@ struct AdministratorGymAddSheet: View {
                 dismiss()
             } catch {
                 isCreating = false
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t add gym",
                     message: ProfileSupport.message(for: error)
                 )

@@ -10,11 +10,11 @@ struct AdministratorCreateUserSheet: View {
     @State private var password = ""
     @State private var isAdministrator = false
     @State private var isCreating = false
-    @State private var alert: AdministratorAlert?
+    @State private var alert: ManageAlert?
 
     var body: some View {
         VStack(spacing: 0) {
-            AdministratorModalHeader(title: "New account") { dismiss() }
+            ManageModalHeader(title: "New account") { dismiss() }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -35,7 +35,7 @@ struct AdministratorCreateUserSheet: View {
                         text: $password,
                         isSecure: true
                     )
-                    AdministratorToggleRow(
+                    ManageToggleRow(
                         title: "Administrator",
                         subtitle: "Can manage accounts and the catalog",
                         isOn: $isAdministrator
@@ -58,7 +58,7 @@ struct AdministratorCreateUserSheet: View {
             .padding(.bottom, 8)
         }
         .background(Color.white.ignoresSafeArea())
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
         .interactiveDismissDisabled(isCreating)
     }
 
@@ -91,7 +91,7 @@ struct AdministratorCreateUserSheet: View {
                 dismiss()
             } catch {
                 isCreating = false
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t create account",
                     message: ProfileSupport.message(for: error)
                 )
@@ -115,7 +115,7 @@ struct AdministratorManageUserSheet: View {
     @State private var isResettingPassword = false
     @State private var isUpdatingActive = false
     @State private var showDeactivateConfirm = false
-    @State private var alert: AdministratorAlert?
+    @State private var alert: ManageAlert?
 
     init(user: UserProfile, onUpdated: @escaping (UserProfile) -> Void) {
         self.onUpdated = onUpdated
@@ -126,7 +126,7 @@ struct AdministratorManageUserSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AdministratorModalHeader(title: "Manage account", dismissLabel: "Close") { dismiss() }
+            ManageModalHeader(title: "Manage account", dismissLabel: "Close") { dismiss() }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -162,7 +162,7 @@ struct AdministratorManageUserSheet: View {
         } message: {
             Text("They are signed out everywhere and can no longer sign in.")
         }
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
     }
 
     private var header: some View {
@@ -214,7 +214,7 @@ struct AdministratorManageUserSheet: View {
     }
 
     private var roleSection: some View {
-        AdministratorToggleRow(
+        ManageToggleRow(
             title: "Administrator",
             subtitle: "Can manage accounts and the catalog",
             isOn: $isAdministrator
@@ -269,7 +269,7 @@ struct AdministratorManageUserSheet: View {
                 apply(updated)
                 displayName = updated.displayName
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t rename account",
                     message: ProfileSupport.message(for: error)
                 )
@@ -296,7 +296,7 @@ struct AdministratorManageUserSheet: View {
                 apply(updated)
             } catch {
                 isAdministrator = oldValue
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t update role",
                     message: ProfileSupport.message(for: error)
                 )
@@ -312,12 +312,12 @@ struct AdministratorManageUserSheet: View {
             do {
                 try await API.resetPassword(userId: user.id, newPassword: newPassword)
                 newPassword = ""
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Password reset",
                     message: "\(user.displayName) can sign in with the new password. Existing sessions were signed out."
                 )
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t reset password",
                     message: ProfileSupport.message(for: error)
                 )
@@ -339,7 +339,7 @@ struct AdministratorManageUserSheet: View {
                 ))
                 apply(updated)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: user.isActive ? "Couldn\u{2019}t deactivate account" : "Couldn\u{2019}t activate account",
                     message: ProfileSupport.message(for: error)
                 )

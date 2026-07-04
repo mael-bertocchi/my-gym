@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AdministratorCatalogView: View {
+struct CatalogView: View {
     @Environment(LocalStore.self) private var store
 
     private let tileColumns = [
@@ -18,10 +18,10 @@ struct AdministratorCatalogView: View {
                     .padding(.bottom, 18)
 
                 LazyVGrid(columns: tileColumns, spacing: 12) {
-                    AdministratorCountTile(value: store.brands.count, caption: "Brands")
-                    AdministratorCountTile(value: store.exercises.count, caption: "Exercises")
-                    AdministratorCountTile(value: store.exerciseGroups.count, caption: "Groups")
-                    AdministratorCountTile(value: store.gyms.count, caption: "Gyms")
+                    CatalogCountTile(value: store.brands.count, caption: "Brands")
+                    CatalogCountTile(value: store.exercises.count, caption: "Exercises")
+                    CatalogCountTile(value: store.exerciseGroups.count, caption: "Groups")
+                    CatalogCountTile(value: store.gyms.count, caption: "Gyms")
                 }
                 .padding(.bottom, 20)
 
@@ -30,16 +30,16 @@ struct AdministratorCatalogView: View {
                     .padding(.bottom, 10)
 
                 VStack(spacing: 0) {
-                    AdministratorHubRow(title: "Brands") {
-                        AdministratorBrandsView()
+                    ManageHubRow(title: "Brands") {
+                        CatalogBrandsView()
                     }
                     RowDivider()
-                    AdministratorHubRow(title: "Exercises & groups") {
-                        AdministratorExercisesView()
+                    ManageHubRow(title: "Exercises & groups") {
+                        CatalogExercisesView()
                     }
                     RowDivider()
-                    AdministratorHubRow(title: "Gyms") {
-                        AdministratorGymsView()
+                    ManageHubRow(title: "Gyms") {
+                        CatalogGymsView()
                     }
                 }
                 .card(radius: 16)
@@ -48,12 +48,12 @@ struct AdministratorCatalogView: View {
             .padding(.top, 8)
             .padding(.bottom, 40)
         }
-        .background(Color.white.ignoresSafeArea())
-        .administratorNavigationChrome("Catalog")
+        .background(Theme.screenBackground.ignoresSafeArea())
+        .manageNavigationChrome("Catalog")
     }
 }
 
-struct AdministratorCountTile: View {
+struct CatalogCountTile: View {
     let value: Int
     let caption: String
 
@@ -68,9 +68,6 @@ struct AdministratorCountTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(
-            Theme.screenBackground,
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-        )
+        .card(radius: 16)
     }
 }

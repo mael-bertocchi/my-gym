@@ -1,26 +1,26 @@
 import SwiftUI
 
-struct AdministratorExercisesView: View {
+struct CatalogExercisesView: View {
     @Environment(LocalStore.self) private var store
 
     @State private var showsNewGroupAlert = false
     @State private var newGroupName = ""
-    @State private var alert: AdministratorAlert?
-    @State private var deleteConflict: AdministratorExerciseDeleteConflict?
+    @State private var alert: ManageAlert?
+    @State private var deleteConflict: CatalogExerciseDeleteConflict?
 
-    private struct AdministratorExerciseBucket: Identifiable {
+    private struct CatalogExerciseBucket: Identifiable {
         let id: String
         let name: String
         let exercises: [Exercise]
     }
 
-    private var buckets: [AdministratorExerciseBucket] {
+    private var buckets: [CatalogExerciseBucket] {
         let groups = store.exerciseGroups.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
         let groupIds = Set(groups.map(\.id))
-        var result: [AdministratorExerciseBucket] = groups.map { group in
-            AdministratorExerciseBucket(
+        var result: [CatalogExerciseBucket] = groups.map { group in
+            CatalogExerciseBucket(
                 id: group.id,
                 name: group.name,
                 exercises: sortedExercises { $0.groupId == group.id }
@@ -31,7 +31,7 @@ struct AdministratorExercisesView: View {
             return !groupIds.contains(groupId)
         }
         if !others.isEmpty {
-            result.append(AdministratorExerciseBucket(id: "administrator-ungrouped", name: "Other", exercises: others))
+            result.append(CatalogExerciseBucket(id: "administrator-ungrouped", name: "Other", exercises: others))
         }
         return result
     }
@@ -44,12 +44,12 @@ struct AdministratorExercisesView: View {
 
     var body: some View {
         List {
-            AdministratorScreenTitle(title: "Exercises", subtitle: countLine)
-                .administratorTitleRow()
+            ManageScreenTitle(title: "Exercises", subtitle: countLine)
+                .manageTitleRow()
 
             if buckets.isEmpty {
-                AdministratorInfoNote(text: "The exercise catalog is empty — tap + to create a movement group.")
-                    .administratorNoteRow()
+                ManageInfoNote(text: "The exercise catalog is empty — tap + to create a movement group.")
+                    .manageNoteRow()
             } else {
                 ForEach(buckets) { bucket in
                     bucketHeader(bucket.name)
@@ -57,38 +57,29 @@ struct AdministratorExercisesView: View {
                         Text("No exercises yet")
                             .font(Theme.font(12))
                             .foregroundStyle(Theme.muted2)
-                            .administratorListRow()
+                            .manageListRow()
                             .listRowSeparator(.hidden)
                     } else {
                         ForEach(bucket.exercises) { exercise in
-                            row(exercise)
-                                .administratorListRow()
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        delete(exercise)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                    Button {
-                                        setArchived(exercise, !exercise.isArchived)
-                                    } label: {
-                                        Label(
-                                            exercise.isArchived ? "Unarchive" : "Archive",
-                                            systemImage: exercise.isArchived ? "tray.and.arrow.up" : "archivebox"
-                                        )
-                                    }
-                                    .tint(Theme.muted2)
-                                }
+                            RevealActionsRow(actions: [
+                                RevealAction(title: exercise.isArchived ? "Unarchive" : "Archive", tint: Theme.muted2) {
+                                    setArchived(exercise, !exercise.isArchived)
+                                },
+                                RevealAction(title: "Delete") { delete(exercise) }
+                            ]) {
+                                row(exercise)
+                            }
+                            .manageListRow()
                         }
                     }
                 }
             }
         }
-        .administratorPlainList()
-        .administratorNavigationChrome("Exercises")
+        .managePlainList()
+        .manageNavigationChrome("Exercises")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AdministratorAddButton {
+                ManageAddButton {
                     newGroupName = ""
                     showsNewGroupAlert = true
                 }
@@ -115,7 +106,7 @@ struct AdministratorExercisesView: View {
         } message: { conflict in
             Text(conflict.message)
         }
-        .administratorInfoAlert($alert)
+        .manageInfoAlert($alert)
     }
 
     private var countLine: String {
@@ -127,7 +118,7 @@ struct AdministratorExercisesView: View {
     private func bucketHeader(_ name: String) -> some View {
         EyebrowText(name)
             .listRowInsets(EdgeInsets(top: 18, leading: 22, bottom: 6, trailing: 22))
-            .listRowBackground(Color.white)
+            .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }
 
@@ -152,6 +143,8 @@ struct AdministratorExercisesView: View {
                     .foregroundStyle(Theme.muted2)
             }
         }
+        .frame(minHeight: 38)
+        .contentShape(Rectangle())
     }
 
     private func createGroup() {
@@ -162,7 +155,7 @@ struct AdministratorExercisesView: View {
                 let group = try await API.createExerciseGroup(name: name)
                 store.insert(group: group)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t create group",
                     message: ProfileSupport.message(for: error)
                 )
@@ -182,7 +175,7 @@ struct AdministratorExercisesView: View {
                 ))
                 store.insert(exercise: updated)
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: archived ? "Couldn\u{2019}t archive exercise" : "Couldn\u{2019}t unarchive exercise",
                     message: ProfileSupport.message(for: error)
                 )
@@ -196,12 +189,12 @@ struct AdministratorExercisesView: View {
                 try await API.deleteExercise(id: exercise.id)
                 store.removeExercise(id: exercise.id)
             } catch let error as APIError where error.statusCode == 409 {
-                deleteConflict = AdministratorExerciseDeleteConflict(
+                deleteConflict = CatalogExerciseDeleteConflict(
                     exercise: exercise,
                     message: error.message
                 )
             } catch {
-                alert = AdministratorAlert(
+                alert = ManageAlert(
                     title: "Couldn\u{2019}t delete exercise",
                     message: ProfileSupport.message(for: error)
                 )
@@ -210,7 +203,7 @@ struct AdministratorExercisesView: View {
     }
 }
 
-struct AdministratorExerciseDeleteConflict: Identifiable {
+struct CatalogExerciseDeleteConflict: Identifiable {
     let id = UUID()
     var exercise: Exercise
     var message: String

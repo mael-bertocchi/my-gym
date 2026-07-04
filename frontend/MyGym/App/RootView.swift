@@ -62,6 +62,7 @@ struct MainShell: View {
     #if DEBUG
     @State private var debugShowAdminUsers = false
     @State private var debugShowManageAccount = false
+    @State private var debugShowCatalog = false
     #endif
 
     var body: some View {
@@ -133,6 +134,15 @@ struct MainShell: View {
                 AdministratorManageUserSheet(user: user) { _ in }
             }
         }
+        .sheet(isPresented: $debugShowCatalog) {
+            NavigationStack {
+                switch UserDefaults.standard.string(forKey: "open") {
+                case "catalog-gyms": CatalogGymsView()
+                case "catalog-exercises": CatalogExercisesView()
+                default: CatalogView()
+                }
+            }
+        }
         #endif
         .onScenePhaseActive {
             activeWorkout.expireRestIfNeeded()
@@ -149,6 +159,7 @@ struct MainShell: View {
             case "start": showStartWorkout = true
             case "admin-users": debugShowAdminUsers = true
             case "admin-account": debugShowManageAccount = true
+            case "catalog", "catalog-gyms", "catalog-exercises": debugShowCatalog = true
             default: break
             }
             #endif

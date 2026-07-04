@@ -1,13 +1,13 @@
 import SwiftUI
 
-struct AdministratorAlert: Identifiable {
+struct ManageAlert: Identifiable {
     let id = UUID()
     var title: String
     var message: String
 }
 
 extension View {
-    func administratorInfoAlert(_ alert: Binding<AdministratorAlert?>) -> some View {
+    func manageInfoAlert(_ alert: Binding<ManageAlert?>) -> some View {
         self.alert(
             alert.wrappedValue?.title ?? "",
             isPresented: Binding(
@@ -24,10 +24,11 @@ extension View {
 }
 
 extension View {
-    func administratorNavigationChrome(_ title: String) -> some View {
+    func manageNavigationChrome(_ title: String) -> some View {
         self
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Theme.screenBackground, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Color.clear.frame(width: 1, height: 1)
@@ -37,39 +38,39 @@ extension View {
 }
 
 extension View {
-    func administratorPlainList() -> some View {
+    func managePlainList() -> some View {
         self
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Color.white.ignoresSafeArea())
+            .background(Theme.screenBackground.ignoresSafeArea())
             .environment(\.defaultMinListRowHeight, 10)
             .contentMargins(.bottom, 24, for: .scrollContent)
     }
 
-    func administratorListRow() -> some View {
+    func manageListRow() -> some View {
         self
             .listRowInsets(EdgeInsets(top: 14, leading: 22, bottom: 14, trailing: 22))
-            .listRowBackground(Color.white)
+            .listRowBackground(Color.clear)
             .listRowSeparatorTint(Theme.divider)
             .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     }
 
-    func administratorTitleRow() -> some View {
+    func manageTitleRow() -> some View {
         self
             .listRowInsets(EdgeInsets(top: 8, leading: 22, bottom: 18, trailing: 22))
-            .listRowBackground(Color.white)
+            .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }
 
-    func administratorNoteRow() -> some View {
+    func manageNoteRow() -> some View {
         self
             .listRowInsets(EdgeInsets(top: 4, leading: 22, bottom: 4, trailing: 22))
-            .listRowBackground(Color.white)
+            .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }
 }
 
-struct AdministratorScreenTitle: View {
+struct ManageScreenTitle: View {
     let title: String
     var subtitle: String?
 
@@ -89,7 +90,7 @@ struct AdministratorScreenTitle: View {
     }
 }
 
-struct AdministratorInfoNote: View {
+struct ManageInfoNote: View {
     let text: String
 
     var body: some View {
@@ -104,7 +105,7 @@ struct AdministratorInfoNote: View {
     }
 }
 
-struct AdministratorHubRow<Destination: View>: View {
+struct ManageHubRow<Destination: View>: View {
     let title: String
     @ViewBuilder let destination: () -> Destination
 
@@ -129,7 +130,7 @@ struct AdministratorHubRow<Destination: View>: View {
     }
 }
 
-struct AdministratorAddButton: View {
+struct ManageAddButton: View {
     let action: () -> Void
 
     var body: some View {
@@ -149,7 +150,7 @@ struct AdministratorAddButton: View {
     }
 }
 
-struct AdministratorModalHeader: View {
+struct ManageModalHeader: View {
     let title: String
     var dismissLabel = "Cancel"
     let onDismiss: () -> Void
@@ -162,7 +163,7 @@ struct AdministratorModalHeader: View {
     }
 }
 
-struct AdministratorToggleRow: View {
+struct ManageToggleRow: View {
     let title: String
     var subtitle: String?
     @Binding var isOn: Bool
@@ -195,7 +196,7 @@ struct AdministratorToggleRow: View {
     }
 }
 
-struct AdministratorDropdownField<MenuItems: View>: View {
+struct ManageDropdownField<MenuItems: View>: View {
     let text: String
     var isPlaceholder = false
     @ViewBuilder let menuItems: () -> MenuItems

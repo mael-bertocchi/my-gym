@@ -12,7 +12,7 @@ struct AdministratorUsersView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                AdministratorScreenTitle(title: "Users", subtitle: subtitle)
+                ManageScreenTitle(title: "Users", subtitle: subtitle)
                     .padding(.bottom, 20)
                 content
             }
@@ -20,11 +20,11 @@ struct AdministratorUsersView: View {
             .padding(.top, 8)
             .padding(.bottom, 40)
         }
-        .background(Color.white.ignoresSafeArea())
-        .administratorNavigationChrome("Users")
+        .background(Theme.screenBackground.ignoresSafeArea())
+        .manageNavigationChrome("Users")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                AdministratorAddButton { showsCreateSheet = true }
+                ManageAddButton { showsCreateSheet = true }
             }
             .sharedBackgroundVisibility(.hidden)
         }
@@ -62,7 +62,7 @@ struct AdministratorUsersView: View {
             }
             .padding(.vertical, 48)
         } else if users.isEmpty {
-            AdministratorInfoNote(text: loadNote ?? "Connect to manage accounts.")
+            ManageInfoNote(text: loadNote ?? "Connect to manage accounts.")
         } else {
             VStack(spacing: 0) {
                 ForEach(users) { user in

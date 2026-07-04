@@ -5,7 +5,6 @@ struct ProfileView: View {
     @Environment(LocalStore.self) private var store
     @Environment(SyncEngine.self) private var syncEngine
     @Environment(HealthKitService.self) private var healthKit
-    @Environment(\.dismiss) private var dismiss
 
     @State private var selectedUnit: WeightUnit = .kilograms
     @State private var restSeconds = 90
@@ -36,24 +35,23 @@ struct ProfileView: View {
                         .padding(.bottom, 10)
                     accountCard
 
+                    SectionLabel("CATALOG")
+                        .padding(.leading, 4)
+                        .padding(.top, 18)
+                        .padding(.bottom, 10)
+                    catalogCard
+
                     if session.isAdministrator {
                         administratorConsoleRow
                             .padding(.top, 18)
                     }
                 }
                 .padding(.horizontal, Theme.screenPadding)
-                .padding(.top, 8)
+                .padding(.top, 24)
                 .padding(.bottom, 40)
             }
             .background(Theme.screenBackground)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(Theme.font(15, .semibold))
-                        .foregroundStyle(Theme.accentBlue)
-                }
-            }
             .sheet(isPresented: $showHomeGymSheet) {
                 ProfileHomeGymSheet()
             }
@@ -287,12 +285,21 @@ struct ProfileView: View {
         }
     }
 
+    private var catalogCard: some View {
+        VStack(spacing: 0) {
+            ManageHubRow(title: "Exercises, gyms & brands") {
+                CatalogView()
+            }
+        }
+        .card()
+    }
+
     private var administratorConsoleRow: some View {
         NavigationLink {
-            AdministratorHomeView()
+            AdministratorUsersView()
         } label: {
             HStack {
-                Text("Administrator console")
+                Text("Manage users")
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(.white)
                 Spacer()
