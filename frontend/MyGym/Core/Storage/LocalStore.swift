@@ -25,11 +25,11 @@ final class LocalStore {
         load()
     }
 
-    func applyCatalog(_ catalog: SyncPull.Catalog) {
-        brands = merge(brands, with: catalog.brands)
-        exerciseGroups = merge(exerciseGroups, with: catalog.exerciseGroups)
-        exercises = merge(exercises, with: catalog.exercises)
-        gyms = merge(gyms, with: catalog.gyms)
+    func applyCatalog(_ catalog: SyncPull.Catalog, replacing: Bool = false) {
+        brands = replacing ? catalog.brands : merge(brands, with: catalog.brands)
+        exerciseGroups = replacing ? catalog.exerciseGroups : merge(exerciseGroups, with: catalog.exerciseGroups)
+        exercises = replacing ? catalog.exercises : merge(exercises, with: catalog.exercises)
+        gyms = replacing ? catalog.gyms : merge(gyms, with: catalog.gyms)
         sortCatalog()
         save()
     }
@@ -153,8 +153,8 @@ final class LocalStore {
         save()
     }
 
-    func applyPull(_ pull: SyncPull) {
-        applyCatalog(pull.catalog)
+    func applyPull(_ pull: SyncPull, replacingCatalog: Bool = false) {
+        applyCatalog(pull.catalog, replacing: replacingCatalog)
         for workout in pull.workouts {
             guard !dirtyWorkoutIds.contains(workout.id) else { continue }
             upsertWorkout(workout.asLocalWorkout, markDirty: false)

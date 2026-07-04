@@ -33,8 +33,9 @@ final class SyncEngine {
                 let result = try await API.syncPush(push)
                 store.applyPushResult(result, pushed: push)
             }
+            let isFullPull = store.lastSyncAt == nil
             let pull = try await API.syncPull(since: store.lastSyncAt)
-            store.applyPull(pull)
+            store.applyPull(pull, replacingCatalog: isFullPull)
             status = .idle
             lastSuccessAt = .now
         } catch is NetworkError {
