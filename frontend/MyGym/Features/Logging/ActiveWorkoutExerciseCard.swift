@@ -112,11 +112,7 @@ struct ActiveWorkoutSetRow: View {
     @State private var weightText: String
     @State private var repsText: String
     @State private var touched: Set<SetField> = []
-    @State private var dragOffset: CGFloat = 0
-    @State private var isSwipedOpen = false
     @FocusState private var focusedField: SetField?
-
-    private static let revealWidth: CGFloat = 84
 
     init(entryId: String, set: LocalSet, unit: WeightUnit, onFocus: @escaping (String) -> Void = { _ in }) {
         self.entryId = entryId
@@ -128,29 +124,9 @@ struct ActiveWorkoutSetRow: View {
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            if dragOffset < 0 {
-                Button(action: remove) {
-                    Text("Remove")
-                        .font(Theme.font(13, .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: Self.revealWidth - 10, height: 38)
-                        .background(Theme.danger, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
+        RevealActionsRow(actions: [RevealAction(title: "Remove", action: remove)]) {
             row
-                .offset(x: dragOffset)
-                .overlay {
-                    if isSwipedOpen {
-                        Color.black.opacity(0.001)
-                            .contentShape(Rectangle())
-                            .onTapGesture(perform: closeSwipe)
-                            .offset(x: dragOffset)
-                    }
-                }
         }
-        .gesture(swipeGesture)
         .onChange(of: weightText) { _, newValue in
             touched.insert(.weight)
             var updated = set
@@ -210,33 +186,10 @@ struct ActiveWorkoutSetRow: View {
         }
     }
 
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 25)
-            .onChanged { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                let base: CGFloat = isSwipedOpen ? -Self.revealWidth : 0
-                dragOffset = min(0, max(-Self.revealWidth, base + value.translation.width))
-            }
-            .onEnded { _ in
-                let shouldOpen = dragOffset < -Self.revealWidth / 2
-                withAnimation(.snappy(duration: 0.22)) {
-                    dragOffset = shouldOpen ? -Self.revealWidth : 0
-                }
-                isSwipedOpen = shouldOpen
-            }
-    }
-
     private func remove() {
         withAnimation(.snappy(duration: 0.22)) {
             activeWorkout.removeSet(entryId: entryId, setId: set.id)
         }
-    }
-
-    private func closeSwipe() {
-        withAnimation(.snappy(duration: 0.22)) {
-            dragOffset = 0
-        }
-        isSwipedOpen = false
     }
 
     private func editableCell(
