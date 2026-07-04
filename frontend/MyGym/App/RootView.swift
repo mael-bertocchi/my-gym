@@ -58,6 +58,7 @@ struct MainShell: View {
     @State private var selection: AppTab = .home
     @State private var showStartWorkout = false
     @State private var showActiveWorkout = false
+    @State private var historyWorkoutRoute: HistoryWorkoutRoute?
 
     #if DEBUG
     @State private var debugShowAdminUsers = false
@@ -181,12 +182,20 @@ struct MainShell: View {
                 onStartWorkout: { showStartWorkout = true }
             )
         case .history:
-            HistoryView()
+            HistoryView(workoutRoute: $historyWorkoutRoute)
         case .stats:
-            StatsView(onStartWorkout: { showStartWorkout = true })
+            StatsView(
+                onStartWorkout: { showStartWorkout = true },
+                onOpenWorkoutInHistory: openWorkoutInHistory
+            )
         case .coach:
             CoachView()
         }
+    }
+
+    private func openWorkoutInHistory(_ workoutId: String) {
+        historyWorkoutRoute = HistoryWorkoutRoute(workoutId: workoutId)
+        selection = .history
     }
 }
 

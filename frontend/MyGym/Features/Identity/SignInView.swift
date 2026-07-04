@@ -64,7 +64,7 @@ struct SignInView: View {
             .scrollBounceBehavior(.basedOnSize)
             .scrollDismissesKeyboard(.interactively)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.screenBackground.ignoresSafeArea())
         .onSubmit {
             if canSubmit { signIn() }
         }

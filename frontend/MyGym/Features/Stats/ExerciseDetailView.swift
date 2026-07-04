@@ -9,7 +9,7 @@ struct ExerciseDetailView: View {
 
     @State private var scope: Scope = .thisMachine
     @State private var range: StatsMath.Range = .threeMonths
-    @State private var workoutSheet: StatsDrillRoute?
+    @State private var workoutRoute: HistoryWorkoutRoute?
     @State private var favoriteError: String?
 
     private enum Scope {
@@ -32,9 +32,10 @@ struct ExerciseDetailView: View {
                 missingState
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.screenBackground.ignoresSafeArea())
         .hidesAppTabBar()
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.screenBackground, for: .navigationBar)
         .toolbar {
             if store.exercise(id: exerciseId) != nil {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -47,8 +48,8 @@ struct ExerciseDetailView: View {
         } message: {
             Text(favoriteError ?? "")
         }
-        .sheet(item: $workoutSheet) { route in
-            StatsDrillSheet(route: route)
+        .navigationDestination(item: $workoutRoute) { route in
+            HistoryWorkoutDetailView(workoutId: route.workoutId)
         }
     }
 
@@ -203,7 +204,7 @@ struct ExerciseDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
-            .background(Theme.screenBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .card(radius: 14)
     }
 
     private func wholeWeight(_ kilograms: Double) -> String {
@@ -247,7 +248,7 @@ struct ExerciseDetailView: View {
                             .gesture(
                                 SpatialTapGesture().onEnded { tap in
                                     if let point = point(at: tap.location, points: points, proxy: proxy, geo: geo) {
-                                        workoutSheet = .workout(workoutId: point.workoutId)
+                                        workoutRoute = HistoryWorkoutRoute(workoutId: point.workoutId)
                                     }
                                 }
                             )
@@ -259,7 +260,7 @@ struct ExerciseDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(Theme.screenBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .card(radius: 18)
     }
 
     private func point(
@@ -292,7 +293,7 @@ struct ExerciseDetailView: View {
                     ForEach(events) { event in
                         RowDivider()
                         Button {
-                            workoutSheet = .workout(workoutId: event.workoutId)
+                            workoutRoute = HistoryWorkoutRoute(workoutId: event.workoutId)
                         } label: {
                             HStack {
                                 Text("\(event.kind.rawValue) · \(Formatting.relativeDay(event.date))")
@@ -334,7 +335,7 @@ struct ExerciseDetailView: View {
                     ForEach(recent) { point in
                         RowDivider()
                         Button {
-                            workoutSheet = .workout(workoutId: point.workoutId)
+                            workoutRoute = HistoryWorkoutRoute(workoutId: point.workoutId)
                         } label: {
                             HStack {
                                 Text(Formatting.shortDate(point.date))
@@ -470,7 +471,7 @@ struct ExerciseDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(Theme.screenBackground, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .card(radius: 18)
     }
 
     private func compareRows(seriesList: [ExerciseDetailSeries]) -> some View {
@@ -545,9 +546,10 @@ private struct ExerciseDetailStatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(13)
-        .background(
-            isHighlighted ? Theme.accentBlueTint : Theme.screenBackground,
-            in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+        .card(
+            radius: Theme.controlRadius,
+            fill: isHighlighted ? Theme.accentBlueTint : Theme.surface,
+            border: isHighlighted ? Theme.accentBlueTintBorder : Theme.hairline
         )
         .accessibilityElement(children: .combine)
     }

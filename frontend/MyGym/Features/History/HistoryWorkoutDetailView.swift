@@ -18,9 +18,10 @@ struct HistoryWorkoutDetailView: View {
                 missingState
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.screenBackground.ignoresSafeArea())
         .hidesAppTabBar()
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.screenBackground, for: .navigationBar)
         .toolbar {
             if store.workout(id: workoutId) != nil {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -128,7 +129,7 @@ struct HistoryWorkoutDetailView: View {
             value += " × \(reps)"
         }
         let title = Text("New record").font(Theme.font(13, .bold))
-        let details = Text(" · \(descriptor) with \(value)").font(Theme.font(13))
+        let details = Text(" · \(descriptor) · \(value)").font(Theme.font(13))
         return Text("\(title)\(details)")
             .foregroundStyle(Theme.inkSecondary)
     }
@@ -137,11 +138,11 @@ struct HistoryWorkoutDetailView: View {
         let items = Superset.groupings(in: workout)
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                if index > 0 {
+                    RowDivider()
+                }
                 switch item {
                 case .single(let entry):
-                    if index > 0, case .single = items[index - 1] {
-                        RowDivider()
-                    }
                     NavigationLink {
                         ExerciseDetailView(exerciseId: entry.exerciseId)
                     } label: {
@@ -149,8 +150,7 @@ struct HistoryWorkoutDetailView: View {
                     }
                     .buttonStyle(.plain)
                 case .pair(_, let members):
-                    HistorySupersetCard(members: members, unit: session.weightUnit)
-                        .padding(.vertical, 12)
+                    HistorySupersetRows(members: members, unit: session.weightUnit)
                 }
             }
         }
@@ -184,84 +184,40 @@ private struct WorkoutDetailStatTile: View {
         }
         .frame(maxWidth: .infinity)
         .padding(12)
-        .background(
-            Theme.screenBackground,
-            in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-        )
+        .card(radius: Theme.controlRadius)
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct HistorySupersetCard: View {
+private struct HistorySupersetRows: View {
     let members: [LocalWorkoutExercise]
     let unit: WeightUnit
 
-    @Environment(LocalStore.self) private var store
-
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
+        VStack(alignment: .leading, spacing: 0) {
+            EyebrowText("SUPERSET · \(roundLabel)", color: Theme.accentBlue, size: 10)
+                .padding(.top, 14)
+            ForEach(members) { member in
+                NavigationLink {
+                    ExerciseDetailView(exerciseId: member.exerciseId)
+                } label: {
+                    WorkoutDetailExerciseRow(entry: member, unit: unit)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
                 .fill(Theme.accentBlue)
                 .frame(width: 3)
-            VStack(alignment: .leading, spacing: 0) {
-                EyebrowText("SUPERSET · \(roundLabel)", color: Theme.accentBlue, size: 10)
-                ForEach(Array(members.enumerated()), id: \.element.id) { index, member in
-                    NavigationLink {
-                        ExerciseDetailView(exerciseId: member.exerciseId)
-                    } label: {
-                        memberRows(member, index: index)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+                .padding(.vertical, 14)
+                .offset(x: -12)
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
-        .card()
-    }
-
-    private func memberRows(_ member: LocalWorkoutExercise, index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                SupersetBadge(
-                    letter: index == 0 ? "A" : "B",
-                    isActive: index == 0,
-                    size: 18,
-                    radius: 5,
-                    fontSize: 10
-                )
-                Text(store.exercise(id: member.exerciseId)?.name ?? "Exercise")
-                    .font(Theme.font(14, .bold))
-                    .foregroundStyle(Theme.ink)
-            }
-            if let line = setLine(member) {
-                Text(line)
-                    .font(Theme.mono(11))
-                    .kerning(0.5)
-                    .foregroundStyle(Theme.muted)
-                    .padding(.leading, 26)
-            }
-        }
-        .padding(.top, index == 0 ? 8 : 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
     }
 
     private var roundLabel: String {
         let rounds = members.map { $0.sets.filter(\.isCompleted).count }.max() ?? 0
         return "\(rounds) \(rounds == 1 ? "ROUND" : "ROUNDS")"
-    }
-
-    private func setLine(_ member: LocalWorkoutExercise) -> String? {
-        let completed = member.sets
-            .filter(\.isCompleted)
-            .sorted { $0.setNumber < $1.setNumber }
-        guard !completed.isEmpty else { return nil }
-        return completed
-            .map { set in
-                "\(Formatting.weightNumber(set.weightKg ?? 0, unit: unit))×\(set.reps ?? 0)"
-            }
-            .joined(separator: " · ")
     }
 }
 

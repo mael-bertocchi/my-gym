@@ -2,12 +2,12 @@ import SwiftUI
 
 struct StatsView: View {
     var onStartWorkout: () -> Void = {}
+    var onOpenWorkoutInHistory: (String) -> Void = { _ in }
 
     @Environment(LocalStore.self) private var store
 
     @State private var tab: ProgressTab = .statistics
     @State private var range: StatsMath.Range = .threeMonths
-    @State private var drillRoute: StatsDrillRoute?
     @State private var pushedExercise: PushedExercise?
 
     private enum ProgressTab: String, CaseIterable {
@@ -39,9 +39,9 @@ struct StatsView: View {
 
                     switch tab {
                     case .statistics:
-                        StatsStatisticsBody(range: $range, onOpenWeek: openWeek)
+                        StatsStatisticsBody(range: $range)
                     case .calendar:
-                        StatsCalendarBody(onOpenWorkout: { drillRoute = .workout(workoutId: $0) })
+                        StatsCalendarBody(onOpenWorkout: onOpenWorkoutInHistory)
                     }
                 }
                 .padding(.top, 8)
@@ -52,9 +52,6 @@ struct StatsView: View {
             .background(Theme.screenBackground.ignoresSafeArea())
             .navigationTitle("Progress")
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(item: $drillRoute) { route in
-                StatsDrillSheet(route: route, onOpenExercise: openExercise)
-            }
             .navigationDestination(item: $pushedExercise) { pushed in
                 ExerciseDetailView(exerciseId: pushed.id)
             }
@@ -67,14 +64,6 @@ struct StatsView: View {
                     }
                 case "calendar":
                     tab = .calendar
-                case "workout-sheet":
-                    if let workout = store.workouts.first {
-                        drillRoute = .workout(workoutId: workout.id)
-                    }
-                case "week-sheet":
-                    if let week = StatsMath.weeklyVolumes(workouts: store.workouts, weekCount: 1).first {
-                        openWeek(week)
-                    }
                 default:
                     break
                 }
@@ -112,25 +101,6 @@ struct StatsView: View {
         .tintedCard()
     }
 
-    private func openWeek(_ week: StatsMath.WeekVolume) {
-        let inWeek = store.workouts
-            .filter { $0.startedAt >= week.start && $0.startedAt < week.end }
-            .sorted { $0.startedAt < $1.startedAt }
-        guard !inWeek.isEmpty else { return }
-        if inWeek.count == 1 {
-            drillRoute = .workout(workoutId: inWeek[0].id)
-        } else {
-            drillRoute = .week(start: week.start, workoutIds: inWeek.map(\.id))
-        }
-    }
-
-    private func openExercise(_ exerciseId: String) {
-        drillRoute = nil
-        Task {
-            try? await Task.sleep(for: .milliseconds(350))
-            pushedExercise = PushedExercise(id: exerciseId)
-        }
-    }
 }
 
 struct StatsRangeChips: View {
@@ -152,12 +122,14 @@ struct StatsRangeChips: View {
 }
 
 struct StatsEmptyNote: View {
+    var text: String = "No data yet"
     var height: CGFloat = 90
 
     var body: some View {
-        Text("No data yet")
+        Text(text)
             .font(Theme.font(13))
             .foregroundStyle(Theme.muted2)
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: height)
     }
 }

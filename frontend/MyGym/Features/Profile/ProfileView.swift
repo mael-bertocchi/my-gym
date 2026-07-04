@@ -269,9 +269,9 @@ struct ProfileView: View {
         let pending = store.hasPendingChanges
         switch syncEngine.status {
         case .failed:
-            return "Failed — tap to retry"
+            return "Failed"
         case .offline:
-            return pending ? "Offline — changes pending" : "Offline"
+            return "Offline"
         default:
             return pending ? "Changes pending" : "Up to date"
         }

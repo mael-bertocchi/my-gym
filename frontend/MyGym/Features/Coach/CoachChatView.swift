@@ -98,7 +98,7 @@ struct CoachChatView: View {
 
                         if bootstrapFailed {
                             Button(action: retryBootstrap) {
-                                Text("Couldn't load your conversation — tap to retry")
+                                Text("Couldn't load your conversation")
                                     .font(Theme.font(12))
                                     .foregroundStyle(Theme.danger)
                                     .frame(maxWidth: .infinity)
@@ -126,7 +126,7 @@ struct CoachChatView: View {
 
                         if failedContent != nil {
                             Button(action: retry) {
-                                Text("Couldn't reach your coach — tap to retry")
+                                Text("Couldn't reach your coach")
                                     .font(Theme.font(12))
                                     .foregroundStyle(Theme.danger)
                                     .frame(maxWidth: .infinity)

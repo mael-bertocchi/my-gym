@@ -1,13 +1,25 @@
 import SwiftUI
 
+struct HistoryWorkoutRoute: Identifiable, Hashable {
+    let workoutId: String
+
+    var id: String { workoutId }
+}
+
 struct HistoryView: View {
     @Environment(LocalStore.self) private var store
     @Environment(AppSession.self) private var session
     @Environment(SyncEngine.self) private var syncEngine
 
+    @Binding var workoutRoute: HistoryWorkoutRoute?
+
     @State private var selectedGymId: String?
     @State private var thisMonthOnly = false
     @State private var debugShowDetail = false
+
+    init(workoutRoute: Binding<HistoryWorkoutRoute?> = .constant(nil)) {
+        _workoutRoute = workoutRoute
+    }
 
     var body: some View {
         NavigationStack {
@@ -24,6 +36,9 @@ struct HistoryView: View {
             .background(Theme.screenBackground.ignoresSafeArea())
             .navigationTitle("History")
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(item: $workoutRoute) { route in
+                HistoryWorkoutDetailView(workoutId: route.workoutId)
+            }
             .navigationDestination(isPresented: $debugShowDetail) {
                 if let id = store.workouts.first(where: { $0.endedAt != nil })?.id {
                     HistoryWorkoutDetailView(workoutId: id)

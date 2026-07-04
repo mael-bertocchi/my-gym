@@ -3,7 +3,6 @@ import SwiftUI
 
 struct StatsStatisticsBody: View {
     @Binding var range: StatsMath.Range
-    var onOpenWeek: (StatsMath.WeekVolume) -> Void
 
     @Environment(LocalStore.self) private var store
     @Environment(AppSession.self) private var session
@@ -18,8 +17,7 @@ struct StatsStatisticsBody: View {
             StatsVolumeCard(
                 rangeLabel: range.rawValue,
                 weeks: StatsMath.weeklyVolumes(workouts: store.workouts, weekCount: weekCount),
-                unit: session.weightUnit,
-                onTapWeek: onOpenWeek
+                unit: session.weightUnit
             )
 
             splitRow(windowed: windowed)
@@ -31,6 +29,11 @@ struct StatsStatisticsBody: View {
 
             StatsBodyweightCard(
                 unit: session.weightUnit,
+                windowStart: range == .all ? nil : StatsMath.windowStart(weekCount: weekCount)
+            )
+
+            StatsHeartRateCard(
+                workouts: store.workouts,
                 windowStart: range == .all ? nil : StatsMath.windowStart(weekCount: weekCount)
             )
         }
@@ -79,6 +82,7 @@ struct TrendDeltaText: View {
 struct ChartTooltip: View {
     let hover: ChartHover
     let bounds: CGSize
+    var verticalOffset: CGFloat = -30
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
@@ -95,7 +99,7 @@ struct ChartTooltip: View {
         .fixedSize()
         .position(
             x: min(max(hover.location.x, 46), bounds.width - 46),
-            y: hover.location.y - 30
+            y: hover.location.y + verticalOffset
         )
         .allowsHitTesting(false)
     }
@@ -105,9 +109,14 @@ private struct StatsVolumeCard: View {
     let rangeLabel: String
     let weeks: [StatsMath.WeekVolume]
     let unit: WeightUnit
-    var onTapWeek: (StatsMath.WeekVolume) -> Void
 
-    @State private var hover: ChartHover?
+    @State private var selectedWeekLabel: String?
+
+    private var selectedWeek: StatsMath.WeekVolume? {
+        selectedWeekLabel.flatMap { label in
+            weeks.first { $0.label == label }
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -140,40 +149,39 @@ private struct StatsVolumeCard: View {
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
+        .chartXSelection(value: $selectedWeekLabel)
         .frame(height: 90)
         .chartOverlay { proxy in
             GeometryReader { geo in
-                Rectangle()
-                    .fill(.clear)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        SpatialTapGesture().onEnded { tap in
-                            if let week = week(at: tap.location, proxy: proxy, geo: geo) {
-                                onTapWeek(week)
-                            }
-                        }
+                if let selectedWeek,
+                   selectedWeek.volumeKg > 0,
+                   let location = barLocation(for: selectedWeek, proxy: proxy, geo: geo) {
+                    ChartTooltip(
+                        hover: ChartHover(
+                            value: Formatting.weight(selectedWeek.volumeKg, unit: unit),
+                            label: "Week of \(Formatting.shortDate(selectedWeek.start))",
+                            location: location
+                        ),
+                        bounds: geo.size,
+                        verticalOffset: 28
                     )
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case .active(let location):
-                            guard let week = week(at: location, proxy: proxy, geo: geo) else {
-                                hover = nil
-                                return
-                            }
-                            hover = ChartHover(
-                                value: Formatting.weight(week.volumeKg, unit: unit),
-                                label: "Week of \(Formatting.shortDate(week.start))",
-                                location: location
-                            )
-                        case .ended:
-                            hover = nil
-                        }
-                    }
-                if let hover {
-                    ChartTooltip(hover: hover, bounds: geo.size)
                 }
             }
         }
+    }
+
+    private func barLocation(
+        for week: StatsMath.WeekVolume,
+        proxy: ChartProxy,
+        geo: GeometryProxy
+    ) -> CGPoint? {
+        guard let plotFrame = proxy.plotFrame,
+              let x = proxy.position(forX: week.label),
+              let y = proxy.position(forY: week.volumeKg) else {
+            return nil
+        }
+        let frame = geo[plotFrame]
+        return CGPoint(x: frame.origin.x + x, y: frame.origin.y + y)
     }
 
     private func week(
@@ -477,7 +485,7 @@ private struct StatsBodyweightCard: View {
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
-        .chartYScale(domain: yDomain(for: entries.map(\.weightKg)))
+        .chartYScale(domain: chartYDomain(for: entries.map(\.weightKg)))
         .chartXSelection(value: $selectedDate)
         .frame(height: 60)
         .chartOverlay { proxy in
@@ -515,11 +523,135 @@ private struct StatsBodyweightCard: View {
         let frame = geo[plotFrame]
         return CGPoint(x: frame.origin.x + x, y: frame.origin.y + y)
     }
+}
 
-    private func yDomain(for values: [Double]) -> ClosedRange<Double> {
-        guard let lowest = values.min(), let highest = values.max() else { return 0...1 }
-        guard highest > lowest else { return (lowest - 1)...(highest + 1) }
-        let padding = (highest - lowest) * 0.15
-        return (lowest - padding)...(highest + padding)
+private struct StatsHeartRateCard: View {
+    let workouts: [LocalWorkout]
+    let windowStart: Date?
+
+    @State private var selectedDate: Date?
+
+    private struct Entry: Identifiable {
+        let id: String
+        let date: Date
+        let bpm: Int
     }
+
+    private var entries: [Entry] {
+        workouts
+            .compactMap { workout in
+                workout.averageHeartRate.map { Entry(id: workout.id, date: workout.startedAt, bpm: $0) }
+            }
+            .sorted { $0.date < $1.date }
+    }
+
+    private var visibleEntries: [Entry] {
+        guard let windowStart else { return entries }
+        return entries.filter { $0.date >= windowStart }
+    }
+
+    var body: some View {
+        let visible = visibleEntries
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                EyebrowText("AVG HEART RATE", size: 10)
+                Spacer()
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Theme.danger)
+            }
+            .padding(.bottom, 14)
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(visible.last.map { "\($0.bpm) bpm" } ?? "—")
+                    .font(Theme.font(22, .heavy))
+                    .foregroundStyle(Theme.ink)
+                if let delta = latestDelta(visible) {
+                    Text(delta)
+                        .font(Theme.mono(11, .bold))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.bottom, 10)
+
+            if visible.count >= 2 {
+                chart(entries: visible)
+            } else if visible.isEmpty {
+                StatsEmptyNote(text: "No heart rate yet", height: 60)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .card(radius: 20)
+    }
+
+    private func latestDelta(_ entries: [Entry]) -> String? {
+        guard entries.count >= 2 else { return nil }
+        let delta = entries[entries.count - 1].bpm - entries[entries.count - 2].bpm
+        return "\(delta >= 0 ? "+" : "-")\(abs(delta)) bpm"
+    }
+
+    private func chart(entries: [Entry]) -> some View {
+        let selected = selectedDate.flatMap { nearestEntry(to: $0, in: entries) }
+        return Chart(entries) { entry in
+            LineMark(
+                x: .value("Date", entry.date),
+                y: .value("BPM", entry.bpm)
+            )
+            .foregroundStyle(Theme.danger)
+            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            PointMark(
+                x: .value("Date", entry.date),
+                y: .value("BPM", entry.bpm)
+            )
+            .foregroundStyle(Theme.danger)
+            .symbolSize(entry.id == selected?.id ? 72 : 28)
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartYScale(domain: chartYDomain(for: entries.map { Double($0.bpm) }))
+        .chartXSelection(value: $selectedDate)
+        .frame(height: 60)
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                if let selected, let location = dotLocation(for: selected, proxy: proxy, geo: geo) {
+                    ChartTooltip(
+                        hover: ChartHover(
+                            value: "\(selected.bpm) bpm",
+                            label: Formatting.shortDate(selected.date),
+                            location: location
+                        ),
+                        bounds: geo.size
+                    )
+                }
+            }
+        }
+    }
+
+    private func nearestEntry(to date: Date, in entries: [Entry]) -> Entry? {
+        entries.min {
+            abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
+        }
+    }
+
+    private func dotLocation(
+        for entry: Entry,
+        proxy: ChartProxy,
+        geo: GeometryProxy
+    ) -> CGPoint? {
+        guard let plotFrame = proxy.plotFrame,
+              let x = proxy.position(forX: entry.date),
+              let y = proxy.position(forY: entry.bpm) else {
+            return nil
+        }
+        let frame = geo[plotFrame]
+        return CGPoint(x: frame.origin.x + x, y: frame.origin.y + y)
+    }
+}
+
+private func chartYDomain(for values: [Double]) -> ClosedRange<Double> {
+    guard let lowest = values.min(), let highest = values.max() else { return 0...1 }
+    guard highest > lowest else { return (lowest - 1)...(highest + 1) }
+    let padding = (highest - lowest) * 0.15
+    return (lowest - padding)...(highest + padding)
 }

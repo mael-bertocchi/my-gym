@@ -21,9 +21,6 @@ struct HomeView: View {
                     thisWeekCard
                         .padding(.bottom, 16)
 
-                    weeklyVolumeCard
-                        .padding(.bottom, 16)
-
                     coachInsightCard
 
                     SectionLabel("RECENT WORKOUTS")
@@ -123,37 +120,6 @@ struct HomeView: View {
         weekWorkouts.reduce(0) { $0 + $1.totalVolume }
     }
 
-    private var weeklyVolumeCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                EyebrowText("WEEKLY VOLUME")
-                Spacer()
-                InlineLink(title: "View all", action: onOpenStats)
-            }
-            HomeVolumeBars(volumes: weeklyVolumes)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .card()
-    }
-
-    private var weeklyVolumes: [Double] {
-        let calendar = mondayCalendar
-        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else {
-            return Array(repeating: 0, count: 6)
-        }
-        return (0..<6).map { index in
-            guard let weekStart = calendar.date(
-                byAdding: .weekOfYear, value: index - 5, to: currentWeekStart
-            ), let week = calendar.dateInterval(of: .weekOfYear, for: weekStart) else {
-                return 0
-            }
-            return store.workouts
-                .filter { week.contains($0.startedAt) }
-                .reduce(0) { $0 + $1.totalVolume }
-        }
-    }
-
     private var coachInsightCard: some View {
         Button(action: onOpenCoach) {
             VStack(alignment: .leading, spacing: 8) {
@@ -244,31 +210,6 @@ private struct HomeStatColumn: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-    }
-}
-
-private struct HomeVolumeBars: View {
-    let volumes: [Double]
-
-    private static let chartHeight: CGFloat = 72
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            ForEach(Array(volumes.enumerated()), id: \.offset) { index, volume in
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(index >= volumes.count - 2 ? Theme.accentBlue : Theme.chartMuted)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: barHeight(volume))
-            }
-        }
-        .frame(height: Self.chartHeight, alignment: .bottom)
-        .frame(maxWidth: .infinity)
-    }
-
-    private func barHeight(_ volume: Double) -> CGFloat {
-        let maxVolume = volumes.max() ?? 0
-        guard volume > 0, maxVolume > 0 else { return 4 }
-        return max(4, Self.chartHeight * CGFloat(volume / maxVolume))
     }
 }
 
