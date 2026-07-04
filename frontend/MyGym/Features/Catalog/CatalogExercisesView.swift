@@ -7,6 +7,7 @@ struct CatalogExercisesView: View {
     @State private var newGroupName = ""
     @State private var alert: ManageAlert?
     @State private var deleteConflict: CatalogExerciseDeleteConflict?
+    @State private var selectedExercise: Exercise?
 
     private struct CatalogExerciseBucket: Identifiable {
         let id: String
@@ -61,12 +62,15 @@ struct CatalogExercisesView: View {
                             .listRowSeparator(.hidden)
                     } else {
                         ForEach(bucket.exercises) { exercise in
-                            RevealActionsRow(actions: [
-                                RevealAction(title: exercise.isArchived ? "Unarchive" : "Archive", tint: Theme.muted2) {
-                                    setArchived(exercise, !exercise.isArchived)
-                                },
-                                RevealAction(title: "Delete") { delete(exercise) }
-                            ]) {
+                            RevealActionsRow(
+                                actions: [
+                                    RevealAction(title: exercise.isArchived ? "Unarchive" : "Archive", tint: Theme.muted2) {
+                                        setArchived(exercise, !exercise.isArchived)
+                                    },
+                                    RevealAction(title: "Delete") { delete(exercise) },
+                                ],
+                                onTap: { selectedExercise = exercise }
+                            ) {
                                 row(exercise)
                             }
                             .manageListRow()
@@ -107,6 +111,9 @@ struct CatalogExercisesView: View {
             Text(conflict.message)
         }
         .manageInfoAlert($alert)
+        .navigationDestination(item: $selectedExercise) { exercise in
+            ExerciseDetailView(exerciseId: exercise.id)
+        }
     }
 
     private var countLine: String {
@@ -142,6 +149,9 @@ struct CatalogExercisesView: View {
                     .font(Theme.mono(11, .semibold))
                     .foregroundStyle(Theme.muted2)
             }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.tabInactive)
         }
         .frame(minHeight: 38)
         .contentShape(Rectangle())

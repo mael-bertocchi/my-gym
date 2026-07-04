@@ -10,6 +10,7 @@ struct RevealAction: Identifiable {
 
 struct RevealActionsRow<Content: View>: View {
     var actions: [RevealAction]
+    var onTap: (() -> Void)?
     @ViewBuilder var content: () -> Content
 
     @State private var dragOffset: CGFloat = 0
@@ -41,18 +42,36 @@ struct RevealActionsRow<Content: View>: View {
                     }
                 }
             }
-            content()
-                .offset(x: dragOffset)
-                .overlay {
-                    if isSwipedOpen {
-                        Color.black.opacity(0.001)
-                            .contentShape(Rectangle())
-                            .onTapGesture(perform: closeSwipe)
-                            .offset(x: dragOffset)
-                    }
-                }
+            tappableContent
         }
         .gesture(swipeGesture)
+    }
+
+    @ViewBuilder
+    private var tappableContent: some View {
+        let base = content()
+            .offset(x: dragOffset)
+            .overlay {
+                if isSwipedOpen {
+                    Color.black.opacity(0.001)
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: closeSwipe)
+                        .offset(x: dragOffset)
+                }
+            }
+        if let onTap {
+            base
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if isSwipedOpen {
+                        closeSwipe()
+                    } else {
+                        onTap()
+                    }
+                }
+        } else {
+            base
+        }
     }
 
     private var swipeGesture: some Gesture {
