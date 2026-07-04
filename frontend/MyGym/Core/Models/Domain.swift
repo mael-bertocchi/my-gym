@@ -149,6 +149,7 @@ struct WorkoutSummary: Codable, Identifiable, Equatable {
     var startedAt: Date
     var endedAt: Date?
     var notes: String?
+    var averageHeartRate: Int?
     var createdAt: Date
     var updatedAt: Date
 }
@@ -193,6 +194,7 @@ struct WorkoutDetail: Codable, Identifiable, Equatable {
     var startedAt: Date
     var endedAt: Date?
     var notes: String?
+    var averageHeartRate: Int?
     var createdAt: Date
     var updatedAt: Date
     var entries: [WorkoutEntry]

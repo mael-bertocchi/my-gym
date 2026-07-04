@@ -48,16 +48,18 @@ final class ActiveWorkoutStore {
     }
 
     func start(gymId: String?, name: String? = nil) {
-        workout = LocalWorkout(
+        let started = LocalWorkout(
             gymId: gymId,
             name: name ?? Self.defaultName(for: .now),
             startedAt: .now
         )
+        workout = started
         restTimer = nil
         restContext = nil
         pausedAt = nil
         pausedSeconds = 0
         restNotifications.cancel()
+        healthKit.startHeartRateStream(from: started.startedAt)
         persist()
     }
 
@@ -130,6 +132,7 @@ final class ActiveWorkoutStore {
     func finish() {
         guard var finished = workout else { return }
         finished.endedAt = finished.startedAt.addingTimeInterval(elapsed())
+        finished.averageHeartRate = healthKit.stopHeartRateStream()
         store.upsertWorkout(finished)
         let exerciseNames = finished.exercises.compactMap { store.exercise(id: $0.exerciseId)?.name }
         workout = nil
@@ -150,6 +153,7 @@ final class ActiveWorkoutStore {
         pausedAt = nil
         pausedSeconds = 0
         restNotifications.cancel()
+        healthKit.stopHeartRateStream()
         persist()
     }
 
@@ -407,6 +411,9 @@ final class ActiveWorkoutStore {
         guard let data = try? Data(contentsOf: Self.fileURL),
               let snapshot = try? APIClient.decoder.decode(Snapshot.self, from: data) else { return }
         workout = snapshot.workout
+        if let restored = snapshot.workout {
+            healthKit.startHeartRateStream(from: restored.startedAt)
+        }
         pausedAt = snapshot.workout == nil ? nil : snapshot.pausedAt
         pausedSeconds = snapshot.workout == nil ? 0 : (snapshot.pausedSeconds ?? 0)
         if let timer = snapshot.restTimer, timer.endsAt > (pausedAt ?? .now) {

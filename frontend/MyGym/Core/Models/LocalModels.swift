@@ -7,6 +7,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
     var startedAt: Date
     var endedAt: Date?
     var notes: String?
+    var averageHeartRate: Int?
     var updatedAt: Date
     var exercises: [LocalWorkoutExercise]
 
@@ -17,6 +18,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         startedAt: Date = .now,
         endedAt: Date? = nil,
         notes: String? = nil,
+        averageHeartRate: Int? = nil,
         updatedAt: Date = .now,
         exercises: [LocalWorkoutExercise] = []
     ) {
@@ -26,6 +28,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.notes = notes
+        self.averageHeartRate = averageHeartRate
         self.updatedAt = updatedAt
         self.exercises = exercises
     }
@@ -205,6 +208,7 @@ extension WorkoutDetail {
             startedAt: startedAt,
             endedAt: endedAt,
             notes: notes,
+            averageHeartRate: averageHeartRate,
             updatedAt: updatedAt,
             exercises: entries
                 .sorted { $0.position < $1.position }

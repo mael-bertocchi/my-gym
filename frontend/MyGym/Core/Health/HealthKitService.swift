@@ -19,11 +19,22 @@ final class HealthKitService {
     private static let enabledKey = "healthKitSyncEnabled"
     private static let workoutType = HKObjectType.workoutType()
     private static let bodyMassType = HKQuantityType(.bodyMass)
+    private static let heartRateType = HKQuantityType(.heartRate)
+    private static let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
+    private static let heartRateFreshness: TimeInterval = 300
 
     private var uuidMap: [String: String] = [:]
 
+    private(set) var latestHeartRate: Int?
+    private(set) var latestHeartRateAt: Date?
+    private var heartRateTotal: Double = 0
+    private var heartRateCount = 0
+    private var heartRateStreamTask: Task<Void, Never>?
+
     #if DEBUG
     var demoBodyweight: [BodyweightSample]?
+    var demoLiveHeartRate: Int?
+    private static let isDemoLaunch = CommandLine.arguments.contains { $0.hasPrefix("-demo") }
     #endif
 
     init() {
@@ -35,7 +46,7 @@ final class HealthKitService {
         do {
             try await healthStore.requestAuthorization(
                 toShare: [Self.workoutType, Self.bodyMassType],
-                read: [Self.bodyMassType]
+                read: [Self.bodyMassType, Self.heartRateType]
             )
         } catch {
             logger.error("HealthKit authorization request failed: \(error.localizedDescription)")
@@ -104,6 +115,75 @@ final class HealthKitService {
             saveUUIDMap()
         } catch {
             logger.error("HealthKit delete failed for workout \(id): \(error.localizedDescription)")
+        }
+    }
+
+    func liveHeartRate(at date: Date = .now) -> Int? {
+        #if DEBUG
+        if let demoLiveHeartRate { return demoLiveHeartRate }
+        #endif
+        guard let latestHeartRate, let latestHeartRateAt,
+              date.timeIntervalSince(latestHeartRateAt) < Self.heartRateFreshness
+        else { return nil }
+        return latestHeartRate
+    }
+
+    func startHeartRateStream(from start: Date) {
+        #if DEBUG
+        guard !Self.isDemoLaunch else { return }
+        #endif
+        guard Self.isHealthDataAvailable, heartRateStreamTask == nil else { return }
+        resetHeartRateState()
+        heartRateStreamTask = Task {
+            await requestAuthorization()
+            let descriptor = HKAnchoredObjectQueryDescriptor(
+                predicates: [.quantitySample(
+                    type: Self.heartRateType,
+                    predicate: HKQuery.predicateForSamples(withStart: start, end: nil)
+                )],
+                anchor: nil
+            )
+            do {
+                for try await update in descriptor.results(for: healthStore) {
+                    guard !Task.isCancelled else { break }
+                    ingestHeartRateSamples(update.addedSamples)
+                }
+            } catch {
+                logger.error("HealthKit heart rate stream failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    @discardableResult
+    func stopHeartRateStream() -> Int? {
+        heartRateStreamTask?.cancel()
+        heartRateStreamTask = nil
+        let average = heartRateCount > 0
+            ? Int((heartRateTotal / Double(heartRateCount)).rounded())
+            : nil
+        resetHeartRateState()
+        #if DEBUG
+        if let demoLiveHeartRate { return demoLiveHeartRate }
+        #endif
+        return average
+    }
+
+    private func resetHeartRateState() {
+        heartRateTotal = 0
+        heartRateCount = 0
+        latestHeartRate = nil
+        latestHeartRateAt = nil
+    }
+
+    private func ingestHeartRateSamples(_ samples: [HKQuantitySample]) {
+        for sample in samples {
+            let bpm = sample.quantity.doubleValue(for: Self.heartRateUnit)
+            heartRateTotal += bpm
+            heartRateCount += 1
+            if latestHeartRateAt.map({ sample.endDate > $0 }) ?? true {
+                latestHeartRate = Int(bpm.rounded())
+                latestHeartRateAt = sample.endDate
+            }
         }
     }
 

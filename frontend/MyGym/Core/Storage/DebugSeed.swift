@@ -203,6 +203,7 @@ enum DebugSeed {
                 weightKg: ((77.0 + 1.8 * progress + wobble) * 10).rounded() / 10
             )
         }
+        healthKit.demoLiveHeartRate = 128
 
         store.upsertSetting(exerciseId: chestPress.id, settings: [
             "Seat height": .number(4),
@@ -252,7 +253,7 @@ enum DebugSeed {
 
     private static func showcasePushDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
         let superset = newId()
-        return workout("Push day", daysAgo: 1, gymId: gymId, minutes: 58, entries: [
+        return workout("Push day", daysAgo: 1, gymId: gymId, minutes: 58, heartRate: 132, entries: [
             entry(ex.chestPress, 1, sets: [
                 mkSet(1, type: .warmup, 40, 12),
                 mkSet(2, 60, 10),
@@ -273,7 +274,7 @@ enum DebugSeed {
     }
 
     private static func showcaseLegDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
-        workout("Leg day", daysAgo: 3, gymId: gymId, minutes: 64, entries: [
+        workout("Leg day", daysAgo: 3, gymId: gymId, minutes: 64, heartRate: 141, entries: [
             entry(ex.squat, 1, sets: [
                 mkSet(1, type: .warmup, 70, 10),
                 mkSet(2, 100, 8),
@@ -290,7 +291,7 @@ enum DebugSeed {
     }
 
     private static func showcasePullDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
-        workout("Pull day", daysAgo: 5, gymId: gymId, minutes: 51, entries: [
+        workout("Pull day", daysAgo: 5, gymId: gymId, minutes: 51, heartRate: 126, entries: [
             entry(ex.latPulldown, 1, sets: [
                 mkSet(1, 60, 12),
                 mkSet(2, 65, 10),
@@ -309,7 +310,7 @@ enum DebugSeed {
         let fly = ramp(18, 22, daysAgo: offset, step: 2)
         let press = ramp(32.5, 40, daysAgo: offset)
         let bench = ramp(70, 80, daysAgo: offset)
-        return workout("Push day", daysAgo: offset, gymId: gymId, minutes: 54 + (offset % 3) * 2, entries: [
+        return workout("Push day", daysAgo: offset, gymId: gymId, minutes: 54 + (offset % 3) * 2, heartRate: 124 + (offset % 5) * 2, entries: [
             entry(ex.chestPress, 1, sets: [
                 mkSet(1, type: .warmup, top - 20, 12),
                 mkSet(2, top - 2.5, 10),
@@ -333,7 +334,7 @@ enum DebugSeed {
         let top = ramp(55, 65, daysAgo: offset)
         let row = ramp(50, 57.5, daysAgo: offset)
         let closeGrip = ramp(40, 45, daysAgo: offset)
-        return workout("Pull day", daysAgo: offset, gymId: gymId, minutes: 50 + (offset % 3) * 2, entries: [
+        return workout("Pull day", daysAgo: offset, gymId: gymId, minutes: 50 + (offset % 3) * 2, heartRate: 119 + (offset % 4) * 2, entries: [
             entry(ex.latPulldown, 1, sets: [
                 mkSet(1, top - 5, 12),
                 mkSet(2, top, 10),
@@ -349,7 +350,7 @@ enum DebugSeed {
         let squat = ramp(90, 110, daysAgo: offset)
         let legPress = ramp(140, 170, daysAgo: offset)
         let curl = ramp(40, 47.5, daysAgo: offset)
-        return workout("Leg day", daysAgo: offset, gymId: gymId, minutes: 58 + (offset % 4) * 2, entries: [
+        return workout("Leg day", daysAgo: offset, gymId: gymId, minutes: 58 + (offset % 4) * 2, heartRate: 134 + (offset % 5) * 2, entries: [
             entry(ex.squat, 1, sets: [
                 mkSet(1, type: .warmup, squat - 40, 10),
                 mkSet(2, squat - 10, 8),
@@ -391,6 +392,7 @@ enum DebugSeed {
         gymId: String,
         minutes: Int,
         notes: String? = nil,
+        heartRate: Int? = nil,
         entries: [LocalWorkoutExercise]
     ) -> LocalWorkout {
         let start = sessionStart(daysAgo: offset)
@@ -401,6 +403,7 @@ enum DebugSeed {
             startedAt: start,
             endedAt: end,
             notes: notes,
+            averageHeartRate: heartRate,
             updatedAt: end,
             exercises: entries
         )

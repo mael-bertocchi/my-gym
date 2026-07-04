@@ -5,6 +5,7 @@ struct ActiveWorkoutView: View {
     @Environment(AppSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
+    @Environment(HealthKitService.self) private var healthKit
 
     @State private var expandedEntryId: String?
     @State private var showPicker = false
@@ -215,22 +216,11 @@ struct ActiveWorkoutView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Minimize workout")
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(workout.name ?? "Workout")
-                        .font(Theme.font(20, .heavy))
-                        .tracking(-0.3)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                    if let gym = store.gym(id: workout.gymId) {
-                        Text(gym.name.uppercased())
-                            .font(Theme.mono(11))
-                            .kerning(0.5)
-                            .foregroundStyle(Theme.muted2)
-                            .lineLimit(1)
-                    }
-                }
-
                 Spacer(minLength: 8)
+
+                if let bpm = healthKit.liveHeartRate(at: now) {
+                    HeartRateBadge(bpm: bpm)
+                }
 
                 Button {
                     if activeWorkout.isPaused {
@@ -250,7 +240,8 @@ struct ActiveWorkoutView: View {
                     }
                     .padding(.vertical, 7)
                     .padding(.horizontal, 11)
-                    .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                    .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                    .fixedSize()
                     .expandedTapTarget(vertical: 6, horizontal: 2)
                 }
                 .buttonStyle(.plain)
@@ -265,6 +256,7 @@ struct ActiveWorkoutView: View {
                         .padding(.vertical, 9)
                         .padding(.horizontal, 15)
                         .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                        .fixedSize()
                         .expandedTapTarget(vertical: 6, horizontal: 2)
                 }
                 .buttonStyle(.plain)
@@ -282,9 +274,31 @@ struct ActiveWorkoutView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.ignoresSafeArea(edges: .top))
+        .background(Theme.screenBackground.ignoresSafeArea(edges: .top))
         .overlay(alignment: .bottom) {
             Rectangle().fill(Theme.divider).frame(height: 1)
+        }
+    }
+
+    private struct HeartRateBadge: View {
+        let bpm: Int
+
+        var body: some View {
+            HStack(spacing: 5) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.danger)
+                    .symbolEffect(.pulse, options: .repeating)
+                Text("\(bpm)")
+                    .font(Theme.mono(15, .bold))
+                    .foregroundStyle(Theme.ink)
+            }
+            .padding(.vertical, 7)
+            .padding(.horizontal, 11)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+            .fixedSize()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Heart rate \(bpm) beats per minute")
         }
     }
 
