@@ -109,7 +109,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
  */
 async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, reply: FastifyReply): Promise<void> {
     if (request.body.gymId !== undefined) {
-        const gym = await request.server.prisma.gym.findUnique({ where: { id: request.body.gymId } });
+        const gym = await request.server.prisma.gym.findFirst({ where: { id: request.body.gymId, userId: request.user.id } });
 
         if (gym === null) {
             throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');
@@ -170,7 +170,7 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
     }
     if (request.body.gymId !== undefined) {
         if (request.body.gymId !== null) {
-            const gym = await request.server.prisma.gym.findUnique({ where: { id: request.body.gymId } });
+            const gym = await request.server.prisma.gym.findFirst({ where: { id: request.body.gymId, userId: request.user.id } });
 
             if (gym === null) {
                 throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');

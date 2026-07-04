@@ -45,7 +45,7 @@ async function listExerciseSettings(request: FastifyRequest<ListExerciseSettings
  * @returns {Promise<void>} Resolves when the settings are saved.
  */
 async function upsertExerciseSetting(request: FastifyRequest<UpsertExerciseSettingRequest>, reply: FastifyReply): Promise<void> {
-    const exercise = await request.server.prisma.exercise.findUnique({ where: { id: request.body.exerciseId } });
+    const exercise = await request.server.prisma.exercise.findFirst({ where: { id: request.body.exerciseId, userId: request.user.id } });
 
     if (exercise === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');

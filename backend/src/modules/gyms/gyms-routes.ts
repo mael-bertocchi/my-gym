@@ -6,34 +6,34 @@ import { UuidParamsSchema } from 'src/shared/schemas';
 
 /**
  * @function gymsRoutes
- * @description Defines the gym catalog routes (authenticated reads, administrator writes).
+ * @description Defines the caller's personal gym catalog routes.
  */
 export default function (fastify: FastifyInstance): void {
-    const administrator = [fastify.authentication.authenticate, fastify.authentication.authorizeAdministrator];
+    const authenticated = [fastify.authentication.authenticate];
 
     fastify.get<ListGymsRequest>('/', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             querystring: ListGymsQuerySchema
         }
     }, gymsController.listGyms);
 
     fastify.get<GymParamsRequest>('/:id', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }
     }, gymsController.getGym);
 
     fastify.post<CreateGymRequest>('/', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             body: CreateGymSchema
         }
     }, gymsController.createGym);
 
     fastify.patch<UpdateGymRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             body: UpdateGymSchema
@@ -41,7 +41,7 @@ export default function (fastify: FastifyInstance): void {
     }, gymsController.updateGym);
 
     fastify.delete<GymParamsRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }

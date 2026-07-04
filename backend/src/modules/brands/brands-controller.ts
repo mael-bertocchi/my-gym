@@ -7,14 +7,14 @@ import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
  * @function listBrands
- * @description Lists brands with optional search and cursor pagination.
+ * @description Lists the caller's brands with optional search and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
 async function listBrands(request: FastifyRequest<ListBrandsRequest>, reply: FastifyReply): Promise<void> {
     const { take, limit, cursor, skip } = parseCursor(request.query);
 
-    const where: Prisma.BrandWhereInput = {};
+    const where: Prisma.BrandWhereInput = { userId: request.user.id };
 
     if (request.query.search !== undefined && request.query.search.trim().length !== 0) {
         where.name = { contains: request.query.search.trim(), mode: 'insensitive' };
@@ -39,13 +39,13 @@ async function listBrands(request: FastifyRequest<ListBrandsRequest>, reply: Fas
 
 /**
  * @function getBrand
- * @description Retrieves a single brand.
+ * @description Retrieves one of the caller's brands.
  *
  * @returns {Promise<void>} Resolves when the brand is sent.
  */
 async function getBrand(request: FastifyRequest<BrandParamsRequest>, reply: FastifyReply): Promise<void> {
-    const brand = await request.server.prisma.brand.findUnique({
-        where: { id: request.params.id },
+    const brand = await request.server.prisma.brand.findFirst({
+        where: { id: request.params.id, userId: request.user.id },
         select: {
             id: true,
             name: true,
@@ -63,19 +63,19 @@ async function getBrand(request: FastifyRequest<BrandParamsRequest>, reply: Fast
 
 /**
  * @function createBrand
- * @description Creates a brand.
+ * @description Creates a brand owned by the caller.
  *
  * @returns {Promise<void>} Resolves when the brand is created.
  */
 async function createBrand(request: FastifyRequest<CreateBrandRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.brand.findUnique({ where: { name: request.body.name } });
+    const existing = await request.server.prisma.brand.findUnique({ where: { userId_name: { userId: request.user.id, name: request.body.name } } });
 
     if (existing !== null) {
         throw new RequestError(StatusCodes.CONFLICT, 'A brand with this name already exists');
     }
 
     const created = await request.server.prisma.brand.create({
-        data: { name: request.body.name },
+        data: { userId: request.user.id, name: request.body.name },
         select: {
             id: true,
             name: true,
@@ -94,14 +94,14 @@ async function createBrand(request: FastifyRequest<CreateBrandRequest>, reply: F
  * @returns {Promise<void>} Resolves when the brand is updated.
  */
 async function updateBrand(request: FastifyRequest<UpdateBrandRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.brand.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.brand.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
     }
 
     const duplicate = await request.server.prisma.brand.findFirst({
-        where: { name: request.body.name, id: { not: request.params.id } }
+        where: { userId: request.user.id, name: request.body.name, id: { not: request.params.id } }
     });
 
     if (duplicate !== null) {
@@ -129,7 +129,7 @@ async function updateBrand(request: FastifyRequest<UpdateBrandRequest>, reply: F
  * @returns {Promise<void>} Resolves when the brand is deleted.
  */
 async function deleteBrand(request: FastifyRequest<BrandParamsRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.brand.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.brand.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');

@@ -7,14 +7,14 @@ import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
  * @function listGyms
- * @description Lists gyms with optional search and cursor pagination.
+ * @description Lists the caller's gyms with optional search and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
 async function listGyms(request: FastifyRequest<ListGymsRequest>, reply: FastifyReply): Promise<void> {
     const { take, limit, cursor, skip } = parseCursor(request.query);
 
-    const where: Prisma.GymWhereInput = {};
+    const where: Prisma.GymWhereInput = { userId: request.user.id };
 
     if (request.query.search !== undefined && request.query.search.trim().length !== 0) {
         where.name = { contains: request.query.search.trim(), mode: 'insensitive' };
@@ -41,13 +41,13 @@ async function listGyms(request: FastifyRequest<ListGymsRequest>, reply: Fastify
 
 /**
  * @function getGym
- * @description Retrieves a single gym.
+ * @description Retrieves one of the caller's gyms.
  *
  * @returns {Promise<void>} Resolves when the gym is sent.
  */
 async function getGym(request: FastifyRequest<GymParamsRequest>, reply: FastifyReply): Promise<void> {
-    const gym = await request.server.prisma.gym.findUnique({
-        where: { id: request.params.id },
+    const gym = await request.server.prisma.gym.findFirst({
+        where: { id: request.params.id, userId: request.user.id },
         select: {
             id: true,
             name: true,
@@ -67,12 +67,12 @@ async function getGym(request: FastifyRequest<GymParamsRequest>, reply: FastifyR
 
 /**
  * @function createGym
- * @description Creates a gym.
+ * @description Creates a gym owned by the caller.
  *
  * @returns {Promise<void>} Resolves when the gym is created.
  */
 async function createGym(request: FastifyRequest<CreateGymRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.gym.findUnique({ where: { name: request.body.name } });
+    const existing = await request.server.prisma.gym.findUnique({ where: { userId_name: { userId: request.user.id, name: request.body.name } } });
 
     if (existing !== null) {
         throw new RequestError(StatusCodes.CONFLICT, 'A gym with this name already exists');
@@ -80,6 +80,7 @@ async function createGym(request: FastifyRequest<CreateGymRequest>, reply: Fasti
 
     const created = await request.server.prisma.gym.create({
         data: {
+            userId: request.user.id,
             name: request.body.name,
             address: request.body.address,
             notes: request.body.notes
@@ -104,7 +105,7 @@ async function createGym(request: FastifyRequest<CreateGymRequest>, reply: Fasti
  * @returns {Promise<void>} Resolves when the gym is updated.
  */
 async function updateGym(request: FastifyRequest<UpdateGymRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.gym.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.gym.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');
@@ -112,7 +113,7 @@ async function updateGym(request: FastifyRequest<UpdateGymRequest>, reply: Fasti
 
     if (request.body.name !== undefined) {
         const duplicate = await request.server.prisma.gym.findFirst({
-            where: { name: request.body.name, id: { not: request.params.id } }
+            where: { userId: request.user.id, name: request.body.name, id: { not: request.params.id } }
         });
 
         if (duplicate !== null) {
@@ -155,7 +156,7 @@ async function updateGym(request: FastifyRequest<UpdateGymRequest>, reply: Fasti
  * @returns {Promise<void>} Resolves when the gym is deleted.
  */
 async function deleteGym(request: FastifyRequest<GymParamsRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.gym.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.gym.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');

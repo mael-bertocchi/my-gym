@@ -8,14 +8,14 @@ import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
 /**
  * @function ensureExercise
- * @description Loads an exercise by id or throws a 404. Used by the per-user sub-routes.
+ * @description Loads one of the caller's exercises by id or throws a 404. Used by the per-user sub-routes.
  *
- * @param {FastifyRequest} request The request, used to reach prisma.
+ * @param {FastifyRequest} request The request, used to reach prisma and the caller.
  * @param {string} id The exercise id.
  * @returns {Promise<void>} Resolves when the exercise exists.
  */
 async function ensureExercise(request: FastifyRequest, id: string): Promise<void> {
-    const exercise = await request.server.prisma.exercise.findUnique({ where: { id }, select: { id: true } });
+    const exercise = await request.server.prisma.exercise.findFirst({ where: { id, userId: request.user.id }, select: { id: true } });
 
     if (exercise === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');
@@ -24,14 +24,14 @@ async function ensureExercise(request: FastifyRequest, id: string): Promise<void
 
 /**
  * @function listExercises
- * @description Lists exercises with group/equipment/brand/muscle/name filters and cursor pagination.
+ * @description Lists the caller's exercises with group/equipment/brand/muscle/name filters and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
 async function listExercises(request: FastifyRequest<ListExercisesRequest>, reply: FastifyReply): Promise<void> {
     const { take, limit, cursor, skip } = parseCursor(request.query);
 
-    const where: Prisma.ExerciseWhereInput = {};
+    const where: Prisma.ExerciseWhereInput = { userId: request.user.id };
 
     if (request.query.groupId !== undefined) {
         where.groupId = request.query.groupId;
@@ -78,13 +78,13 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
 
 /**
  * @function getExercise
- * @description Retrieves a single exercise.
+ * @description Retrieves one of the caller's exercises.
  *
  * @returns {Promise<void>} Resolves when the exercise is sent.
  */
 async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply: FastifyReply): Promise<void> {
-    const exercise = await request.server.prisma.exercise.findUnique({
-        where: { id: request.params.id },
+    const exercise = await request.server.prisma.exercise.findFirst({
+        where: { id: request.params.id, userId: request.user.id },
         select: {
             id: true,
             name: true,
@@ -109,26 +109,26 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
 
 /**
  * @function createExercise
- * @description Creates an exercise, optionally linked to a brand and a movement group.
+ * @description Creates an exercise owned by the caller, optionally linked to one of their brands and movement groups.
  *
  * @returns {Promise<void>} Resolves when the exercise is created.
  */
 async function createExercise(request: FastifyRequest<CreateExerciseRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.exercise.findUnique({ where: { name: request.body.name } });
+    const existing = await request.server.prisma.exercise.findUnique({ where: { userId_name: { userId: request.user.id, name: request.body.name } } });
 
     if (existing !== null) {
         throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
     }
 
     if (request.body.brandId !== undefined) {
-        const brand = await request.server.prisma.brand.findUnique({ where: { id: request.body.brandId } });
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
 
         if (brand === null) {
             throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
     if (request.body.groupId !== undefined) {
-        const group = await request.server.prisma.exerciseGroup.findUnique({ where: { id: request.body.groupId } });
+        const group = await request.server.prisma.exerciseGroup.findFirst({ where: { id: request.body.groupId, userId: request.user.id } });
 
         if (group === null) {
             throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise group not found');
@@ -137,6 +137,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
 
     const created = await request.server.prisma.exercise.create({
         data: {
+            userId: request.user.id,
             name: request.body.name,
             primaryMuscle: request.body.primaryMuscle,
             secondaryMuscles: request.body.secondaryMuscles,
@@ -169,7 +170,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
  * @returns {Promise<void>} Resolves when the exercise is updated.
  */
 async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.exercise.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.exercise.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');
@@ -177,7 +178,7 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
 
     if (request.body.name !== undefined) {
         const duplicate = await request.server.prisma.exercise.findFirst({
-            where: { name: request.body.name, id: { not: request.params.id } }
+            where: { userId: request.user.id, name: request.body.name, id: { not: request.params.id } }
         });
 
         if (duplicate !== null) {
@@ -185,14 +186,14 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
         }
     }
     if (request.body.brandId !== undefined && request.body.brandId !== null) {
-        const brand = await request.server.prisma.brand.findUnique({ where: { id: request.body.brandId } });
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
 
         if (brand === null) {
             throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
     if (request.body.groupId !== undefined && request.body.groupId !== null) {
-        const group = await request.server.prisma.exerciseGroup.findUnique({ where: { id: request.body.groupId } });
+        const group = await request.server.prisma.exerciseGroup.findFirst({ where: { id: request.body.groupId, userId: request.user.id } });
 
         if (group === null) {
             throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise group not found');
@@ -254,7 +255,7 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
  * @returns {Promise<void>} Resolves when the exercise is deleted.
  */
 async function deleteExercise(request: FastifyRequest<ExerciseParamsRequest>, reply: FastifyReply): Promise<void> {
-    const existing = await request.server.prisma.exercise.findUnique({ where: { id: request.params.id } });
+    const existing = await request.server.prisma.exercise.findFirst({ where: { id: request.params.id, userId: request.user.id } });
 
     if (existing === null) {
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');

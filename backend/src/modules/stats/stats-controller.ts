@@ -121,7 +121,7 @@ async function getMuscleDistribution(request: FastifyRequest<MuscleDistributionR
  */
 async function getPersonalRecords(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const exercises = await request.server.prisma.exercise.findMany({
-        where: { workoutEntries: { some: { workout: { userId: request.user.id } } } },
+        where: { userId: request.user.id, workoutEntries: { some: { workout: { userId: request.user.id } } } },
         select: {
             id: true,
             name: true,

@@ -6,34 +6,34 @@ import { UuidParamsSchema } from 'src/shared/schemas';
 
 /**
  * @function brandsRoutes
- * @description Defines the brand catalog routes (authenticated reads, administrator writes).
+ * @description Defines the caller's personal brand catalog routes.
  */
 export default function (fastify: FastifyInstance): void {
-    const administrator = [fastify.authentication.authenticate, fastify.authentication.authorizeAdministrator];
+    const authenticated = [fastify.authentication.authenticate];
 
     fastify.get<ListBrandsRequest>('/', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             querystring: ListBrandsQuerySchema
         }
     }, brandsController.listBrands);
 
     fastify.get<BrandParamsRequest>('/:id', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }
     }, brandsController.getBrand);
 
     fastify.post<CreateBrandRequest>('/', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             body: CreateBrandSchema
         }
     }, brandsController.createBrand);
 
     fastify.patch<UpdateBrandRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             body: UpdateBrandSchema
@@ -41,7 +41,7 @@ export default function (fastify: FastifyInstance): void {
     }, brandsController.updateBrand);
 
     fastify.delete<BrandParamsRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }

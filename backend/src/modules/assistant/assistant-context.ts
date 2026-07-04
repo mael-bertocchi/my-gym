@@ -75,7 +75,7 @@ export async function loadAssistantContext(prisma: PrismaClient, userId: string)
     }));
 
     const exercises = await prisma.exercise.findMany({
-        where: { workoutEntries: { some: { workout: { userId } } } },
+        where: { userId, workoutEntries: { some: { workout: { userId } } } },
         select: {
             id: true,
             name: true,

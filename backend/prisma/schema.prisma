@@ -89,6 +89,10 @@ model User {
   conversations    Conversation[]
   refreshSessions  RefreshSession[]
   syncDeletions    SyncDeletion[]
+  brands           Brand[]
+  exerciseGroups   ExerciseGroup[]
+  exercises        Exercise[]
+  gyms             Gym[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -110,32 +114,42 @@ model RefreshSession {
 }
 
 model Brand {
-  id   String @id @default(uuid())
-  name String @unique
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
 
   exercises Exercise[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([userId, name])
+  @@index([userId])
   @@map("brands")
 }
 
 model ExerciseGroup {
-  id   String @id @default(uuid())
-  name String @unique
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
 
   exercises Exercise[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([userId, name])
+  @@index([userId])
   @@map("exercise_groups")
 }
 
 model Exercise {
   id               String         @id @default(uuid())
-  name             String         @unique
+  userId           String         @map("user_id")
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
   primaryMuscle    MuscleGroup    @map("primary_muscle")
   secondaryMuscles MuscleGroup[]  @map("secondary_muscles")
   equipment        EquipmentType  @default(OTHER)
@@ -152,6 +166,8 @@ model Exercise {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([userId, name])
+  @@index([userId])
   @@index([primaryMuscle])
   @@index([brandId])
   @@index([groupId])
@@ -160,7 +176,9 @@ model Exercise {
 
 model Gym {
   id      String  @id @default(uuid())
-  name    String  @unique
+  userId  String  @map("user_id")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
   address String?
   notes   String?
 
@@ -170,6 +188,8 @@ model Gym {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([userId, name])
+  @@index([userId])
   @@map("gyms")
 }
 

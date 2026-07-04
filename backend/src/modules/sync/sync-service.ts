@@ -4,7 +4,7 @@ import type { PushBody, SyncDeletionInput, SyncSettingInput, SyncWorkoutInput } 
 
 /**
  * @function pullChanges
- * @description Returns the catalog and the caller's own logs/settings changed since a timestamp, plus deletion tombstones. An undefined `since` returns a full snapshot.
+ * @description Returns the caller's catalog, logs, and settings changed since a timestamp, plus deletion tombstones. An undefined `since` returns a full snapshot.
  *
  * @param {PrismaClient} prisma The Prisma client.
  * @param {string} userId The caller's id.
@@ -15,10 +15,10 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
     const changed: Prisma.DateTimeFilter | undefined = since !== undefined ? { gt: since } : undefined;
 
     const [brands, exerciseGroups, exercises, gyms, workouts, exerciseSettings, deletions] = await Promise.all([
-        prisma.brand.findMany({ where: { updatedAt: changed } }),
-        prisma.exerciseGroup.findMany({ where: { updatedAt: changed } }),
-        prisma.exercise.findMany({ where: { updatedAt: changed } }),
-        prisma.gym.findMany({ where: { updatedAt: changed } }),
+        prisma.brand.findMany({ where: { userId, updatedAt: changed } }),
+        prisma.exerciseGroup.findMany({ where: { userId, updatedAt: changed } }),
+        prisma.exercise.findMany({ where: { userId, updatedAt: changed } }),
+        prisma.gym.findMany({ where: { userId, updatedAt: changed } }),
         prisma.workout.findMany({
             where: { userId, updatedAt: changed }, select: {
                 id: true,
@@ -95,7 +95,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
         const gymId = workout.gymId ?? null;
 
         if (gymId !== null) {
-            const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true } });
+            const gym = await prisma.gym.findFirst({ where: { id: gymId, userId }, select: { id: true } });
             if (gym === null) {
                 return { id: workout.id, status: 'error', message: 'Gym not found' };
             }
@@ -103,7 +103,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
 
         const exerciseIds = [...new Set(workout.exercises.map((entry) => entry.exerciseId))];
         if (exerciseIds.length !== 0) {
-            const found = await prisma.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
+            const found = await prisma.exercise.findMany({ where: { id: { in: exerciseIds }, userId }, select: { id: true } });
             if (found.length !== exerciseIds.length) {
                 return { id: workout.id, status: 'error', message: 'One or more exercises not found' };
             }
@@ -250,7 +250,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
  */
 async function applySetting(prisma: PrismaClient, userId: string, setting: SyncSettingInput) {
     try {
-        const exercise = await prisma.exercise.findUnique({ where: { id: setting.exerciseId }, select: { id: true } });
+        const exercise = await prisma.exercise.findFirst({ where: { id: setting.exerciseId, userId }, select: { id: true } });
         if (exercise === null) {
             return { id: setting.id, status: 'error', message: 'Exercise not found' };
         }

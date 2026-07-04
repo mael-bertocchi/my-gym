@@ -6,34 +6,34 @@ import { UuidParamsSchema } from 'src/shared/schemas';
 
 /**
  * @function exercisesRoutes
- * @description Defines the exercise catalog routes (authenticated reads, administrator writes) and the caller's per-exercise history/stats/pre-fill.
+ * @description Defines the caller's personal exercise catalog routes and per-exercise history/stats/pre-fill.
  */
 export default function (fastify: FastifyInstance): void {
-    const administrator = [fastify.authentication.authenticate, fastify.authentication.authorizeAdministrator];
+    const authenticated = [fastify.authentication.authenticate];
 
     fastify.get<ListExercisesRequest>('/', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             querystring: ListExercisesQuerySchema
         }
     }, exercisesController.listExercises);
 
     fastify.get<ExerciseParamsRequest>('/:id', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }
     }, exercisesController.getExercise);
 
     fastify.post<CreateExerciseRequest>('/', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             body: CreateExerciseSchema
         }
     }, exercisesController.createExercise);
 
     fastify.patch<UpdateExerciseRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             body: UpdateExerciseSchema
@@ -41,14 +41,14 @@ export default function (fastify: FastifyInstance): void {
     }, exercisesController.updateExercise);
 
     fastify.delete<ExerciseParamsRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }
     }, exercisesController.deleteExercise);
 
     fastify.get<ExerciseRangeRequest>('/:id/history', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             querystring: ExerciseRangeQuerySchema
@@ -56,7 +56,7 @@ export default function (fastify: FastifyInstance): void {
     }, exercisesController.getExerciseHistory);
 
     fastify.get<ExerciseRangeRequest>('/:id/stats', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             querystring: ExerciseRangeQuerySchema
@@ -64,7 +64,7 @@ export default function (fastify: FastifyInstance): void {
     }, exercisesController.getExerciseStats);
 
     fastify.get<ExerciseLastRequest>('/:id/last', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             querystring: ExerciseLastQuerySchema

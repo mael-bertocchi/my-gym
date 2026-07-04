@@ -6,34 +6,34 @@ import { UuidParamsSchema } from 'src/shared/schemas';
 
 /**
  * @function exerciseGroupsRoutes
- * @description Defines the exercise-group catalog routes (authenticated reads, administrator writes).
+ * @description Defines the caller's personal exercise-group catalog routes.
  */
 export default function (fastify: FastifyInstance): void {
-    const administrator = [fastify.authentication.authenticate, fastify.authentication.authorizeAdministrator];
+    const authenticated = [fastify.authentication.authenticate];
 
     fastify.get<ListExerciseGroupsRequest>('/', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             querystring: ListExerciseGroupsQuerySchema
         }
     }, exerciseGroupsController.listExerciseGroups);
 
     fastify.get<ExerciseGroupParamsRequest>('/:id', {
-        preHandler: [fastify.authentication.authenticate],
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }
     }, exerciseGroupsController.getExerciseGroup);
 
     fastify.post<CreateExerciseGroupRequest>('/', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             body: CreateExerciseGroupSchema
         }
     }, exerciseGroupsController.createExerciseGroup);
 
     fastify.patch<UpdateExerciseGroupRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema,
             body: UpdateExerciseGroupSchema
@@ -41,7 +41,7 @@ export default function (fastify: FastifyInstance): void {
     }, exerciseGroupsController.updateExerciseGroup);
 
     fastify.delete<ExerciseGroupParamsRequest>('/:id', {
-        preHandler: administrator,
+        preHandler: authenticated,
         schema: {
             params: UuidParamsSchema
         }

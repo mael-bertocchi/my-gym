@@ -22,7 +22,7 @@ async function updateProfile(request: FastifyRequest<UpdateProfileRequest>, repl
     }
     if (request.body.defaultGymId !== undefined) {
         if (request.body.defaultGymId !== null) {
-            const gym = await request.server.prisma.gym.findUnique({ where: { id: request.body.defaultGymId } });
+            const gym = await request.server.prisma.gym.findFirst({ where: { id: request.body.defaultGymId, userId: request.user.id } });
 
             if (gym === null) {
                 throw new RequestError(StatusCodes.NOT_FOUND, 'Gym not found');
