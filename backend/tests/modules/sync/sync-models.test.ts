@@ -61,6 +61,33 @@ describe('SyncWorkoutSchema', () => {
         bad.exercises[0].supersetId = 'pair-1';
         expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
     });
+
+    it('accepts a workout with an averageHeartRate and keeps it', () => {
+        const timed = aggregate() as { averageHeartRate?: number };
+        timed.averageHeartRate = 128;
+        const result = SyncWorkoutSchema.safeParse(timed);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.averageHeartRate).toBe(128);
+        }
+    });
+
+    it('accepts a workout without an averageHeartRate', () => {
+        const result = SyncWorkoutSchema.safeParse(aggregate());
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.averageHeartRate).toBeUndefined();
+        }
+    });
+
+    it('rejects a non-integer or out-of-range averageHeartRate', () => {
+        const fractional = aggregate() as { averageHeartRate?: number };
+        fractional.averageHeartRate = 120.4;
+        expect(SyncWorkoutSchema.safeParse(fractional).success).toBe(false);
+        const excessive = aggregate() as { averageHeartRate?: number };
+        excessive.averageHeartRate = 400;
+        expect(SyncWorkoutSchema.safeParse(excessive).success).toBe(false);
+    });
 });
 
 describe('PushBodySchema', () => {

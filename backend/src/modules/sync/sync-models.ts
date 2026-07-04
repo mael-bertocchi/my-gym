@@ -50,6 +50,7 @@ export const SyncWorkoutSchema = z.object({
     startedAt: z.coerce.date(),
     endedAt: z.coerce.date().nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),
+    averageHeartRate: z.number().int().min(1).max(300).nullable().optional(),
     updatedAt: z.coerce.date(),
     exercises: z.array(SyncWorkoutExerciseSchema).max(MAX_BATCH)
 });

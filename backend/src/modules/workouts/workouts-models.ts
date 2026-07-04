@@ -39,14 +39,15 @@ export type CreateWorkoutBody = z.infer<typeof CreateWorkoutSchema>;
 
 /**
  * @constant UpdateWorkoutSchema
- * @description Zod schema for the update-workout request body. Each field is optional, but at least one must be provided. A null gymId/endedAt clears that field.
+ * @description Zod schema for the update-workout request body. Each field is optional, but at least one must be provided. A null gymId/endedAt/averageHeartRate clears that field.
  */
 export const UpdateWorkoutSchema = z.object({
     gymId: z.uuid().nullable().optional(),
     name: z.string().min(1).max(120).optional(),
     startedAt: z.coerce.date().optional(),
     endedAt: z.coerce.date().nullable().optional(),
-    notes: z.string().max(2000).optional()
+    notes: z.string().max(2000).optional(),
+    averageHeartRate: z.number().int().min(1).max(300).nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
 });

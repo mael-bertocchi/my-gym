@@ -27,6 +27,7 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                 startedAt: true,
                 endedAt: true,
                 notes: true,
+                averageHeartRate: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {
@@ -124,6 +125,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                     startedAt: true,
                     endedAt: true,
                     notes: true,
+                    averageHeartRate: true,
                     createdAt: true,
                     updatedAt: true,
                     entries: {
@@ -160,8 +162,8 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
         await prisma.$transaction(async (tx) => {
             await tx.workout.upsert({
                 where: { id: workout.id },
-                create: { id: workout.id, userId, gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, updatedAt: workout.updatedAt },
-                update: { gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, updatedAt: workout.updatedAt }
+                create: { id: workout.id, userId, gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, updatedAt: workout.updatedAt },
+                update: { gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, updatedAt: workout.updatedAt }
             });
 
             await tx.workoutExercise.deleteMany({ where: { workoutId: workout.id } });
@@ -203,6 +205,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                 startedAt: true,
                 endedAt: true,
                 notes: true,
+                averageHeartRate: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {

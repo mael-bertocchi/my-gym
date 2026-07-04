@@ -194,15 +194,16 @@ model Gym {
 }
 
 model Workout {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gymId     String?   @map("gym_id")
-  gym       Gym?      @relation(fields: [gymId], references: [id], onDelete: SetNull)
-  name      String?
-  startedAt DateTime  @map("started_at")
-  endedAt   DateTime? @map("ended_at")
-  notes     String?
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gymId            String?   @map("gym_id")
+  gym              Gym?      @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  name             String?
+  startedAt        DateTime  @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  notes            String?
+  averageHeartRate Int?      @map("average_heart_rate")
 
   entries WorkoutExercise[]
 

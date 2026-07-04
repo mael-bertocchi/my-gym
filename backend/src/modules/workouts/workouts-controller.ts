@@ -32,6 +32,7 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
             startedAt: true,
             endedAt: true,
             notes: true,
+            averageHeartRate: true,
             createdAt: true,
             updatedAt: true
         },
@@ -60,6 +61,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
             startedAt: true,
             endedAt: true,
             notes: true,
+            averageHeartRate: true,
             createdAt: true,
             updatedAt: true,
             entries: {
@@ -131,6 +133,7 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             startedAt: true,
             endedAt: true,
             notes: true,
+            averageHeartRate: true,
             createdAt: true,
             updatedAt: true
         }
@@ -168,6 +171,9 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
     if (request.body.notes !== undefined) {
         data.notes = request.body.notes;
     }
+    if (request.body.averageHeartRate !== undefined) {
+        data.averageHeartRate = request.body.averageHeartRate;
+    }
     if (request.body.gymId !== undefined) {
         if (request.body.gymId !== null) {
             const gym = await request.server.prisma.gym.findFirst({ where: { id: request.body.gymId, userId: request.user.id } });
@@ -189,6 +195,7 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
             startedAt: true,
             endedAt: true,
             notes: true,
+            averageHeartRate: true,
             createdAt: true,
             updatedAt: true
         }
