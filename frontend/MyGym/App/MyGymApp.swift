@@ -41,7 +41,6 @@ struct MyGymApp: App {
                 .environment(activeWorkout)
                 .environment(tabChrome)
                 .tint(Theme.accentBlue)
-                .preferredColorScheme(.light)
                 .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
     }

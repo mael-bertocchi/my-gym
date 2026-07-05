@@ -30,7 +30,7 @@ struct ProfileHomeGymSheet: View {
                 .padding(.bottom, 24)
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isSaving)
@@ -170,7 +170,7 @@ struct ProfileChangePasswordSheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isLoading || hasInput)
     }

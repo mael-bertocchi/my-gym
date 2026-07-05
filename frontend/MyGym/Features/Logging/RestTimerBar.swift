@@ -19,7 +19,7 @@ struct RestTimerBar: View {
             .frame(width: 30, height: 30)
 
             VStack(alignment: .leading, spacing: 2) {
-                EyebrowText(eyebrow, size: 10)
+                EyebrowText(eyebrow, color: Theme.muted, size: 10)
                     .lineLimit(1)
                 Text(Formatting.countdown(timer.remainingSeconds))
                     .font(Theme.mono(18, .bold))
@@ -34,7 +34,7 @@ struct RestTimerBar: View {
                 Button(action: onSkip) {
                     Text("Skip")
                         .font(Theme.font(12, .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onAccent)
                         .fixedSize()
                         .padding(.vertical, 7)
                         .padding(.horizontal, 13)
@@ -48,7 +48,10 @@ struct RestTimerBar: View {
         .padding(.vertical, 11)
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity)
-        .liquidGlass(radius: 0, blueTinted: true)
+        .background(Theme.restBarFill)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+        }
     }
 
     private func adjustChip(_ title: String, delta: Int) -> some View {
@@ -61,10 +64,10 @@ struct RestTimerBar: View {
                 .fixedSize()
                 .padding(.vertical, 7)
                 .padding(.horizontal, 11)
-                .background(Color.white.opacity(0.65), in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.9), lineWidth: 1)
+                        .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                 )
                 .expandedTapTarget(vertical: 8, horizontal: 3)
         }

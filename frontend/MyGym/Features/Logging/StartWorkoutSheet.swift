@@ -56,7 +56,7 @@ struct StartWorkoutSheet: View {
                 .padding(.bottom, 16)
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { footer }
         .presentationDragIndicator(.visible)
         .onAppear(perform: preselect)
@@ -101,7 +101,7 @@ struct StartWorkoutSheet: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                isSelected ? Theme.accentBlueTint : Color.white,
+                isSelected ? Theme.accentBlueTint : Theme.surface,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
             .overlay(
@@ -146,7 +146,7 @@ struct StartWorkoutSheet: View {
             .padding(.top, 16)
             .padding(.bottom, 12)
         }
-        .background(Color.white)
+        .background(Theme.surface)
     }
 
     private var orderedGyms: [Gym] {
@@ -216,7 +216,7 @@ private struct StartWorkoutAddGymSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 24)
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .presentationDetents([.height(280)])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isSaving || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

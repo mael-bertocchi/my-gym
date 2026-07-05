@@ -152,7 +152,7 @@ struct CatalogGymAddSheet: View {
             .padding(.top, 12)
             .padding(.bottom, 8)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .presentationDragIndicator(.visible)
         .manageInfoAlert($alert)
         .interactiveDismissDisabled(isCreating || hasInput)

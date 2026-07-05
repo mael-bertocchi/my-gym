@@ -41,7 +41,7 @@ struct HistoryWorkoutEditSheet: View {
         }
         .padding(.top, 12)
         .padding(.horizontal, 24)
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isDirty)

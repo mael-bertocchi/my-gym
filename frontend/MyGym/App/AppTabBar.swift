@@ -31,6 +31,7 @@ extension Theme {
 }
 
 struct AppTabBar: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var selection: AppTab
     var isWorkoutActive: Bool
     var onCenterTap: () -> Void
@@ -49,7 +50,7 @@ struct AppTabBar: View {
         .background {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                Color.white.opacity(0.75)
+                Theme.surface.opacity(colorScheme == .dark ? 0.85 : 0.75)
             }
             .overlay(alignment: .top) {
                 Rectangle().fill(Theme.canvas).frame(height: 1)

@@ -32,11 +32,11 @@ struct PrimaryButton: View {
             ZStack {
                 if isLoading {
                     ProgressView()
-                        .tint(isDisabled ? Theme.muted2 : .white)
+                        .tint(isDisabled ? Theme.muted2 : Theme.onAccent)
                 } else {
                     Text(title)
                         .font(Theme.font(16, .bold))
-                        .foregroundStyle(isDisabled ? Theme.muted2 : .white)
+                        .foregroundStyle(isDisabled ? Theme.muted2 : Theme.onAccent)
                 }
             }
             .frame(maxWidth: .infinity)

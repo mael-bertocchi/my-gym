@@ -57,7 +57,7 @@ struct AdministratorCreateUserSheet: View {
             .padding(.top, 12)
             .padding(.bottom, 8)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .manageInfoAlert($alert)
         .interactiveDismissDisabled(isCreating)
     }
@@ -155,7 +155,7 @@ struct AdministratorManageUserSheet: View {
             .padding(.top, 12)
             .padding(.bottom, 8)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .alert("Deactivate \(user.displayName)?", isPresented: $showDeactivateConfirm) {
             Button("Cancel", role: .cancel) {}
             Button("Deactivate", role: .destructive) { toggleActive() }

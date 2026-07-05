@@ -17,6 +17,7 @@ struct CardBackground: ViewModifier {
 }
 
 struct LiquidGlassBackground: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
     var radius: CGFloat = Theme.cardRadius
     var blueTinted = false
 
@@ -27,7 +28,7 @@ struct LiquidGlassBackground: ViewModifier {
                     .fill(.ultraThinMaterial)
                     .overlay(
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .fill(Color.white.opacity(0.75))
+                            .fill(Theme.surface.opacity(colorScheme == .dark ? 0.82 : 0.75))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -36,9 +37,12 @@ struct LiquidGlassBackground: ViewModifier {
             }
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.85), lineWidth: 1)
+                    .strokeBorder(
+                        colorScheme == .dark ? Theme.hairline : Color.white.opacity(0.85),
+                        lineWidth: 1
+                    )
             )
-            .shadow(color: Color.black.opacity(0.10), radius: 18, y: 8)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.32 : 0.10), radius: 18, y: 8)
     }
 }
 

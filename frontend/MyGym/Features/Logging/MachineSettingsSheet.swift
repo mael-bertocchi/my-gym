@@ -48,7 +48,7 @@ struct MachineSettingsSheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { footer }
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isDirty)
@@ -165,7 +165,7 @@ struct MachineSettingsSheet: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
-        .background(Color.white)
+        .background(Theme.surface)
     }
 
     private func load() {

@@ -24,7 +24,7 @@ struct AddExercisePicker: View {
                     .padding(.top, 14)
                 exerciseList
             }
-            .background(Color.white.ignoresSafeArea())
+            .background(Theme.surface.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: PickerFormDestination.self) { destination in
                 NewExerciseFormView(

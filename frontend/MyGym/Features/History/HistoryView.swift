@@ -70,7 +70,7 @@ struct HistoryView: View {
                         .foregroundStyle(Theme.muted)
                         .frame(width: 44, height: 44)
                         .background(
-                            Color.white,
+                            Theme.surface,
                             in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous)
                         )
                         .overlay(
