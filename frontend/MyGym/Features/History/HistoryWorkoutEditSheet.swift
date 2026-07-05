@@ -44,7 +44,6 @@ struct HistoryWorkoutEditSheet: View {
         .background(Theme.surface.ignoresSafeArea())
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isDirty)
         .confirmationDialog(
             "Delete this workout?",
             isPresented: $isConfirmingDelete,
@@ -60,14 +59,9 @@ struct HistoryWorkoutEditSheet: View {
     private var navRow: some View {
         ModalHeader(
             title: "Edit workout",
-            onDismiss: { dismiss() },
             trailingTitle: "Save",
             trailingAction: save
         )
-    }
-
-    private var isDirty: Bool {
-        name != (workout.name ?? "") || gymId != workout.gymId
     }
 
     private var gymField: some View {

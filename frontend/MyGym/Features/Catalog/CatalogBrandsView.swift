@@ -16,8 +16,13 @@ struct CatalogBrandsView: View {
 
     var body: some View {
         List {
-            ManageScreenTitle(title: "Brands", subtitle: countLine)
-                .manageTitleRow()
+            ManageScreenTitle(title: "Brands", subtitle: countLine) {
+                ManageAddButton {
+                    newBrandName = ""
+                    showsNewBrandAlert = true
+                }
+            }
+            .manageTitleRow()
 
             if brands.isEmpty {
                 ManageInfoNote(text: "No brands yet.")
@@ -39,15 +44,6 @@ struct CatalogBrandsView: View {
         }
         .managePlainList()
         .manageNavigationChrome("Brands")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ManageAddButton {
-                    newBrandName = ""
-                    showsNewBrandAlert = true
-                }
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
         .alert("New brand", isPresented: $showsNewBrandAlert) {
             TextField("Brand name", text: $newBrandName)
             Button("Cancel", role: .cancel) {}

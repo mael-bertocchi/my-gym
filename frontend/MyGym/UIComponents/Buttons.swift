@@ -206,7 +206,7 @@ struct InlineLink: View {
 struct ModalHeader: View {
     let title: String
     var dismissTitle = "Cancel"
-    var onDismiss: () -> Void
+    var onDismiss: (() -> Void)? = nil
     var trailingTitle: String?
     var trailingDisabled = false
     var trailingAction: () -> Void = {}
@@ -217,13 +217,15 @@ struct ModalHeader: View {
                 .font(Theme.font(16, .bold))
                 .foregroundStyle(Theme.ink)
             HStack {
-                Button(action: onDismiss) {
-                    Text(dismissTitle)
-                        .font(Theme.font(15))
-                        .foregroundStyle(Theme.muted2)
-                        .expandedTapTarget(vertical: 12, horizontal: 10)
+                if let onDismiss {
+                    Button(action: onDismiss) {
+                        Text(dismissTitle)
+                            .font(Theme.font(15))
+                            .foregroundStyle(Theme.muted2)
+                            .expandedTapTarget(vertical: 12, horizontal: 10)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 Spacer()
                 if let trailingTitle {
                     Button(action: trailingAction) {

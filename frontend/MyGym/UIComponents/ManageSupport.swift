@@ -23,17 +23,40 @@ extension View {
     }
 }
 
+struct ManageBackHeader: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Theme.muted2)
+                    .frame(width: 44, height: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 6)
+        .padding(.horizontal, Theme.screenPadding)
+        .background(Theme.screenBackground)
+    }
+}
+
 extension View {
     func manageNavigationChrome(_ title: String) -> some View {
-        self
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.screenBackground, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Color.clear.frame(width: 1, height: 1)
-                }
-            }
+        VStack(spacing: 0) {
+            ManageBackHeader()
+            self
+        }
+        .background(Theme.screenBackground.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
     }
 }
 
@@ -70,21 +93,36 @@ extension View {
     }
 }
 
-struct ManageScreenTitle: View {
+struct ManageScreenTitle<Trailing: View>: View {
     let title: String
     var subtitle: String?
+    @ViewBuilder var trailing: () -> Trailing
+
+    init(
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.trailing = trailing
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(Theme.font(26, .heavy))
-                .tracking(-0.4)
-                .foregroundStyle(Theme.ink)
-            if let subtitle {
-                Text(subtitle)
-                    .font(Theme.font(13))
-                    .foregroundStyle(Theme.muted2)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(Theme.font(26, .heavy))
+                    .tracking(-0.4)
+                    .foregroundStyle(Theme.ink)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(Theme.font(13))
+                        .foregroundStyle(Theme.muted2)
+                }
             }
+            Spacer(minLength: 0)
+            trailing()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -152,11 +190,9 @@ struct ManageAddButton: View {
 
 struct ManageModalHeader: View {
     let title: String
-    var dismissLabel = "Cancel"
-    let onDismiss: () -> Void
 
     var body: some View {
-        ModalHeader(title: title, dismissTitle: dismissLabel, onDismiss: onDismiss)
+        ModalHeader(title: title)
             .padding(.top, 18)
             .padding(.horizontal, 24)
             .padding(.bottom, 20)

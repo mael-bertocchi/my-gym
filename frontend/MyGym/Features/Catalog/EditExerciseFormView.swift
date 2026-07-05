@@ -16,7 +16,6 @@ struct EditExerciseFormView: View {
 
     @State private var isSaving = false
     @State private var alert: ManageAlert?
-    @State private var showsDiscardConfirm = false
     @State private var showsNewGroupAlert = false
     @State private var newGroupName = ""
     @State private var showsNewBrandAlert = false
@@ -34,13 +33,7 @@ struct EditExerciseFormView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ManageModalHeader(title: "Edit exercise") {
-                if hasEdits {
-                    showsDiscardConfirm = true
-                } else {
-                    dismiss()
-                }
-            }
+            ManageModalHeader(title: "Edit exercise")
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     nameField
@@ -58,16 +51,8 @@ struct EditExerciseFormView: View {
         }
         .background(Theme.surface.ignoresSafeArea())
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isSaving || hasEdits)
+        .interactiveDismissDisabled(isSaving)
         .manageInfoAlert($alert)
-        .confirmationDialog(
-            "Discard changes?",
-            isPresented: $showsDiscardConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Discard", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
-        }
     }
 
     private var nameField: some View {

@@ -20,21 +20,7 @@ struct HistoryWorkoutDetailView: View {
         }
         .background(Theme.screenBackground.ignoresSafeArea())
         .hidesAppTabBar()
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.screenBackground, for: .navigationBar)
-        .toolbar {
-            if store.workout(id: workoutId) != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isEditPresented = true
-                    } label: {
-                        Text("Edit")
-                            .font(Theme.font(15))
-                            .foregroundStyle(Theme.muted2)
-                    }
-                }
-            }
-        }
+        .manageNavigationChrome("")
         .sheet(isPresented: $isEditPresented) {
             if let workout = store.workout(id: workoutId) {
                 HistoryWorkoutEditSheet(workout: workout) {
@@ -51,10 +37,20 @@ struct HistoryWorkoutDetailView: View {
         let prHits = HistoryPRIndex(workouts: store.workouts).hits(for: workout.id)
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(workout.name ?? "Workout")
-                    .font(Theme.font(26, .heavy))
-                    .tracking(-0.4)
-                    .foregroundStyle(Theme.ink)
+                HStack(alignment: .center, spacing: 12) {
+                    Text(workout.name ?? "Workout")
+                        .font(Theme.font(26, .heavy))
+                        .tracking(-0.4)
+                        .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 0)
+                    Button {
+                        isEditPresented = true
+                    } label: {
+                        Text("Edit")
+                            .font(Theme.font(15))
+                            .foregroundStyle(Theme.muted2)
+                    }
+                }
                 Text(dateLine(for: workout))
                     .font(Theme.mono(12))
                     .foregroundStyle(Theme.muted2)

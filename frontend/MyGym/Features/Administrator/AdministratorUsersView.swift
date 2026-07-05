@@ -12,8 +12,10 @@ struct AdministratorUsersView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                ManageScreenTitle(title: "Users", subtitle: subtitle)
-                    .padding(.bottom, 20)
+                ManageScreenTitle(title: "Users", subtitle: subtitle) {
+                    ManageAddButton { showsCreateSheet = true }
+                }
+                .padding(.bottom, 20)
                 content
             }
             .padding(.horizontal, 22)
@@ -22,12 +24,6 @@ struct AdministratorUsersView: View {
         }
         .background(Theme.screenBackground.ignoresSafeArea())
         .manageNavigationChrome("Users")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ManageAddButton { showsCreateSheet = true }
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
         .sheet(isPresented: $showsCreateSheet) {
             AdministratorCreateUserSheet { created in
                 users.insert(created, at: 0)

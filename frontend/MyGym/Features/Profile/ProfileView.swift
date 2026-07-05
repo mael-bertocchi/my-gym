@@ -52,7 +52,7 @@ struct ProfileView: View {
                 .padding(.bottom, 40)
             }
             .background(Theme.screenBackground)
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showHomeGymSheet) {
                 ProfileHomeGymSheet()
             }
@@ -332,15 +332,15 @@ struct ProfileView: View {
             HStack {
                 Text("Manage users")
                     .font(Theme.font(15, .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.onAccent)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(Theme.onAccent.opacity(0.6))
             }
             .padding(.vertical, 15)
             .padding(.horizontal, 16)
-            .background(Theme.ink, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

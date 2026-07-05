@@ -48,7 +48,7 @@ struct ProfileHomeGymSheet: View {
     }
 
     private var navRow: some View {
-        ModalHeader(title: "Home gym", onDismiss: { dismiss() })
+        ModalHeader(title: "Home gym")
             .overlay(alignment: .trailing) {
                 if isSaving {
                     ProgressView()
@@ -172,15 +172,11 @@ struct ProfileChangePasswordSheet: View {
         }
         .background(Theme.surface.ignoresSafeArea())
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isLoading || hasInput)
-    }
-
-    private var hasInput: Bool {
-        !currentPassword.isEmpty || !newPassword.isEmpty || !confirmPassword.isEmpty
+        .interactiveDismissDisabled(isLoading)
     }
 
     private var navRow: some View {
-        ModalHeader(title: "Change password", onDismiss: { dismiss() })
+        ModalHeader(title: "Change password")
     }
 
     private var fields: some View {

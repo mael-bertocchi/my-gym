@@ -34,15 +34,7 @@ struct ExerciseDetailView: View {
         }
         .background(Theme.screenBackground.ignoresSafeArea())
         .hidesAppTabBar()
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.screenBackground, for: .navigationBar)
-        .toolbar {
-            if store.exercise(id: exerciseId) != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    favoriteButton
-                }
-            }
-        }
+        .manageNavigationChrome("")
         .alert("Couldn't update favorite", isPresented: favoriteAlertBinding) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -62,10 +54,14 @@ struct ExerciseDetailView: View {
         )
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(exercise.name)
-                    .font(Theme.font(26, .heavy))
-                    .tracking(-0.4)
-                    .foregroundStyle(Theme.ink)
+                HStack(alignment: .center, spacing: 12) {
+                    Text(exercise.name)
+                        .font(Theme.font(26, .heavy))
+                        .tracking(-0.4)
+                        .foregroundStyle(Theme.ink)
+                    Spacer(minLength: 0)
+                    favoriteButton
+                }
                 Text(subtitle(for: exercise))
                     .font(Theme.mono(11))
                     .foregroundStyle(Theme.accentBlue)

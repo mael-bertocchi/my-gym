@@ -43,7 +43,6 @@ struct AddExercisePicker: View {
     private var navRow: some View {
         ModalHeader(
             title: "Add exercise",
-            onDismiss: { dismiss() },
             trailingTitle: "New",
             trailingAction: { path.append(PickerFormDestination()) }
         )

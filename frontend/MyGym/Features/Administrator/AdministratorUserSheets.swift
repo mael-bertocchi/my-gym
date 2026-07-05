@@ -14,7 +14,7 @@ struct AdministratorCreateUserSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ManageModalHeader(title: "New account") { dismiss() }
+            ManageModalHeader(title: "New account")
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -126,7 +126,7 @@ struct AdministratorManageUserSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ManageModalHeader(title: "Manage account", dismissLabel: "Close") { dismiss() }
+            ManageModalHeader(title: "Manage account")
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {

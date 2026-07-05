@@ -46,8 +46,13 @@ struct CatalogExercisesView: View {
 
     var body: some View {
         List {
-            ManageScreenTitle(title: "Exercises", subtitle: countLine)
-                .manageTitleRow()
+            ManageScreenTitle(title: "Exercises", subtitle: countLine) {
+                ManageAddButton {
+                    newGroupName = ""
+                    showsNewGroupAlert = true
+                }
+            }
+            .manageTitleRow()
 
             if buckets.isEmpty {
                 ManageInfoNote(text: "The exercise catalog is empty — tap + to create a movement group.")
@@ -85,15 +90,6 @@ struct CatalogExercisesView: View {
         }
         .managePlainList()
         .manageNavigationChrome("Exercises")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ManageAddButton {
-                    newGroupName = ""
-                    showsNewGroupAlert = true
-                }
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
         .alert("New group", isPresented: $showsNewGroupAlert) {
             TextField("Group name", text: $newGroupName)
             Button("Cancel", role: .cancel) {}

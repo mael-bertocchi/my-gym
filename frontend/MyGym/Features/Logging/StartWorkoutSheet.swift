@@ -68,7 +68,7 @@ struct StartWorkoutSheet: View {
     }
 
     private var navRow: some View {
-        ModalHeader(title: "New workout", onDismiss: { dismiss() })
+        ModalHeader(title: "New workout")
     }
 
     private func gymCard(_ gym: Gym) -> some View {
@@ -193,7 +193,7 @@ private struct StartWorkoutAddGymSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ModalHeader(title: "New gym", onDismiss: { dismiss() })
+            ModalHeader(title: "New gym")
                 .padding(.top, 24)
                 .padding(.bottom, 24)
 
@@ -219,7 +219,7 @@ private struct StartWorkoutAddGymSheet: View {
         .background(Theme.surface.ignoresSafeArea())
         .presentationDetents([.height(280)])
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isSaving || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .interactiveDismissDisabled(isSaving)
         .alert("Couldn't add gym", isPresented: Binding(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }

@@ -19,7 +19,6 @@ struct MachineSettingsSheet: View {
     @State private var showAddField = false
     @State private var newFieldName = ""
     @State private var showClearConfirm = false
-    @State private var showDiscardConfirm = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,16 +50,7 @@ struct MachineSettingsSheet: View {
         .background(Theme.surface.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { footer }
         .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isDirty)
         .onAppear(perform: load)
-        .confirmationDialog(
-            "Discard changes?",
-            isPresented: $showDiscardConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Discard changes", role: .destructive) { dismiss() }
-            Button("Keep editing", role: .cancel) {}
-        }
         .alert("Add field", isPresented: $showAddField) {
             TextField("Field name", text: $newFieldName)
             Button("Cancel", role: .cancel) {}
@@ -79,20 +69,9 @@ struct MachineSettingsSheet: View {
     private var navRow: some View {
         ModalHeader(
             title: "Machine settings",
-            onDismiss: {
-                if isDirty {
-                    showDiscardConfirm = true
-                } else {
-                    dismiss()
-                }
-            },
             trailingTitle: "Save",
             trailingAction: save
         )
-    }
-
-    private var isDirty: Bool {
-        !fields.elementsEqual(initialFields) { $0.name == $1.name && $0.text == $1.text }
     }
 
     private var contextHeader: some View {

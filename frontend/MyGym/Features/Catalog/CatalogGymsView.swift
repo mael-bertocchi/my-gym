@@ -15,8 +15,10 @@ struct CatalogGymsView: View {
 
     var body: some View {
         List {
-            ManageScreenTitle(title: "Gyms", subtitle: countLine)
-                .manageTitleRow()
+            ManageScreenTitle(title: "Gyms", subtitle: countLine) {
+                ManageAddButton { showsAddSheet = true }
+            }
+            .manageTitleRow()
 
             if gyms.isEmpty {
                 ManageInfoNote(text: "No gyms yet.")
@@ -34,12 +36,6 @@ struct CatalogGymsView: View {
         }
         .managePlainList()
         .manageNavigationChrome("Gyms")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ManageAddButton { showsAddSheet = true }
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
         .sheet(isPresented: $showsAddSheet) {
             CatalogGymAddSheet()
         }
@@ -113,7 +109,7 @@ struct CatalogGymAddSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ManageModalHeader(title: "New gym") { dismiss() }
+            ManageModalHeader(title: "New gym")
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -155,11 +151,7 @@ struct CatalogGymAddSheet: View {
         .background(Theme.surface.ignoresSafeArea())
         .presentationDragIndicator(.visible)
         .manageInfoAlert($alert)
-        .interactiveDismissDisabled(isCreating || hasInput)
-    }
-
-    private var hasInput: Bool {
-        !name.isEmpty || !address.isEmpty || !notes.isEmpty
+        .interactiveDismissDisabled(isCreating)
     }
 
     private var trimmedName: String {
