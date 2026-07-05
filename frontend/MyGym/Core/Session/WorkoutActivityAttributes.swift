@@ -10,5 +10,7 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         var completedSets: Int
         var totalSets: Int
         var restEndsAt: Date?
+        var exerciseName: String?
+        var setDetail: String?
     }
 }
