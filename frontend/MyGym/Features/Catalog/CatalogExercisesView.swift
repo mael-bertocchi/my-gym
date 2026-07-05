@@ -8,6 +8,7 @@ struct CatalogExercisesView: View {
     @State private var alert: ManageAlert?
     @State private var deleteConflict: CatalogExerciseDeleteConflict?
     @State private var selectedExercise: Exercise?
+    @State private var editingExercise: Exercise?
 
     private struct CatalogExerciseBucket: Identifiable {
         let id: String
@@ -64,6 +65,9 @@ struct CatalogExercisesView: View {
                         ForEach(bucket.exercises) { exercise in
                             RevealActionsRow(
                                 actions: [
+                                    RevealAction(title: "Edit", tint: Theme.accentBlue) {
+                                        editingExercise = exercise
+                                    },
                                     RevealAction(title: exercise.isArchived ? "Unarchive" : "Archive", tint: Theme.muted2) {
                                         setArchived(exercise, !exercise.isArchived)
                                     },
@@ -113,6 +117,9 @@ struct CatalogExercisesView: View {
         .manageInfoAlert($alert)
         .navigationDestination(item: $selectedExercise) { exercise in
             ExerciseDetailView(exerciseId: exercise.id)
+        }
+        .sheet(item: $editingExercise) { exercise in
+            EditExerciseFormView(exercise: exercise)
         }
     }
 

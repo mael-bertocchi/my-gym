@@ -157,6 +157,33 @@ enum API {
         try await client.patch("exercises/\(id)", body: request)
     }
 
+    struct EditExerciseRequest: Encodable {
+        var name: String
+        var primaryMuscle: MuscleGroup
+        var equipment: EquipmentType
+        var brandId: String?
+        var groupId: String
+        var isUnilateral: Bool
+
+        private enum CodingKeys: String, CodingKey {
+            case name, primaryMuscle, equipment, brandId, groupId, isUnilateral
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(name, forKey: .name)
+            try container.encode(primaryMuscle, forKey: .primaryMuscle)
+            try container.encode(equipment, forKey: .equipment)
+            try container.encode(brandId, forKey: .brandId)
+            try container.encode(groupId, forKey: .groupId)
+            try container.encode(isUnilateral, forKey: .isUnilateral)
+        }
+    }
+
+    static func editExercise(id: String, _ request: EditExerciseRequest) async throws -> Exercise {
+        try await client.patch("exercises/\(id)", body: request)
+    }
+
     static func deleteExercise(id: String) async throws {
         let _: Message = try await client.delete("exercises/\(id)")
     }
