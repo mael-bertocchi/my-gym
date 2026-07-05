@@ -50,28 +50,29 @@ struct RevealActionsRow<Content: View>: View {
     @ViewBuilder
     private var tappableContent: some View {
         let base = content()
-            .offset(x: dragOffset)
             .overlay {
                 if isSwipedOpen {
                     Color.black.opacity(0.001)
                         .contentShape(Rectangle())
                         .onTapGesture(perform: closeSwipe)
-                        .offset(x: dragOffset)
                 }
             }
-        if let onTap {
-            base
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if isSwipedOpen {
-                        closeSwipe()
-                    } else {
-                        onTap()
+        Group {
+            if let onTap {
+                base
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if isSwipedOpen {
+                            closeSwipe()
+                        } else {
+                            onTap()
+                        }
                     }
-                }
-        } else {
-            base
+            } else {
+                base
+            }
         }
+        .offset(x: dragOffset)
     }
 
     private var swipeGesture: some Gesture {
