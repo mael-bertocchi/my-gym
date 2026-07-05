@@ -25,6 +25,19 @@ describe('CreateSetSchema', () => {
     it('rejects an unknown setType', () => {
         expect(CreateSetSchema.safeParse({ setType: 'CARDIO' }).success).toBe(false);
     });
+
+    it('accepts a single-arm side', () => {
+        expect(CreateSetSchema.safeParse({ side: 'LEFT' }).success).toBe(true);
+        expect(CreateSetSchema.safeParse({ side: 'RIGHT' }).success).toBe(true);
+    });
+
+    it('accepts a null side (two-sided set)', () => {
+        expect(CreateSetSchema.safeParse({ side: null }).success).toBe(true);
+    });
+
+    it('rejects an unknown side', () => {
+        expect(CreateSetSchema.safeParse({ side: 'BOTH' }).success).toBe(false);
+    });
 });
 
 describe('UpdateSetSchema', () => {
@@ -34,5 +47,9 @@ describe('UpdateSetSchema', () => {
 
     it('accepts clearing the weight with null (bodyweight)', () => {
         expect(UpdateSetSchema.safeParse({ weightKg: null }).success).toBe(true);
+    });
+
+    it('accepts updating the side', () => {
+        expect(UpdateSetSchema.safeParse({ side: 'RIGHT' }).success).toBe(true);
     });
 });

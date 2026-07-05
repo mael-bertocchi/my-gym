@@ -64,6 +64,7 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             groupId: true,
             isFavorite: true,
             isArchived: true,
+            isUnilateral: true,
             createdAt: true,
             updatedAt: true
         },
@@ -95,6 +96,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             groupId: true,
             isFavorite: true,
             isArchived: true,
+            isUnilateral: true,
             createdAt: true,
             updatedAt: true
         }
@@ -143,7 +145,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
             brandId: request.body.brandId,
-            groupId: request.body.groupId
+            groupId: request.body.groupId,
+            isUnilateral: request.body.isUnilateral
         },
         select: {
             id: true,
@@ -155,6 +158,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             groupId: true,
             isFavorite: true,
             isArchived: true,
+            isUnilateral: true,
             createdAt: true,
             updatedAt: true
         }
@@ -226,6 +230,9 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.isArchived !== undefined) {
         data.isArchived = request.body.isArchived;
     }
+    if (request.body.isUnilateral !== undefined) {
+        data.isUnilateral = request.body.isUnilateral;
+    }
 
     const updated = await request.server.prisma.exercise.update({
         where: { id: request.params.id },
@@ -240,6 +247,7 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             groupId: true,
             isFavorite: true,
             isArchived: true,
+            isUnilateral: true,
             createdAt: true,
             updatedAt: true
         }
@@ -301,6 +309,7 @@ async function getExerciseHistory(request: FastifyRequest<ExerciseRangeRequest>,
                     id: true,
                     setNumber: true,
                     setType: true,
+                    side: true,
                     weightKg: true,
                     reps: true,
                     distanceM: true,
@@ -401,6 +410,7 @@ async function getExerciseLast(request: FastifyRequest<ExerciseLastRequest>, rep
                     id: true,
                     setNumber: true,
                     setType: true,
+                    side: true,
                     weightKg: true,
                     reps: true,
                     distanceM: true,

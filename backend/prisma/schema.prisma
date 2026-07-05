@@ -63,6 +63,11 @@ enum SetType {
   FAILURE
 }
 
+enum SetSide {
+  LEFT
+  RIGHT
+}
+
 enum MessageRole {
   USER
   ASSISTANT
@@ -159,6 +164,7 @@ model Exercise {
   group            ExerciseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   isFavorite       Boolean        @default(false) @map("is_favorite")
   isArchived       Boolean        @default(false) @map("is_archived")
+  isUnilateral     Boolean        @default(false) @map("is_unilateral")
 
   workoutEntries WorkoutExercise[]
   settings       ExerciseSetting[]
@@ -241,6 +247,7 @@ model WorkoutSet {
   workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   setNumber         Int             @map("set_number")
   setType           SetType         @default(NORMAL) @map("set_type")
+  side              SetSide?        @map("side")
   weightKg          Decimal?        @map("weight_kg") @db.Decimal(6, 2)
   reps              Int?
   distanceM         Decimal?        @map("distance_m") @db.Decimal(10, 2)

@@ -1,5 +1,5 @@
 import type { RequestGenericInterface } from 'fastify';
-import { SetType } from 'prisma/generated/prisma/client';
+import { SetSide, SetType } from 'prisma/generated/prisma/client';
 import { z } from 'zod';
 
 /**
@@ -7,6 +7,12 @@ import { z } from 'zod';
  * @description Zod schema validating a value against the Prisma SetType enum.
  */
 export const SetTypeSchema = z.enum(SetType);
+
+/**
+ * @constant SetSideSchema
+ * @description Zod schema validating a value against the Prisma SetSide enum (which arm of a single-arm set). Null/absent means a normal two-sided set.
+ */
+export const SetSideSchema = z.enum(SetSide);
 
 /**
  * @constant SetCreateParamsSchema
@@ -34,6 +40,7 @@ export const SetParamsSchema = z.object({
 export const CreateSetSchema = z.object({
     setNumber: z.number().int().positive().optional(),
     setType: SetTypeSchema.optional(),
+    side: SetSideSchema.nullable().optional(),
     weightKg: z.number().min(0).max(9999.99).optional(),
     reps: z.number().int().min(0).max(10000).optional(),
     distanceM: z.number().min(0).max(99999999.99).optional(),
@@ -54,6 +61,7 @@ export type CreateSetBody = z.infer<typeof CreateSetSchema>;
 export const UpdateSetSchema = z.object({
     setNumber: z.number().int().positive().optional(),
     setType: SetTypeSchema.optional(),
+    side: SetSideSchema.nullable().optional(),
     weightKg: z.number().min(0).max(9999.99).nullable().optional(),
     reps: z.number().int().min(0).max(10000).nullable().optional(),
     distanceM: z.number().min(0).max(99999999.99).nullable().optional(),

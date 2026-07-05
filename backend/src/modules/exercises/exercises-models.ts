@@ -37,7 +37,8 @@ export const CreateExerciseSchema = z.object({
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
     brandId: z.uuid().optional(),
-    groupId: z.uuid().optional()
+    groupId: z.uuid().optional(),
+    isUnilateral: z.boolean().optional().default(false)
 });
 
 /**
@@ -58,7 +59,8 @@ export const UpdateExerciseSchema = z.object({
     brandId: z.uuid().nullable().optional(),
     groupId: z.uuid().nullable().optional(),
     isFavorite: z.boolean().optional(),
-    isArchived: z.boolean().optional()
+    isArchived: z.boolean().optional(),
+    isUnilateral: z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
 });

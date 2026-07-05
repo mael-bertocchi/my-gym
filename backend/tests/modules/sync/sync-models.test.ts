@@ -40,6 +40,22 @@ describe('SyncWorkoutSchema', () => {
         expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
     });
 
+    it('accepts a single-arm set side and keeps it', () => {
+        const unilateral = aggregate() as { exercises: { sets: { side?: string }[] }[] };
+        unilateral.exercises[0].sets[0].side = 'LEFT';
+        const result = SyncWorkoutSchema.safeParse(unilateral);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.exercises[0].sets[0].side).toBe('LEFT');
+        }
+    });
+
+    it('rejects a set with an unknown side', () => {
+        const bad = aggregate() as { exercises: { sets: { side?: string }[] }[] };
+        bad.exercises[0].sets[0].side = 'BOTH';
+        expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
+    });
+
     it('rejects an exercise entry missing its exerciseId', () => {
         const bad = aggregate() as { exercises: { exerciseId?: string }[] };
         delete bad.exercises[0].exerciseId;

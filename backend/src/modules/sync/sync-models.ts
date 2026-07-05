@@ -1,6 +1,6 @@
 import type { RequestGenericInterface } from 'fastify';
 import { SyncEntityType } from 'prisma/generated/prisma/client';
-import { SetTypeSchema } from 'src/modules/sets/sets-models';
+import { SetSideSchema, SetTypeSchema } from 'src/modules/sets/sets-models';
 import { SettingsSchema } from 'src/shared/schemas';
 import { z } from 'zod';
 
@@ -18,6 +18,7 @@ export const SyncSetSchema = z.object({
     id: z.uuid(),
     setNumber: z.number().int().positive(),
     setType: SetTypeSchema.optional(),
+    side: SetSideSchema.nullable().optional(),
     weightKg: z.number().min(0).max(9999.99).nullable().optional(),
     reps: z.number().int().min(0).max(10000).nullable().optional(),
     distanceM: z.number().min(0).max(99999999.99).nullable().optional(),

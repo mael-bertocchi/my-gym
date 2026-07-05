@@ -35,6 +35,7 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
             workoutExerciseId: request.params.workoutExerciseId,
             setNumber,
             setType: request.body.setType,
+            side: request.body.side,
             weightKg: request.body.weightKg,
             reps: request.body.reps,
             distanceM: request.body.distanceM,
@@ -46,6 +47,7 @@ async function createSet(request: FastifyRequest<CreateSetRequest>, reply: Fasti
             workoutExerciseId: true,
             setNumber: true,
             setType: true,
+            side: true,
             weightKg: true,
             reps: true,
             distanceM: true,
@@ -89,6 +91,9 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
     if (request.body.setType !== undefined) {
         data.setType = request.body.setType;
     }
+    if (request.body.side !== undefined) {
+        data.side = request.body.side;
+    }
     if (request.body.weightKg !== undefined) {
         data.weightKg = request.body.weightKg;
     }
@@ -113,6 +118,7 @@ async function updateSet(request: FastifyRequest<UpdateSetRequest>, reply: Fasti
             workoutExerciseId: true,
             setNumber: true,
             setType: true,
+            side: true,
             weightKg: true,
             reps: true,
             distanceM: true,

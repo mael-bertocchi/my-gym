@@ -83,6 +83,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
                             id: true,
                             setNumber: true,
                             setType: true,
+                            side: true,
                             weightKg: true,
                             reps: true,
                             distanceM: true,

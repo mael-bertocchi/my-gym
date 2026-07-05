@@ -20,6 +20,19 @@ describe('CreateExerciseSchema', () => {
         }
     });
 
+    it('defaults isUnilateral to false and accepts an override', () => {
+        const omitted = CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS', equipment: 'BARBELL' });
+        expect(omitted.success).toBe(true);
+        if (omitted.success) {
+            expect(omitted.data.isUnilateral).toBe(false);
+        }
+        const set = CreateExerciseSchema.safeParse({ name: 'Single-Arm Row', primaryMuscle: 'LATS', equipment: 'DUMBBELL', isUnilateral: true });
+        expect(set.success).toBe(true);
+        if (set.success) {
+            expect(set.data.isUnilateral).toBe(true);
+        }
+    });
+
     it('rejects a missing equipment type', () => {
         expect(CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS' }).success).toBe(false);
     });
@@ -44,6 +57,10 @@ describe('UpdateExerciseSchema', () => {
 
     it('accepts a brand detach', () => {
         expect(UpdateExerciseSchema.safeParse({ brandId: null }).success).toBe(true);
+    });
+
+    it('accepts toggling isUnilateral', () => {
+        expect(UpdateExerciseSchema.safeParse({ isUnilateral: true }).success).toBe(true);
     });
 
     it('rejects an empty update', () => {
