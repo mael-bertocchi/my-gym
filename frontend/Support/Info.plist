@@ -27,6 +27,19 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>fr.mael-bertocchi.my-gym</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mygym</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSHealthShareUsageDescription</key>
 	<string>My Gym can read the relevant data from Apple Health, such as your bodyweight.</string>
 	<key>NSHealthUpdateUsageDescription</key>

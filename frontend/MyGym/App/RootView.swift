@@ -145,6 +145,11 @@ struct MainShell: View {
             }
         }
         #endif
+        .onOpenURL { url in
+            if url.scheme == "mygym", url.host == "active", activeWorkout.isActive {
+                showActiveWorkout = true
+            }
+        }
         .onScenePhaseActive {
             activeWorkout.expireRestIfNeeded()
             Task { await syncEngine.sync() }

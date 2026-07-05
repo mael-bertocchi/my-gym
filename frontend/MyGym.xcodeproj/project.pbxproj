@@ -6,15 +6,75 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		58650FC52FF98E25005B4D7C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58650FC42FF98E25005B4D7C /* WidgetKit.framework */; };
+		58650FC72FF98E25005B4D7C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58650FC62FF98E25005B4D7C /* SwiftUI.framework */; };
+		58650FD62FF98E25005B4D7C /* WorkoutWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58650FC22FF98E25005B4D7C /* WorkoutWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		58650FD42FF98E25005B4D7C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A100000000000000000000AA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 58650FC12FF98E25005B4D7C;
+			remoteInfo = WorkoutWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		58650FD72FF98E26005B4D7C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				58650FD62FF98E25005B4D7C /* WorkoutWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		58650FC22FF98E25005B4D7C /* WorkoutWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WorkoutWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		58650FC42FF98E25005B4D7C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		58650FC62FF98E25005B4D7C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		A100000000000000000000A5 /* MyGym.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		58650FDA2FF98E26005B4D7C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 58650FC12FF98E25005B4D7C /* WorkoutWidgetExtension */;
+		};
+		588F16472FFA58CA004080FF /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/Session/WorkoutActivityAttributes.swift,
+			);
+			target = 58650FC12FF98E25005B4D7C /* WorkoutWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A100000000000000000000A1 /* MyGym */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MyGym; sourceTree = "<group>"; };
+		58650FC82FF98E25005B4D7C /* WorkoutWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (58650FDA2FF98E26005B4D7C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WorkoutWidget; sourceTree = "<group>"; };
+		A100000000000000000000A1 /* MyGym */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (588F16472FFA58CA004080FF /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MyGym; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		58650FBF2FF98E25005B4D7C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				58650FC72FF98E25005B4D7C /* SwiftUI.framework in Frameworks */,
+				58650FC52FF98E25005B4D7C /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A100000000000000000000A2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -25,10 +85,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		58650FC32FF98E25005B4D7C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				58650FC42FF98E25005B4D7C /* WidgetKit.framework */,
+				58650FC62FF98E25005B4D7C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A100000000000000000000A3 = {
 			isa = PBXGroup;
 			children = (
 				A100000000000000000000A1 /* MyGym */,
+				58650FC82FF98E25005B4D7C /* WorkoutWidget */,
+				58650FC32FF98E25005B4D7C /* Frameworks */,
 				A100000000000000000000A4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				A100000000000000000000A5 /* MyGym.app */,
+				58650FC22FF98E25005B4D7C /* WorkoutWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -44,6 +116,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		58650FC12FF98E25005B4D7C /* WorkoutWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 58650FDB2FF98E26005B4D7C /* Build configuration list for PBXNativeTarget "WorkoutWidgetExtension" */;
+			buildPhases = (
+				58650FBE2FF98E25005B4D7C /* Sources */,
+				58650FBF2FF98E25005B4D7C /* Frameworks */,
+				58650FC02FF98E25005B4D7C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				58650FC82FF98E25005B4D7C /* WorkoutWidget */,
+			);
+			name = WorkoutWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WorkoutWidgetExtension;
+			productReference = 58650FC22FF98E25005B4D7C /* WorkoutWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		A100000000000000000000A6 /* MyGym */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A100000000000000000000A7 /* Build configuration list for PBXNativeTarget "MyGym" */;
@@ -51,10 +145,12 @@
 				A100000000000000000000A8 /* Sources */,
 				A100000000000000000000A2 /* Frameworks */,
 				A100000000000000000000A9 /* Resources */,
+				58650FD72FF98E26005B4D7C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				58650FD52FF98E25005B4D7C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A100000000000000000000A1 /* MyGym */,
@@ -73,9 +169,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
+					58650FC12FF98E25005B4D7C = {
+						CreatedOnToolsVersion = 26.6;
+					};
 					A100000000000000000000A6 = {
 						CreatedOnToolsVersion = 16.0;
 					};
@@ -96,11 +195,19 @@
 			projectRoot = "";
 			targets = (
 				A100000000000000000000A6 /* MyGym */,
+				58650FC12FF98E25005B4D7C /* WorkoutWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		58650FC02FF98E25005B4D7C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A100000000000000000000A9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -111,6 +218,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		58650FBE2FF98E25005B4D7C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A100000000000000000000A8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -120,7 +234,76 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		58650FD52FF98E25005B4D7C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 58650FC12FF98E25005B4D7C /* WorkoutWidgetExtension */;
+			targetProxy = 58650FD42FF98E25005B4D7C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		58650FD82FF98E26005B4D7C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WorkoutWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WorkoutWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.WorkoutWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		58650FD92FF98E26005B4D7C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WorkoutWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WorkoutWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.WorkoutWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		A100000000000000000000AC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -300,6 +483,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		58650FDB2FF98E26005B4D7C /* Build configuration list for PBXNativeTarget "WorkoutWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				58650FD82FF98E26005B4D7C /* Debug */,
+				58650FD92FF98E26005B4D7C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A100000000000000000000A7 /* Build configuration list for PBXNativeTarget "MyGym" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
