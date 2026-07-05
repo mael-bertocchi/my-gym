@@ -2,11 +2,9 @@ import SwiftUI
 
 struct ActiveWorkoutExerciseCard: View {
     let entry: LocalWorkoutExercise
-    var superset: SupersetDecoration?
     var onOpenSettings: () -> Void
     var onRemove: () -> Void
     var onAddToSuperset: (() -> Void)?
-    var onUnlinkSuperset: (() -> Void)?
     var onFocusEntry: (String) -> Void = { _ in }
 
     @Environment(AppSession.self) private var session
@@ -15,35 +13,25 @@ struct ActiveWorkoutExerciseCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: superset == nil ? .top : .center, spacing: 8) {
-                if let superset {
-                    SupersetBadge(letter: superset.letter, isActive: superset.isActive)
-                }
+            HStack(alignment: .top, spacing: 8) {
                 Text(exerciseName)
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
-                if let chip = superset?.chip {
-                    SupersetChipView(chip: chip)
-                } else {
-                    Menu {
-                        Button("Machine settings", action: onOpenSettings)
-                        if let onAddToSuperset {
-                            Button("Add to superset", action: onAddToSuperset)
-                        }
-                        if let onUnlinkSuperset {
-                            Button("Unlink superset", action: onUnlinkSuperset)
-                        }
-                        Button("Remove exercise", role: .destructive, action: onRemove)
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Theme.tabInactive)
-                            .frame(width: 44, height: 32, alignment: .trailing)
-                            .contentShape(Rectangle())
+                Menu {
+                    Button("Machine settings", action: onOpenSettings)
+                    if let onAddToSuperset {
+                        Button("Add to superset", action: onAddToSuperset)
                     }
-                    .accessibilityLabel("Exercise options")
+                    Button("Remove exercise", role: .destructive, action: onRemove)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.tabInactive)
+                        .frame(width: 44, height: 32, alignment: .trailing)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Exercise options")
             }
             .padding(.bottom, 4)
 
@@ -62,14 +50,31 @@ struct ActiveWorkoutExerciseCard: View {
             }
             .padding(.bottom, 8)
 
-            VStack(spacing: 8) {
-                ForEach(entry.sets) { set in
-                    ActiveWorkoutSetRow(
-                        entryId: entry.id,
-                        set: set,
-                        unit: session.weightUnit,
-                        onFocus: onFocusEntry
-                    )
+            if isUnilateral {
+                VStack(spacing: 14) {
+                    ForEach(entry.setRounds, id: \.first?.id) { round in
+                        VStack(spacing: 6) {
+                            ForEach(round) { set in
+                                ActiveWorkoutSetRow(
+                                    entryId: entry.id,
+                                    set: set,
+                                    unit: session.weightUnit,
+                                    onFocus: onFocusEntry
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(entry.sets) { set in
+                        ActiveWorkoutSetRow(
+                            entryId: entry.id,
+                            set: set,
+                            unit: session.weightUnit,
+                            onFocus: onFocusEntry
+                        )
+                    }
                 }
             }
 
@@ -80,14 +85,15 @@ struct ActiveWorkoutExerciseCard: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .card(
-            border: superset?.isHighlighted == true ? Theme.accentBlue : Theme.hairline,
-            borderWidth: superset?.isHighlighted == true ? 1.5 : 1
-        )
+        .card()
     }
 
     private var exerciseName: String {
         store.exercise(id: entry.exerciseId)?.name ?? "Exercise"
+    }
+
+    private var isUnilateral: Bool {
+        store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
     }
 
     private func tableHeaderCell(_ text: String) -> some View {
@@ -145,7 +151,7 @@ struct ActiveWorkoutSetRow: View {
 
     private var row: some View {
         HStack(spacing: 8) {
-            Text("\(set.setNumber)")
+            Text(set.side?.short ?? "\(set.setNumber)")
                 .font(Theme.font(13, .bold))
                 .foregroundStyle(set.isCompleted ? Theme.muted2 : Theme.ink)
                 .frame(width: 28)
@@ -168,7 +174,7 @@ struct ActiveWorkoutSetRow: View {
                             .frame(width: 24, height: 24)
                         Image(systemName: "checkmark")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.onAccent)
                     } else {
                         Circle()
                             .strokeBorder(Theme.controlOutline, lineWidth: 2)
@@ -179,11 +185,18 @@ struct ActiveWorkoutSetRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(set.isCompleted ? "Mark set \(set.setNumber) incomplete" : "Complete set \(set.setNumber)")
+            .accessibilityLabel(set.isCompleted ? "Mark \(positionLabel) incomplete" : "Complete \(positionLabel)")
         }
         .contextMenu {
             Button("Remove set", role: .destructive, action: remove)
         }
+    }
+
+    private var positionLabel: String {
+        if let side = set.side {
+            return "set \(set.setNumber) \(side.label.lowercased())"
+        }
+        return "set \(set.setNumber)"
     }
 
     private func remove() {
@@ -216,7 +229,7 @@ struct ActiveWorkoutSetRow: View {
                         lineWidth: isFocused ? 1.5 : 1
                     )
             )
-            .accessibilityLabel(field == .weight ? "Weight, set \(set.setNumber)" : "Reps, set \(set.setNumber)")
+            .accessibilityLabel(field == .weight ? "Weight, \(positionLabel)" : "Reps, \(positionLabel)")
     }
 
     private func completedCell(_ value: String, isBold: Bool) -> some View {
@@ -263,7 +276,6 @@ struct ActiveWorkoutSetRow: View {
 
 struct ActiveWorkoutCondensedCard: View {
     let entry: LocalWorkoutExercise
-    var superset: SupersetDecoration?
     var onTap: () -> Void
 
     @Environment(AppSession.self) private var session
@@ -273,19 +285,12 @@ struct ActiveWorkoutCondensedCard: View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center, spacing: 8) {
-                    if let superset {
-                        SupersetBadge(letter: superset.letter, isActive: superset.isActive)
-                    }
                     Text(exerciseName)
                         .font(Theme.font(15, .bold))
                         .foregroundStyle(Theme.ink)
-                    if let chip = superset?.chip {
-                        Spacer(minLength: 8)
-                        SupersetChipView(chip: chip)
-                    }
                 }
                 ActiveWorkoutBrandLine(exerciseId: entry.exerciseId)
-                    .padding(.top, superset == nil ? 2 : 4)
+                    .padding(.top, 2)
                 Text(summary)
                     .font(Theme.font(12))
                     .foregroundStyle(Theme.muted)
@@ -295,7 +300,7 @@ struct ActiveWorkoutCondensedCard: View {
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
             .card()
-            .opacity(superset == nil ? 0.96 : 1)
+            .opacity(0.96)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -305,11 +310,17 @@ struct ActiveWorkoutCondensedCard: View {
         store.exercise(id: entry.exerciseId)?.name ?? "Exercise"
     }
 
+    private var isUnilateral: Bool {
+        store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
+    }
+
     private var summary: String {
         let completed = entry.sets.filter(\.isCompleted)
-        var text = "\(completed.count) \(completed.count == 1 ? "set" : "sets") logged"
+        let count = isUnilateral ? Set(completed.map(\.setNumber)).count : completed.count
+        var text = "\(count) \(count == 1 ? "set" : "sets") logged"
         if let last = completed.last, let weight = last.weightKg, let reps = last.reps {
-            text += " · last: \(Formatting.weight(weight, unit: session.weightUnit)) × \(reps)"
+            let side = last.side.map { "\($0.short) " } ?? ""
+            text += " · last: \(side)\(Formatting.weight(weight, unit: session.weightUnit)) × \(reps)"
         }
         return text
     }

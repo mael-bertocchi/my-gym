@@ -13,6 +13,7 @@ struct NewExerciseFormView: View {
     @State private var equipmentType: EquipmentType = .machine
     @State private var selectedBrandId: String?
     @State private var primaryMuscle: MuscleGroup?
+    @State private var isUnilateral = false
 
     @State private var isCreating = false
     @State private var errorMessage: String?
@@ -59,6 +60,7 @@ struct NewExerciseFormView: View {
                     equipmentTypeField
                     brandField
                     muscleField
+                    unilateralField
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -66,7 +68,7 @@ struct NewExerciseFormView: View {
             .scrollDismissesKeyboard(.interactively)
             footer
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(Theme.surface.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .alert("Couldn\u{2019}t create exercise", isPresented: $showsError) {
@@ -104,6 +106,7 @@ struct NewExerciseFormView: View {
             || equipmentType != .machine
             || selectedBrandId != nil
             || primaryMuscle != nil
+            || isUnilateral
     }
 
     private var footer: some View {
@@ -230,6 +233,17 @@ struct NewExerciseFormView: View {
         }
     }
 
+    private var unilateralField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NewExerciseFieldLabel("SET LOGGING")
+            ManageToggleRow(
+                title: "Single-arm",
+                subtitle: "Log each set for the left and right side.",
+                isOn: $isUnilateral
+            )
+        }
+    }
+
     private var sortedGroups: [ExerciseGroup] {
         store.exerciseGroups.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
@@ -322,7 +336,8 @@ struct NewExerciseFormView: View {
                         secondaryMuscles: nil,
                         equipment: equipmentType,
                         brandId: brand?.id,
-                        groupId: group.id
+                        groupId: group.id,
+                        isUnilateral: isUnilateral
                     )
                 )
                 store.insert(exercise: exercise)

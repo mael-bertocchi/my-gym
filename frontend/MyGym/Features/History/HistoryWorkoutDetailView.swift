@@ -71,7 +71,7 @@ struct HistoryWorkoutDetailView: View {
                         caption: "volume"
                     )
                     WorkoutDetailStatTile(
-                        value: "\(workout.completedSetCount)",
+                        value: "\(completedSetCount(for: workout))",
                         caption: "sets"
                     )
                 }
@@ -87,6 +87,14 @@ struct HistoryWorkoutDetailView: View {
             .padding(.top, 8)
             .padding(.horizontal, Theme.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func completedSetCount(for workout: LocalWorkout) -> Int {
+        workout.exercises.reduce(0) { total, entry in
+            let completed = entry.sets.filter(\.isCompleted)
+            let unilateral = store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
+            return total + (unilateral ? Set(completed.map(\.setNumber)).count : completed.count)
         }
     }
 
@@ -262,14 +270,17 @@ private struct WorkoutDetailExerciseRow: View {
     }
 
     private var setCountLabel: String {
-        let count = entry.sets.count
+        let unilateral = store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
+        let completed = entry.sets.filter(\.isCompleted)
+        let count = unilateral ? Set(completed.map(\.setNumber)).count : completed.count
         return count == 1 ? "1 set" : "\(count) sets"
     }
 
     private func setLog(_ sets: [LocalSet]) -> String {
         sets.map { set in
+            let side = set.side.map { "\($0.short) " } ?? ""
             let weight = Formatting.weightNumber(set.weightKg ?? 0, unit: unit)
-            return "\(weight)×\(set.reps ?? 0)"
+            return "\(side)\(weight)×\(set.reps ?? 0)"
         }
         .joined(separator: " · ")
     }

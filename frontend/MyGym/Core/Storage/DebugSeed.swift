@@ -25,7 +25,12 @@ enum DebugSeed {
     }
 
     @MainActor
-    static func startDemoActiveWorkout(store: LocalStore, activeWorkout: ActiveWorkoutStore, supersetGo: Bool = false) {
+    static func startDemoActiveWorkout(
+        store: LocalStore,
+        activeWorkout: ActiveWorkoutStore,
+        supersetGo: Bool = false,
+        singleArm: Bool = false
+    ) {
         guard let gym = store.gyms.first(where: { $0.name == "Iron Temple" }),
               let chest = store.exercises.first(where: { $0.name == "Chest Press" }),
               let incline = store.exercises.first(where: { $0.name == "Incline DB Press" }),
@@ -40,6 +45,12 @@ enum DebugSeed {
                 activeWorkout.setCompleted(entryId: chestEntry.id, setId: set.id, completed: true, restSeconds: 90)
             }
         }
+
+        if singleArm {
+            seedSingleArmSuperset(store: store, activeWorkout: activeWorkout, incline: incline)
+            return
+        }
+
         let inclineEntry = activeWorkout.addExercise(incline)
         let cableFlyEntry = activeWorkout.addExercise(cableFly)
         activeWorkout.debugBackdateStart(minutes: 42)
@@ -65,6 +76,47 @@ enum DebugSeed {
     }
 
     @MainActor
+    private static func seedSingleArmSuperset(store: LocalStore, activeWorkout: ActiveWorkoutStore, incline: Exercise) {
+        guard let oneArm = store.exercises.first(where: { $0.name == "Single-Arm Row" }),
+              let inclineEntry = activeWorkout.addExercise(incline),
+              let oneArmEntry = activeWorkout.addExercise(oneArm)
+        else {
+            activeWorkout.startRest(seconds: 72)
+            return
+        }
+        activeWorkout.debugBackdateStart(minutes: 37)
+        activeWorkout.addSet(entryId: inclineEntry.id)
+        activeWorkout.addSet(entryId: oneArmEntry.id)
+        setRoundValues(activeWorkout, entryId: inclineEntry.id, round: 1, weightKg: 26, reps: 10)
+        setRoundValues(activeWorkout, entryId: inclineEntry.id, round: 2, weightKg: 24, reps: 12)
+        setRoundValues(activeWorkout, entryId: oneArmEntry.id, round: 1, weightKg: 22, reps: 12)
+        activeWorkout.createSuperset(entryId: inclineEntry.id, partnerId: oneArmEntry.id)
+        completeRound(activeWorkout, entryId: inclineEntry.id, round: 1)
+        completeRound(activeWorkout, entryId: oneArmEntry.id, round: 1)
+        activeWorkout.skipRest()
+        completeRound(activeWorkout, entryId: inclineEntry.id, round: 2)
+    }
+
+    @MainActor
+    private static func setRoundValues(_ activeWorkout: ActiveWorkoutStore, entryId: String, round: Int, weightKg: Double, reps: Int) {
+        guard let entry = activeWorkout.workout?.exercises.first(where: { $0.id == entryId }) else { return }
+        for set in entry.sets where set.setNumber == round {
+            var updated = set
+            updated.weightKg = weightKg
+            updated.reps = set.side == .right ? reps - 1 : reps
+            activeWorkout.updateSet(entryId: entryId, set: updated)
+        }
+    }
+
+    @MainActor
+    private static func completeRound(_ activeWorkout: ActiveWorkoutStore, entryId: String, round: Int) {
+        guard let entry = activeWorkout.workout?.exercises.first(where: { $0.id == entryId }) else { return }
+        for set in entry.sets where set.setNumber == round {
+            activeWorkout.setCompleted(entryId: entryId, setId: set.id, completed: true, restSeconds: 90)
+        }
+    }
+
+    @MainActor
     static func enterDemo(store: LocalStore, session: AppSession, healthKit: HealthKitService) {
         store.clearAll()
 
@@ -84,6 +136,7 @@ enum DebugSeed {
         let legCurlGroup = mkGroup("Leg Curl")
         let latPulldownGroup = mkGroup("Lat Pulldown")
         let seatedRowGroup = mkGroup("Seated Row")
+        let oneArmRowGroup = mkGroup("Single-Arm Row")
         let squatGroup = mkGroup("Squat")
         let shoulderPressGroup = mkGroup("Shoulder Press")
 
@@ -123,6 +176,10 @@ enum DebugSeed {
             "Seated Row", .upperBack, secondary: [.biceps],
             equipment: .cable, brandId: technogym.id, groupId: seatedRowGroup.id
         )
+        let oneArmRow = mkExercise(
+            "Single-Arm Row", .upperBack, secondary: [.biceps],
+            equipment: .dumbbell, brandId: nil, groupId: oneArmRowGroup.id, unilateral: true
+        )
         let squat = mkExercise(
             "Squat", .quadriceps, secondary: [.glutes],
             equipment: .barbell, brandId: nil, groupId: squatGroup.id
@@ -137,11 +194,11 @@ enum DebugSeed {
             exerciseGroups: [
                 chestPressGroup, inclinePressGroup, cableFlyGroup, benchPressGroup,
                 legPressGroup, legCurlGroup, latPulldownGroup, seatedRowGroup,
-                squatGroup, shoulderPressGroup,
+                oneArmRowGroup, squatGroup, shoulderPressGroup,
             ],
             exercises: [
                 chestPress, chestPressTechnogym, benchPress, inclineDumbbellPress,
-                cableFly, legPress, legCurl, latPulldown, seatedRow, squat, shoulderPress,
+                cableFly, legPress, legCurl, latPulldown, seatedRow, oneArmRow, squat, shoulderPress,
             ],
             gyms: [ironTemple, downtown, hotelLisbon]
         ))
@@ -477,7 +534,8 @@ enum DebugSeed {
         equipment: EquipmentType,
         brandId: String?,
         groupId: String,
-        favorite: Bool = false
+        favorite: Bool = false,
+        unilateral: Bool = false
     ) -> Exercise {
         Exercise(
             id: newId(),
@@ -489,6 +547,7 @@ enum DebugSeed {
             groupId: groupId,
             isFavorite: favorite,
             isArchived: false,
+            isUnilateral: unilateral,
             createdAt: catalogBirth,
             updatedAt: catalogBirth
         )

@@ -66,6 +66,7 @@ struct LocalSet: Codable, Identifiable, Equatable {
     var id: String
     var setNumber: Int
     var setType: SetType
+    var side: SetSide?
     var weightKg: Double?
     var reps: Int?
     var distanceM: Double?
@@ -76,6 +77,7 @@ struct LocalSet: Codable, Identifiable, Equatable {
         id: String = UUID().uuidString.lowercased(),
         setNumber: Int,
         setType: SetType = .normal,
+        side: SetSide? = nil,
         weightKg: Double? = nil,
         reps: Int? = nil,
         distanceM: Double? = nil,
@@ -85,6 +87,7 @@ struct LocalSet: Codable, Identifiable, Equatable {
         self.id = id
         self.setNumber = setNumber
         self.setType = setType
+        self.side = side
         self.weightKg = weightKg
         self.reps = reps
         self.distanceM = distanceM
@@ -109,6 +112,20 @@ struct LocalExerciseSetting: Codable, Identifiable, Equatable {
         self.exerciseId = exerciseId
         self.settings = settings
         self.updatedAt = updatedAt
+    }
+}
+
+extension LocalWorkoutExercise {
+    var setRounds: [[LocalSet]] {
+        var order: [Int] = []
+        var groups: [Int: [LocalSet]] = [:]
+        for set in sets {
+            if groups[set.setNumber] == nil {
+                order.append(set.setNumber)
+            }
+            groups[set.setNumber, default: []].append(set)
+        }
+        return order.map { groups[$0]! }
     }
 }
 
@@ -163,22 +180,28 @@ enum Superset {
             .sorted { $0.position < $1.position }
     }
 
-    static func nextIncompleteSet(in members: [LocalWorkoutExercise]) -> (entryId: String, setIndex: Int)? {
-        let roundCount = members.map(\.sets.count).max() ?? 0
-        for index in 0..<roundCount {
+    static func nextIncompleteSet(in members: [LocalWorkoutExercise]) -> (entryId: String, round: Int, setId: String)? {
+        for round in 0..<totalRounds(in: members) {
             for member in members {
-                if index < member.sets.count, !member.sets[index].isCompleted {
-                    return (member.id, index)
+                let rounds = member.setRounds
+                guard round < rounds.count else { continue }
+                if let set = rounds[round].first(where: { !$0.isCompleted }) {
+                    return (member.id, round, set.id)
                 }
             }
         }
         return nil
     }
 
-    static func isRoundComplete(in members: [LocalWorkoutExercise], setIndex: Int) -> Bool {
+    static func isRoundComplete(in members: [LocalWorkoutExercise], round: Int) -> Bool {
         members.allSatisfy { member in
-            setIndex >= member.sets.count || member.sets[setIndex].isCompleted
+            let rounds = member.setRounds
+            return round >= rounds.count || rounds[round].allSatisfy(\.isCompleted)
         }
+    }
+
+    static func totalRounds(in members: [LocalWorkoutExercise]) -> Int {
+        members.map { $0.setRounds.count }.max() ?? 0
     }
 }
 
@@ -227,6 +250,7 @@ extension WorkoutDetail {
                                     id: set.id,
                                     setNumber: set.setNumber,
                                     setType: set.setType,
+                                    side: set.side,
                                     weightKg: set.weightKg.double,
                                     reps: set.reps,
                                     distanceM: set.distanceM.double,

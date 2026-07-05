@@ -78,6 +78,27 @@ enum SetType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum SetSide: String, Codable, CaseIterable, Identifiable {
+    case left = "LEFT"
+    case right = "RIGHT"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .left: return "Left"
+        case .right: return "Right"
+        }
+    }
+
+    var short: String {
+        switch self {
+        case .left: return "L"
+        case .right: return "R"
+        }
+    }
+}
+
 enum MessageRole: String, Codable {
     case user = "USER"
     case assistant = "ASSISTANT"
@@ -129,8 +150,32 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var groupId: String?
     var isFavorite: Bool
     var isArchived: Bool
+    var isUnilateral: Bool
     var createdAt: Date
     var updatedAt: Date
+}
+
+extension Exercise {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, primaryMuscle, secondaryMuscles, equipment
+        case brandId, groupId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        primaryMuscle = try container.decode(MuscleGroup.self, forKey: .primaryMuscle)
+        secondaryMuscles = try container.decode([MuscleGroup].self, forKey: .secondaryMuscles)
+        equipment = try container.decode(EquipmentType.self, forKey: .equipment)
+        brandId = try container.decodeIfPresent(String.self, forKey: .brandId)
+        groupId = try container.decodeIfPresent(String.self, forKey: .groupId)
+        isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
+        isArchived = try container.decode(Bool.self, forKey: .isArchived)
+        isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
 }
 
 struct Gym: Codable, Identifiable, Equatable, Hashable {
@@ -158,6 +203,7 @@ struct WorkoutSet: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var setNumber: Int
     var setType: SetType
+    var side: SetSide?
     var weightKg: LenientDouble?
     var reps: Int?
     var distanceM: LenientDouble?

@@ -137,6 +137,7 @@ enum API {
         var equipment: EquipmentType
         var brandId: String?
         var groupId: String?
+        var isUnilateral: Bool
     }
 
     static func createExercise(_ request: CreateExerciseRequest) async throws -> Exercise {
@@ -149,6 +150,7 @@ enum API {
         var secondaryMuscles: [MuscleGroup]?
         var isFavorite: Bool?
         var isArchived: Bool?
+        var isUnilateral: Bool?
     }
 
     static func updateExercise(id: String, _ request: UpdateExerciseRequest) async throws -> Exercise {

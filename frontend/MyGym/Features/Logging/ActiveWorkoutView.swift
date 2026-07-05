@@ -165,11 +165,11 @@ struct ActiveWorkoutView: View {
                                 }
                             }
                         case .pair(let supersetId, let members):
-                            SupersetGroupSection(
+                            SupersetUnifiedCard(
                                 supersetId: supersetId,
                                 members: members,
-                                expandedEntryId: expandedEntryId,
-                                onExpand: { focus($0.id) },
+                                activeEntryId: expandedEntryId,
+                                onSelectMember: focus,
                                 onOpenSettings: { settingsEntry = $0 },
                                 onRemove: { confirmRemove($0) },
                                 onUnlink: {
@@ -252,7 +252,7 @@ struct ActiveWorkoutView: View {
                 } label: {
                     Text("Finish")
                         .font(Theme.font(13, .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Theme.onAccent)
                         .padding(.vertical, 9)
                         .padding(.horizontal, 15)
                         .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))

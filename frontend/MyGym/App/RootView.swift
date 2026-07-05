@@ -32,7 +32,8 @@ struct RootView: View {
                     DebugSeed.startDemoActiveWorkout(
                         store: store,
                         activeWorkout: activeWorkout,
-                        supersetGo: CommandLine.arguments.contains("-demo-superset-go")
+                        supersetGo: CommandLine.arguments.contains("-demo-superset-go"),
+                        singleArm: CommandLine.arguments.contains("-demo-single-arm")
                     )
                     if CommandLine.arguments.contains("-demo-paused") {
                         activeWorkout.pause()

@@ -106,6 +106,7 @@ final class ActiveWorkoutStore {
                     LocalSet(
                         setNumber: set.setNumber,
                         setType: set.setType,
+                        side: set.side,
                         weightKg: set.weightKg,
                         reps: set.reps,
                         isCompleted: false
@@ -170,13 +171,16 @@ final class ActiveWorkoutStore {
                 LocalSet(
                     setNumber: set.setNumber,
                     setType: set.setType,
+                    side: exercise.isUnilateral ? set.side : nil,
                     weightKg: set.weightKg,
                     reps: set.reps,
                     isCompleted: false
                 )
             }
         }
-        if sets.isEmpty {
+        if exercise.isUnilateral, !sets.contains(where: { $0.side != nil }) {
+            sets = [LocalSet(setNumber: 1, side: .left), LocalSet(setNumber: 1, side: .right)]
+        } else if sets.isEmpty {
             sets = [LocalSet(setNumber: 1)]
         }
 
@@ -249,15 +253,22 @@ final class ActiveWorkoutStore {
 
     func addSet(entryId: String) {
         guard let index = entryIndex(entryId) else { return }
-        let sets = workout!.exercises[index].sets
-        let last = sets.last
-        let next = LocalSet(
-            setNumber: (sets.map(\.setNumber).max() ?? 0) + 1,
-            setType: .normal,
-            weightKg: last?.weightKg,
-            reps: last?.reps
-        )
-        workout?.exercises[index].sets.append(next)
+        let entry = workout!.exercises[index]
+        let sets = entry.sets
+        let nextNumber = (sets.map(\.setNumber).max() ?? 0) + 1
+        if isUnilateral(exerciseId: entry.exerciseId) {
+            let lastLeft = sets.last { $0.side == .left }
+            let lastRight = sets.last { $0.side == .right }
+            workout?.exercises[index].sets.append(contentsOf: [
+                LocalSet(setNumber: nextNumber, setType: .normal, side: .left, weightKg: lastLeft?.weightKg, reps: lastLeft?.reps),
+                LocalSet(setNumber: nextNumber, setType: .normal, side: .right, weightKg: lastRight?.weightKg, reps: lastRight?.reps),
+            ])
+        } else {
+            let last = sets.last
+            workout?.exercises[index].sets.append(
+                LocalSet(setNumber: nextNumber, setType: .normal, weightKg: last?.weightKg, reps: last?.reps)
+            )
+        }
         persist()
     }
 
@@ -270,14 +281,34 @@ final class ActiveWorkoutStore {
     }
 
     func removeSet(entryId: String, setId: String) {
-        guard let entryIndex = entryIndex(entryId) else { return }
-        workout?.exercises[entryIndex].sets.removeAll { $0.id == setId }
-        if let sets = workout?.exercises[entryIndex].sets {
-            for setIndex in sets.indices {
-                workout?.exercises[entryIndex].sets[setIndex].setNumber = setIndex + 1
+        guard let entryIndex = entryIndex(entryId),
+              let target = workout?.exercises[entryIndex].sets.first(where: { $0.id == setId })
+        else { return }
+        if isUnilateral(exerciseId: workout!.exercises[entryIndex].exerciseId) {
+            workout?.exercises[entryIndex].sets.removeAll { $0.setNumber == target.setNumber }
+            renumberRounds(entryIndex: entryIndex)
+        } else {
+            workout?.exercises[entryIndex].sets.removeAll { $0.id == setId }
+            if let sets = workout?.exercises[entryIndex].sets {
+                for setIndex in sets.indices {
+                    workout?.exercises[entryIndex].sets[setIndex].setNumber = setIndex + 1
+                }
             }
         }
         persist()
+    }
+
+    private func renumberRounds(entryIndex: Int) {
+        guard let sets = workout?.exercises[entryIndex].sets else { return }
+        var mapping: [Int: Int] = [:]
+        var next = 0
+        for set in sets where mapping[set.setNumber] == nil {
+            next += 1
+            mapping[set.setNumber] = next
+        }
+        for setIndex in sets.indices {
+            workout?.exercises[entryIndex].sets[setIndex].setNumber = mapping[sets[setIndex].setNumber] ?? (setIndex + 1)
+        }
     }
 
     @discardableResult
@@ -290,13 +321,20 @@ final class ActiveWorkoutStore {
         if completed {
             if let current = workout, let supersetId = current.exercises[entryIndex].supersetId {
                 let members = Superset.members(of: supersetId, in: current)
-                if Superset.isRoundComplete(in: members, setIndex: setIndex) {
-                    startRest(seconds: restSeconds, context: RestContext(supersetId: supersetId, round: setIndex + 1))
-                    focusEntryId = Superset.nextIncompleteSet(in: members)?.entryId
-                } else {
-                    focusEntryId = members.first { member in
-                        member.id != entryId && setIndex < member.sets.count && !member.sets[setIndex].isCompleted
-                    }?.id ?? Superset.nextIncompleteSet(in: members)?.entryId
+                let completedSetId = current.exercises[entryIndex].sets[setIndex].id
+                let round = current.exercises[entryIndex].setRounds
+                    .firstIndex { $0.contains { $0.id == completedSetId } } ?? setIndex
+                if Superset.isRoundComplete(in: members, round: round) {
+                    startRest(seconds: restSeconds, context: RestContext(supersetId: supersetId, round: round + 1))
+                }
+                focusEntryId = Superset.nextIncompleteSet(in: members)?.entryId
+            } else if let current = workout, isUnilateral(exerciseId: current.exercises[entryIndex].exerciseId) {
+                let round = current.exercises[entryIndex].sets[setIndex].setNumber
+                let roundComplete = current.exercises[entryIndex].sets
+                    .filter { $0.setNumber == round }
+                    .allSatisfy(\.isCompleted)
+                if roundComplete {
+                    startRest(seconds: restSeconds)
                 }
             } else {
                 startRest(seconds: restSeconds)
@@ -368,11 +406,17 @@ final class ActiveWorkoutStore {
         guard let entry = latestHistoryEntry(exerciseId: exerciseId) else { return nil }
         let completed = entry.sets.filter(\.isCompleted)
         guard let last = completed.last, let weight = last.weightKg, let reps = last.reps else { return nil }
-        return "\(completed.count) sets logged · last: \(Formatting.weight(weight)) × \(reps)"
+        let count = isUnilateral(exerciseId: exerciseId) ? Set(completed.map(\.setNumber)).count : completed.count
+        let side = last.side.map { "\($0.short) " } ?? ""
+        return "\(count) sets logged · last: \(side)\(Formatting.weight(weight)) × \(reps)"
     }
 
     private func entryIndex(_ entryId: String) -> Int? {
         workout?.exercises.firstIndex { $0.id == entryId }
+    }
+
+    private func isUnilateral(exerciseId: String) -> Bool {
+        store.exercise(id: exerciseId)?.isUnilateral ?? false
     }
 
     private static func defaultName(for date: Date) -> String {
