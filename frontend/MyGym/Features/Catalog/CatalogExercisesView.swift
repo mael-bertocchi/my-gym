@@ -73,9 +73,6 @@ struct CatalogExercisesView: View {
                                     RevealAction(title: "Edit", tint: Theme.accentBlue) {
                                         editingExercise = exercise
                                     },
-                                    RevealAction(title: exercise.isArchived ? "Unarchive" : "Archive", tint: Theme.muted2) {
-                                        setArchived(exercise, !exercise.isArchived)
-                                    },
                                     RevealAction(title: "Delete") { delete(exercise) },
                                 ],
                                 onTap: { selectedExercise = exercise }
@@ -104,9 +101,8 @@ struct CatalogExercisesView: View {
                 set: { if !$0 { deleteConflict = nil } }
             ),
             presenting: deleteConflict
-        ) { conflict in
-            Button("Archive instead") { setArchived(conflict.exercise, true) }
-            Button("Cancel", role: .cancel) {}
+        ) { _ in
+            Button("OK", role: .cancel) {}
         } message: { conflict in
             Text(conflict.message)
         }
@@ -147,11 +143,6 @@ struct CatalogExercisesView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            if exercise.isArchived {
-                Text("Archived")
-                    .font(Theme.mono(11, .semibold))
-                    .foregroundStyle(Theme.muted2)
-            }
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.tabInactive)
@@ -170,26 +161,6 @@ struct CatalogExercisesView: View {
             } catch {
                 alert = ManageAlert(
                     title: "Couldn\u{2019}t create group",
-                    message: ProfileSupport.message(for: error)
-                )
-            }
-        }
-    }
-
-    private func setArchived(_ exercise: Exercise, _ archived: Bool) {
-        Task {
-            do {
-                let updated = try await API.updateExercise(id: exercise.id, .init(
-                    name: nil,
-                    primaryMuscle: nil,
-                    secondaryMuscles: nil,
-                    isFavorite: nil,
-                    isArchived: archived
-                ))
-                store.insert(exercise: updated)
-            } catch {
-                alert = ManageAlert(
-                    title: archived ? "Couldn\u{2019}t archive exercise" : "Couldn\u{2019}t unarchive exercise",
                     message: ProfileSupport.message(for: error)
                 )
             }

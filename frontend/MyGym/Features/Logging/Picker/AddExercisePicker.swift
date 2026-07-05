@@ -137,7 +137,7 @@ struct AddExercisePicker: View {
     }
 
     private var activeExercises: [Exercise] {
-        store.exercises.filter { !$0.isArchived }
+        store.exercises
     }
 
     private var occurringMuscles: [MuscleGroup] {
