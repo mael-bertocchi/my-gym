@@ -9,6 +9,7 @@ struct ProfileView: View {
     @State private var selectedUnit: WeightUnit = .kilograms
     @State private var restSeconds = 90
     @State private var isHealthSyncEnabled = false
+    @State private var iconOption: AppIconOption = .system
 
     @State private var showHomeGymSheet = false
     @State private var showChangePasswordSheet = false
@@ -82,6 +83,7 @@ struct ProfileView: View {
                 selectedUnit = session.weightUnit
                 restSeconds = session.restTimerSeconds
                 isHealthSyncEnabled = healthKit.isEnabled
+                iconOption = AppIconOption.current
             }
             .onChange(of: selectedUnit) { oldValue, newValue in
                 unitChanged(from: oldValue, to: newValue)
@@ -105,6 +107,19 @@ struct ProfileView: View {
                     }
                 } else {
                     healthKit.isEnabled = false
+                }
+            }
+            .onChange(of: iconOption) { oldValue, newValue in
+                Task {
+                    do {
+                        try await newValue.apply()
+                    } catch {
+                        iconOption = oldValue
+                        infoAlert = ProfileInfoAlert(
+                            title: "Couldn't change icon",
+                            message: ProfileSupport.message(for: error)
+                        )
+                    }
                 }
             }
         }
@@ -146,6 +161,22 @@ struct ProfileView: View {
                         (value: WeightUnit.pounds, label: "lb"),
                     ],
                     selection: $selectedUnit,
+                    fillsWidth: false
+                )
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+
+            RowDivider()
+
+            HStack {
+                Text("Icon")
+                    .font(Theme.font(15))
+                    .foregroundStyle(Theme.ink)
+                Spacer()
+                SegmentedPicker(
+                    options: AppIconOption.allCases.map { (value: $0, label: $0.label) },
+                    selection: $iconOption,
                     fillsWidth: false
                 )
             }
