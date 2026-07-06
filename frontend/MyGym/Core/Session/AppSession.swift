@@ -11,9 +11,7 @@ final class AppSession {
     }
 
     private(set) var identityState: IdentityState = .loading
-    private(set) var currentUser: UserProfile? {
-        didSet { activeWorkout.weightUnit = weightUnit }
-    }
+    private(set) var currentUser: UserProfile?
 
     private let store: LocalStore
     private let syncEngine: SyncEngine

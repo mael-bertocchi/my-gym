@@ -18,8 +18,7 @@ struct MyGymApp: App {
             store: store,
             syncEngine: syncEngine,
             healthKit: healthKit,
-            restNotifications: restNotifications,
-            liveActivity: WorkoutLiveActivityController()
+            restNotifications: restNotifications
         )
         _store = State(initialValue: store)
         _syncEngine = State(initialValue: syncEngine)

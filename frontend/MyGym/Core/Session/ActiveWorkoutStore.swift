@@ -31,13 +31,6 @@ final class ActiveWorkoutStore {
     private(set) var pausedAt: Date?
     private(set) var pausedSeconds: TimeInterval = 0
 
-    var weightUnit: WeightUnit = .kilograms {
-        didSet {
-            guard weightUnit != oldValue else { return }
-            liveActivity.sync(activityState())
-        }
-    }
-
     var isActive: Bool { workout != nil }
     var isPaused: Bool { pausedAt != nil }
 
@@ -45,16 +38,13 @@ final class ActiveWorkoutStore {
     private let syncEngine: SyncEngine
     private let healthKit: HealthKitService
     private let restNotifications: RestNotificationService
-    private let liveActivity: WorkoutLiveActivityController
 
-    init(store: LocalStore, syncEngine: SyncEngine, healthKit: HealthKitService, restNotifications: RestNotificationService, liveActivity: WorkoutLiveActivityController) {
+    init(store: LocalStore, syncEngine: SyncEngine, healthKit: HealthKitService, restNotifications: RestNotificationService) {
         self.store = store
         self.syncEngine = syncEngine
         self.healthKit = healthKit
         self.restNotifications = restNotifications
-        self.liveActivity = liveActivity
         restore()
-        liveActivity.sync(activityState())
     }
 
     func start(gymId: String?, name: String? = nil) {
@@ -448,36 +438,6 @@ final class ActiveWorkoutStore {
         return directory.appending(path: "active-workout.json")
     }
 
-    private func activityState() -> WorkoutActivityAttributes.ContentState? {
-        guard let workout else { return nil }
-        let sets = workout.exercises.flatMap(\.sets)
-        let focus = currentFocus()
-        return WorkoutActivityAttributes.ContentState(
-            workoutName: workout.name ?? "Workout",
-            timerStart: workout.startedAt.addingTimeInterval(pausedSeconds),
-            pausedAt: pausedAt,
-            exerciseCount: workout.exercises.count,
-            completedSets: sets.filter(\.isCompleted).count,
-            totalSets: sets.count,
-            restEndsAt: pausedAt == nil ? restTimer?.endsAt : nil,
-            exerciseName: focus.flatMap { store.exercise(id: $0.entry.exerciseId)?.name },
-            setDetail: focus.flatMap { setDetail(for: $0.set) }
-        )
-    }
-
-    private func currentFocus() -> (entry: LocalWorkoutExercise, set: LocalSet)? {
-        guard let workout else { return nil }
-        let ordered = workout.exercises.sorted { $0.position < $1.position }
-        guard let entry = ordered.first(where: { $0.sets.contains { !$0.isCompleted } }) ?? ordered.last else { return nil }
-        guard let set = entry.sets.first(where: { !$0.isCompleted }) ?? entry.sets.last else { return nil }
-        return (entry, set)
-    }
-
-    private func setDetail(for set: LocalSet) -> String? {
-        guard let weightKg = set.weightKg, let reps = set.reps else { return nil }
-        return "\(Formatting.weight(weightKg, unit: weightUnit)) × \(reps)"
-    }
-
     private func persist() {
         let snapshot = Snapshot(
             workout: workout,
@@ -489,7 +449,6 @@ final class ActiveWorkoutStore {
         if let data = try? APIClient.encoder.encode(snapshot) {
             try? data.write(to: Self.fileURL, options: .atomic)
         }
-        liveActivity.sync(activityState())
     }
 
     private func restore() {
