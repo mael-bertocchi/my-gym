@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(SyncEngine.self) private var syncEngine
     @Environment(HealthKitService.self) private var healthKit
@@ -9,7 +9,7 @@ struct ProfileView: View {
     @State private var selectedUnit: WeightUnit = .kilograms
     @State private var restSeconds = 90
     @State private var isHealthSyncEnabled = false
-    @State private var iconOption: AppIconOption = .system
+    @State private var iconOption: ApplicationIconOption = .system
 
     @State private var showHomeGymSheet = false
     @State private var showChangePasswordSheet = false
@@ -83,7 +83,7 @@ struct ProfileView: View {
                 selectedUnit = session.weightUnit
                 restSeconds = session.restTimerSeconds
                 isHealthSyncEnabled = healthKit.isEnabled
-                iconOption = AppIconOption.current
+                iconOption = ApplicationIconOption.current
             }
             .onChange(of: selectedUnit) { oldValue, newValue in
                 unitChanged(from: oldValue, to: newValue)
@@ -175,7 +175,7 @@ struct ProfileView: View {
                     .foregroundStyle(Theme.ink)
                 Spacer()
                 SegmentedPicker(
-                    options: AppIconOption.allCases.map { (value: $0, label: $0.label) },
+                    options: ApplicationIconOption.allCases.map { (value: $0, label: $0.label) },
                     selection: $iconOption,
                     fillsWidth: false
                 )

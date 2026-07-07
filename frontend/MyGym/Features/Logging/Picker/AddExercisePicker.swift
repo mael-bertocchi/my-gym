@@ -5,7 +5,7 @@ struct AddExercisePicker: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(LocalStore.self) private var store
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     @State private var searchText = ""

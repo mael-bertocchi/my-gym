@@ -1,6 +1,6 @@
 import UIKit
 
-enum AppIconOption: String, CaseIterable, Identifiable {
+enum ApplicationIconOption: String, CaseIterable, Identifiable {
     case system
     case light
     case dark
@@ -18,13 +18,13 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     private var alternateIconName: String? {
         switch self {
         case .system: return nil
-        case .light: return "AppIconLight"
-        case .dark: return "AppIconDark"
+        case .light: return "ApplicationIconLight"
+        case .dark: return "ApplicationIconDark"
         }
     }
 
     @MainActor
-    static var current: AppIconOption {
+    static var current: ApplicationIconOption {
         let name = UIApplication.shared.alternateIconName
         return allCases.first { $0.alternateIconName == name } ?? .system
     }

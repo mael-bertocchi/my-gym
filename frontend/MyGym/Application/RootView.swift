@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
     @Environment(HealthKitService.self) private var healthKit
@@ -50,7 +50,7 @@ struct RootView: View {
 }
 
 struct MainShell: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
     @Environment(LocalStore.self) private var store
     @Environment(SyncEngine.self) private var syncEngine
@@ -92,7 +92,7 @@ struct MainShell: View {
                         .padding(.horizontal, 14)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    AppTabBar(
+                    ApplicationTabBar(
                         selection: $selection,
                         isWorkoutActive: activeWorkout.isActive,
                         onCenterTap: {

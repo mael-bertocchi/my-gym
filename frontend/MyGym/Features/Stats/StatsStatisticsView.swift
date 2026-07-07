@@ -5,7 +5,7 @@ struct StatsStatisticsBody: View {
     @Binding var range: StatsMath.Range
 
     @Environment(LocalStore.self) private var store
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
 
     var body: some View {
         let weekCount = range.weekCount(workouts: store.workouts)

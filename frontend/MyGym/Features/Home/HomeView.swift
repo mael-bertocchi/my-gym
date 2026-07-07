@@ -6,7 +6,7 @@ struct HomeView: View {
     var onOpenHistory: () -> Void = {}
     var onStartWorkout: () -> Void = {}
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
 
     @State private var showProfile = false

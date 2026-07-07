@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SignInView: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
 
     @State private var email = ""
     @State private var password = ""

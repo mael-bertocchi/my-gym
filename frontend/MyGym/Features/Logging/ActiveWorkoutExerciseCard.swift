@@ -8,7 +8,7 @@ struct ActiveWorkoutExerciseCard: View {
     var onAddToSuperset: (() -> Void)?
     var onFocusEntry: (String) -> Void = { _ in }
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
@@ -110,7 +110,7 @@ struct ActiveWorkoutSetRow: View {
     let unit: WeightUnit
     var onFocus: (String) -> Void
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     private enum SetField: Hashable {
@@ -292,7 +292,7 @@ struct ActiveWorkoutCondensedCard: View {
     let entry: LocalWorkoutExercise
     var onTap: () -> Void
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
 
     var body: some View {

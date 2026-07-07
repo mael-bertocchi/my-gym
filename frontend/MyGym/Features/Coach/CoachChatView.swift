@@ -31,7 +31,7 @@ struct CoachChatView: View {
             messageList
         }
         .background(Theme.screenBackground)
-        .hidesAppTabBar()
+        .hidesApplicationTabBar()
         .safeAreaInset(edge: .bottom, spacing: 0) { composer }
         .toolbar(.hidden, for: .navigationBar)
         .task { await bootstrap() }

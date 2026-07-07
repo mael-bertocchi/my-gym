@@ -1,10 +1,10 @@
 import SwiftUI
 
 @main
-struct MyGymApp: App {
+struct MyGymApplication: App {
     @State private var store: LocalStore
     @State private var syncEngine: SyncEngine
-    @State private var session: AppSession
+    @State private var session: ApplicationSession
     @State private var healthKit: HealthKitService
     @State private var activeWorkout: ActiveWorkoutStore
     @State private var tabChrome = TabChromeState()
@@ -24,7 +24,7 @@ struct MyGymApp: App {
         _syncEngine = State(initialValue: syncEngine)
         _healthKit = State(initialValue: healthKit)
         _activeWorkout = State(initialValue: activeWorkout)
-        _session = State(initialValue: AppSession(
+        _session = State(initialValue: ApplicationSession(
             store: store,
             syncEngine: syncEngine,
             activeWorkout: activeWorkout

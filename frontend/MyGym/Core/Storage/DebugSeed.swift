@@ -4,7 +4,7 @@ import Foundation
 
 enum DebugSeed {
     @MainActor
-    static func enterDemoEmpty(store: LocalStore, session: AppSession, healthKit: HealthKitService, activeWorkout: ActiveWorkoutStore) {
+    static func enterDemoEmpty(store: LocalStore, session: ApplicationSession, healthKit: HealthKitService, activeWorkout: ActiveWorkoutStore) {
         store.clearAll()
         InsightCache.clear()
         healthKit.demoBodyweight = []
@@ -117,7 +117,7 @@ enum DebugSeed {
     }
 
     @MainActor
-    static func enterDemo(store: LocalStore, session: AppSession, healthKit: HealthKitService) {
+    static func enterDemo(store: LocalStore, session: ApplicationSession, healthKit: HealthKitService) {
         store.clearAll()
 
         let ironTemple = mkGym("Iron Temple")

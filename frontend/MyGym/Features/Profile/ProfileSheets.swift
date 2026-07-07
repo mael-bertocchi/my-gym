@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct ProfileHomeGymSheet: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 

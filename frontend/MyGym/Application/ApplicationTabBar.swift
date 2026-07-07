@@ -30,7 +30,7 @@ extension Theme {
     static let resumeBannerClearance: CGFloat = 72
 }
 
-struct AppTabBar: View {
+struct ApplicationTabBar: View {
     @Environment(\.colorScheme) private var colorScheme
     @Binding var selection: AppTab
     var isWorkoutActive: Bool

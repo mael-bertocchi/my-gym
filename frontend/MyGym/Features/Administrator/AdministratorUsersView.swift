@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AdministratorUsersView: View {
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
 
     @State private var users: [UserProfile] = []
     @State private var isLoading = true

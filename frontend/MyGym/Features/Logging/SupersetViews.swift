@@ -11,7 +11,7 @@ struct SupersetUnifiedCard: View {
     var onUnlink: () -> Void
     var onFocusEntry: (String) -> Void
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
@@ -314,7 +314,7 @@ struct TwinSideCell: View {
     let unit: WeightUnit
     var onFocus: (String) -> Void
 
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     private enum SetField: Hashable {

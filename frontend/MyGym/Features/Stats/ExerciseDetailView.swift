@@ -5,7 +5,7 @@ struct ExerciseDetailView: View {
     var exerciseId: String
 
     @Environment(LocalStore.self) private var store
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
 
     @State private var range: StatsMath.Range = .threeMonths
     @State private var workoutRoute: HistoryWorkoutRoute?
@@ -20,7 +20,7 @@ struct ExerciseDetailView: View {
             }
         }
         .background(Theme.screenBackground.ignoresSafeArea())
-        .hidesAppTabBar()
+        .hidesApplicationTabBar()
         .manageNavigationChrome("")
         .alert("Couldn't update favorite", isPresented: favoriteAlertBinding) {
             Button("OK", role: .cancel) {}

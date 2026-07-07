@@ -8,7 +8,7 @@ struct HistoryWorkoutRoute: Identifiable, Hashable {
 
 struct HistoryView: View {
     @Environment(LocalStore.self) private var store
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(SyncEngine.self) private var syncEngine
 
     @Binding var workoutRoute: HistoryWorkoutRoute?

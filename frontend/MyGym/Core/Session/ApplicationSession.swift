@@ -3,7 +3,7 @@ import Observation
 
 @MainActor
 @Observable
-final class AppSession {
+final class ApplicationSession {
     enum IdentityState: Equatable {
         case loading
         case signedOut

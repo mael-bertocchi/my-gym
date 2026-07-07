@@ -4,7 +4,7 @@ struct HistoryWorkoutDetailView: View {
     let workoutId: String
 
     @Environment(LocalStore.self) private var store
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(HealthKitService.self) private var healthKit
     @Environment(\.dismiss) private var dismiss
 
@@ -19,7 +19,7 @@ struct HistoryWorkoutDetailView: View {
             }
         }
         .background(Theme.screenBackground.ignoresSafeArea())
-        .hidesAppTabBar()
+        .hidesApplicationTabBar()
         .manageNavigationChrome("")
         .sheet(isPresented: $isEditPresented) {
             if let workout = store.workout(id: workoutId) {

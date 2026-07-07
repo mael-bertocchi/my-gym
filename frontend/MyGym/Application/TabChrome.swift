@@ -17,7 +17,7 @@ final class TabChromeState {
     }
 }
 
-private struct HidesAppTabBar: ViewModifier {
+private struct HidesApplicationTabBar: ViewModifier {
     @Environment(TabChromeState.self) private var chrome
 
     func body(content: Content) -> some View {
@@ -28,7 +28,7 @@ private struct HidesAppTabBar: ViewModifier {
 }
 
 extension View {
-    func hidesAppTabBar() -> some View {
-        modifier(HidesAppTabBar())
+    func hidesApplicationTabBar() -> some View {
+        modifier(HidesApplicationTabBar())
     }
 }

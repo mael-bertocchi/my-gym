@@ -7,7 +7,7 @@ private extension UTType {
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(AppSession.self) private var session
+    @Environment(ApplicationSession.self) private var session
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
     @Environment(HealthKitService.self) private var healthKit
