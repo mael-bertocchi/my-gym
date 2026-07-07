@@ -1,4 +1,9 @@
 import SwiftUI
+import UniformTypeIdentifiers
+
+private extension UTType {
+    static let workoutExerciseGrouping = UTType(exportedAs: "fr.mael-bertocchi.my-gym.exercise-grouping")
+}
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
@@ -15,6 +20,8 @@ struct ActiveWorkoutView: View {
     @State private var settingsEntry: LocalWorkoutExercise?
     @State private var supersetSource: LocalWorkoutExercise?
     @State private var removeCandidate: LocalWorkoutExercise?
+    @State private var groupingOrder: [String] = []
+    @State private var draggingGroupingId: String?
 
     var body: some View {
         Group {
@@ -146,40 +153,56 @@ struct ActiveWorkoutView: View {
 
             ScrollView {
                 VStack(spacing: 14) {
-                    ForEach(Superset.groupings(in: workout)) { grouping in
-                        switch grouping {
-                        case .single(let entry):
-                            if entry.id == expandedEntryId {
-                                ActiveWorkoutExerciseCard(
-                                    entry: entry,
-                                    onOpenSettings: { settingsEntry = entry },
-                                    onRemove: { confirmRemove(entry) },
-                                    onAddToSuperset: supersetPartnerExists(in: workout, excluding: entry)
-                                        ? { supersetSource = entry }
-                                        : nil,
+                    ForEach(displayedGroupings(workout)) { grouping in
+                        Group {
+                            switch grouping {
+                            case .single(let entry):
+                                if entry.id == expandedEntryId {
+                                    ActiveWorkoutExerciseCard(
+                                        entry: entry,
+                                        onOpenSettings: { settingsEntry = entry },
+                                        onRemove: { confirmRemove(entry) },
+                                        onAddToSuperset: supersetPartnerExists(in: workout, excluding: entry)
+                                            ? { supersetSource = entry }
+                                            : nil,
+                                        onFocusEntry: focus
+                                    )
+                                } else {
+                                    ActiveWorkoutCondensedCard(entry: entry) {
+                                        focus(entry.id)
+                                    }
+                                }
+                            case .pair(let supersetId, let members):
+                                SupersetUnifiedCard(
+                                    supersetId: supersetId,
+                                    members: members,
+                                    activeEntryId: expandedEntryId,
+                                    onSelectMember: focus,
+                                    onOpenSettings: { settingsEntry = $0 },
+                                    onRemove: { confirmRemove($0) },
+                                    onUnlink: {
+                                        withAnimation(.snappy(duration: 0.2)) {
+                                            activeWorkout.unlinkSuperset(supersetId: supersetId)
+                                        }
+                                    },
                                     onFocusEntry: focus
                                 )
-                            } else {
-                                ActiveWorkoutCondensedCard(entry: entry) {
-                                    focus(entry.id)
-                                }
                             }
-                        case .pair(let supersetId, let members):
-                            SupersetUnifiedCard(
-                                supersetId: supersetId,
-                                members: members,
-                                activeEntryId: expandedEntryId,
-                                onSelectMember: focus,
-                                onOpenSettings: { settingsEntry = $0 },
-                                onRemove: { confirmRemove($0) },
-                                onUnlink: {
-                                    withAnimation(.snappy(duration: 0.2)) {
-                                        activeWorkout.unlinkSuperset(supersetId: supersetId)
-                                    }
-                                },
-                                onFocusEntry: focus
-                            )
                         }
+                        .opacity(draggingGroupingId == grouping.id ? 0.6 : 1)
+                        .onDrag {
+                            beginDrag(grouping.id, in: workout)
+                            return exerciseGroupingItemProvider(for: grouping.id)
+                        }
+                        .onDrop(
+                            of: [.workoutExerciseGrouping],
+                            delegate: ExerciseReorderDropDelegate(
+                                itemId: grouping.id,
+                                order: $groupingOrder,
+                                draggingId: $draggingGroupingId,
+                                onCommit: commitReorder
+                            )
+                        )
                     }
 
                     addExerciseTile
@@ -195,6 +218,15 @@ struct ActiveWorkoutView: View {
                 .padding(.horizontal, Theme.screenPadding)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
+                .onDrop(
+                    of: [.workoutExerciseGrouping],
+                    delegate: ExerciseReorderDropDelegate(
+                        itemId: nil,
+                        order: $groupingOrder,
+                        draggingId: $draggingGroupingId,
+                        onCommit: commitReorder
+                    )
+                )
             }
             .scrollDismissesKeyboard(.interactively)
         }
@@ -364,6 +396,40 @@ struct ActiveWorkoutView: View {
         workout.exercises.sorted { $0.position < $1.position }
     }
 
+    private func displayedGroupings(_ workout: LocalWorkout) -> [Superset.Grouping] {
+        let groupings = Superset.groupings(in: workout)
+        guard draggingGroupingId != nil, !groupingOrder.isEmpty else { return groupings }
+        let byId = Dictionary(uniqueKeysWithValues: groupings.map { ($0.id, $0) })
+        return groupingOrder.compactMap { byId[$0] }
+    }
+
+    private func beginDrag(_ groupingId: String, in workout: LocalWorkout) {
+        guard draggingGroupingId == nil else { return }
+        groupingOrder = Superset.groupings(in: workout).map(\.id)
+        draggingGroupingId = groupingId
+        Haptics.impact(.medium)
+    }
+
+    private func commitReorder() {
+        if !groupingOrder.isEmpty {
+            activeWorkout.reorderExercises(groupingIds: groupingOrder)
+        }
+        draggingGroupingId = nil
+        groupingOrder = []
+    }
+
+    private func exerciseGroupingItemProvider(for groupingId: String) -> NSItemProvider {
+        let provider = NSItemProvider()
+        provider.registerDataRepresentation(
+            forTypeIdentifier: UTType.workoutExerciseGrouping.identifier,
+            visibility: .ownProcess
+        ) { completion in
+            completion(Data(groupingId.utf8), nil)
+            return nil
+        }
+        return provider
+    }
+
     private var restEyebrow: String {
         guard let context = activeWorkout.restContext else { return "REST" }
         return "REST · ROUND \(context.round) DONE"
@@ -419,5 +485,34 @@ struct ActiveWorkoutView: View {
         if let workout = activeWorkout.workout {
             expandedEntryId = defaultExpandedId(in: workout)
         }
+    }
+}
+
+private struct ExerciseReorderDropDelegate: DropDelegate {
+    let itemId: String?
+    @Binding var order: [String]
+    @Binding var draggingId: String?
+    let onCommit: () -> Void
+
+    func dropEntered(info: DropInfo) {
+        guard let itemId, let draggingId, draggingId != itemId,
+              let from = order.firstIndex(of: draggingId),
+              let to = order.firstIndex(of: itemId)
+        else { return }
+        if order[to] != draggingId {
+            withAnimation(.snappy(duration: 0.2)) {
+                order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+            }
+            Haptics.impact(.light)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        onCommit()
+        return true
     }
 }

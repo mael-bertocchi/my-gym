@@ -161,6 +161,7 @@ final class ActiveWorkoutStore {
     @discardableResult
     func addExercise(_ exercise: Exercise) -> LocalWorkoutExercise? {
         guard var current = workout else { return nil }
+        guard !current.exercises.contains(where: { $0.exerciseId == exercise.id }) else { return nil }
 
         var sets: [LocalSet] = []
         if let lastEntry = latestHistoryEntry(exerciseId: exercise.id) {
@@ -229,6 +230,28 @@ final class ActiveWorkoutStore {
     func unlinkSuperset(supersetId: String) {
         guard workout != nil else { return }
         clearSuperset(supersetId)
+        persist()
+    }
+
+    func reorderExercises(groupingIds: [String]) {
+        guard let current = workout else { return }
+        var byId = Dictionary(uniqueKeysWithValues: Superset.groupings(in: current).map { ($0.id, $0) })
+        var ordered: [LocalWorkoutExercise] = []
+        for id in groupingIds {
+            switch byId.removeValue(forKey: id) {
+            case .single(let entry):
+                ordered.append(entry)
+            case .pair(_, let members):
+                ordered.append(contentsOf: members)
+            case nil:
+                continue
+            }
+        }
+        guard ordered.count == current.exercises.count else { return }
+        for index in ordered.indices {
+            ordered[index].position = index + 1
+        }
+        workout?.exercises = ordered
         persist()
     }
 

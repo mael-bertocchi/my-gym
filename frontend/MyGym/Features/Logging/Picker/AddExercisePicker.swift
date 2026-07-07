@@ -6,6 +6,7 @@ struct AddExercisePicker: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(LocalStore.self) private var store
     @Environment(AppSession.self) private var session
+    @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     @State private var searchText = ""
     @State private var filter: PickerFilter = .all
@@ -137,7 +138,8 @@ struct AddExercisePicker: View {
     }
 
     private var activeExercises: [Exercise] {
-        store.exercises
+        let addedIds = Set(activeWorkout.workout?.exercises.map(\.exerciseId) ?? [])
+        return store.exercises.filter { !addedIds.contains($0.id) }
     }
 
     private var occurringMuscles: [MuscleGroup] {
