@@ -75,7 +75,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
                     supersetId: true,
                     createdAt: true,
                     exercise: {
-                        select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true, groupId: true }
+                        select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
                     },
                     sets: {
                         orderBy: { setNumber: Prisma.SortOrder.asc },

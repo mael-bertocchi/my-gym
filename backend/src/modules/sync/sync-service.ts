@@ -14,9 +14,8 @@ import type { PushBody, SyncDeletionInput, SyncSettingInput, SyncWorkoutInput } 
 export async function pullChanges(prisma: PrismaClient, userId: string, since: Date | undefined) {
     const changed: Prisma.DateTimeFilter | undefined = since !== undefined ? { gt: since } : undefined;
 
-    const [brands, exerciseGroups, exercises, gyms, workouts, exerciseSettings, deletions] = await Promise.all([
+    const [brands, exercises, gyms, workouts, exerciseSettings, deletions] = await Promise.all([
         prisma.brand.findMany({ where: { userId, updatedAt: changed } }),
-        prisma.exerciseGroup.findMany({ where: { userId, updatedAt: changed } }),
         prisma.exercise.findMany({ where: { userId, updatedAt: changed } }),
         prisma.gym.findMany({ where: { userId, updatedAt: changed } }),
         prisma.workout.findMany({
@@ -41,7 +40,7 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                         supersetId: true,
                         createdAt: true,
                         exercise: {
-                            select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true, groupId: true }
+                            select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
                         },
                         sets: {
                             orderBy: { setNumber: Prisma.SortOrder.asc },
@@ -79,7 +78,7 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
     ]);
 
     return {
-        catalog: { brands, exerciseGroups, exercises, gyms },
+        catalog: { brands, exercises, gyms },
         workouts,
         exerciseSettings,
         deletions
@@ -143,7 +142,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                             supersetId: true,
                             createdAt: true,
                             exercise: {
-                                select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true, groupId: true }
+                                select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
                             },
                             sets: {
                                 orderBy: { setNumber: Prisma.SortOrder.asc },

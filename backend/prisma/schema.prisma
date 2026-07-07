@@ -1,7 +1,7 @@
 // my-gym — workout tracker backend.
 // Conventions: UUID string PKs, camelCase fields mapped to snake_case columns/tables,
 // created/updated timestamps. The datasource connection URL is supplied at runtime
-// via prisma.config.ts. The catalog (brands, exercise groups, exercises, gyms) is
+// via prisma.config.ts. The catalog (brands, exercises, gyms) is
 // shared and administrator-managed; workouts, remembered settings, and assistant
 // conversations are per-user.
 
@@ -95,7 +95,6 @@ model User {
   refreshSessions  RefreshSession[]
   syncDeletions    SyncDeletion[]
   brands           Brand[]
-  exerciseGroups   ExerciseGroup[]
   exercises        Exercise[]
   gyms             Gym[]
 
@@ -134,22 +133,6 @@ model Brand {
   @@map("brands")
 }
 
-model ExerciseGroup {
-  id     String @id @default(uuid())
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name   String
-
-  exercises Exercise[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@map("exercise_groups")
-}
-
 model Exercise {
   id               String         @id @default(uuid())
   userId           String         @map("user_id")
@@ -160,8 +143,6 @@ model Exercise {
   equipment        EquipmentType  @default(OTHER)
   brandId          String?        @map("brand_id")
   brand            Brand?         @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  groupId          String?        @map("group_id")
-  group            ExerciseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   isFavorite       Boolean        @default(false) @map("is_favorite")
   isArchived       Boolean        @default(false) @map("is_archived")
   isUnilateral     Boolean        @default(false) @map("is_unilateral")
@@ -176,7 +157,6 @@ model Exercise {
   @@index([userId])
   @@index([primaryMuscle])
   @@index([brandId])
-  @@index([groupId])
   @@map("exercises")
 }
 

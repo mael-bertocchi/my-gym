@@ -24,7 +24,7 @@ async function ensureExercise(request: FastifyRequest, id: string): Promise<void
 
 /**
  * @function listExercises
- * @description Lists the caller's exercises with group/equipment/brand/muscle/name filters and cursor pagination.
+ * @description Lists the caller's exercises with equipment/brand/muscle/name filters and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
@@ -33,9 +33,6 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
 
     const where: Prisma.ExerciseWhereInput = { userId: request.user.id };
 
-    if (request.query.groupId !== undefined) {
-        where.groupId = request.query.groupId;
-    }
     if (request.query.equipment !== undefined) {
         where.equipment = request.query.equipment;
     }
@@ -61,7 +58,6 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             secondaryMuscles: true,
             equipment: true,
             brandId: true,
-            groupId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -93,7 +89,6 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             secondaryMuscles: true,
             equipment: true,
             brandId: true,
-            groupId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -111,7 +106,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
 
 /**
  * @function createExercise
- * @description Creates an exercise owned by the caller, optionally linked to one of their brands and movement groups.
+ * @description Creates an exercise owned by the caller, optionally linked to one of their brands.
  *
  * @returns {Promise<void>} Resolves when the exercise is created.
  */
@@ -129,13 +124,6 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
-    if (request.body.groupId !== undefined) {
-        const group = await request.server.prisma.exerciseGroup.findFirst({ where: { id: request.body.groupId, userId: request.user.id } });
-
-        if (group === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise group not found');
-        }
-    }
 
     const created = await request.server.prisma.exercise.create({
         data: {
@@ -145,7 +133,6 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
             brandId: request.body.brandId,
-            groupId: request.body.groupId,
             isUnilateral: request.body.isUnilateral
         },
         select: {
@@ -155,7 +142,6 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             secondaryMuscles: true,
             equipment: true,
             brandId: true,
-            groupId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -196,13 +182,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
         }
     }
-    if (request.body.groupId !== undefined && request.body.groupId !== null) {
-        const group = await request.server.prisma.exerciseGroup.findFirst({ where: { id: request.body.groupId, userId: request.user.id } });
-
-        if (group === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise group not found');
-        }
-    }
 
     const data: Prisma.ExerciseUncheckedUpdateInput = {};
 
@@ -220,9 +199,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     }
     if (request.body.brandId !== undefined) {
         data.brandId = request.body.brandId;
-    }
-    if (request.body.groupId !== undefined) {
-        data.groupId = request.body.groupId;
     }
     if (request.body.isFavorite !== undefined) {
         data.isFavorite = request.body.isFavorite;
@@ -244,7 +220,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             secondaryMuscles: true,
             equipment: true,
             brandId: true,
-            groupId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,

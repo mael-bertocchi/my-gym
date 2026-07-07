@@ -17,10 +17,9 @@ export const EquipmentTypeSchema = z.enum(EquipmentType);
 
 /**
  * @constant ListExercisesQuerySchema
- * @description Zod schema for the list-exercises query string (cursor pagination plus group/equipment/brand/muscle/name filters).
+ * @description Zod schema for the list-exercises query string (cursor pagination plus equipment/brand/muscle/name filters).
  */
 export const ListExercisesQuerySchema = CursorQuerySchema.extend({
-    groupId: z.uuid().optional(),
     equipment: EquipmentTypeSchema.optional(),
     brandId: z.uuid().optional(),
     muscle: MuscleGroupSchema.optional(),
@@ -37,7 +36,6 @@ export const CreateExerciseSchema = z.object({
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
     brandId: z.uuid().optional(),
-    groupId: z.uuid().optional(),
     isUnilateral: z.boolean().optional().default(false)
 });
 
@@ -49,7 +47,7 @@ export type CreateExerciseBody = z.infer<typeof CreateExerciseSchema>;
 
 /**
  * @constant UpdateExerciseSchema
- * @description Zod schema for the update-exercise request body. Each field is optional, but at least one must be provided. A null brandId/groupId detaches that link.
+ * @description Zod schema for the update-exercise request body. Each field is optional, but at least one must be provided. A null brandId detaches that link.
  */
 export const UpdateExerciseSchema = z.object({
     name: z.string().min(1).max(120).optional(),
@@ -57,7 +55,6 @@ export const UpdateExerciseSchema = z.object({
     secondaryMuscles: z.array(MuscleGroupSchema).optional(),
     equipment: EquipmentTypeSchema.optional(),
     brandId: z.uuid().nullable().optional(),
-    groupId: z.uuid().nullable().optional(),
     isFavorite: z.boolean().optional(),
     isArchived: z.boolean().optional(),
     isUnilateral: z.boolean().optional()
@@ -97,7 +94,6 @@ export const ExerciseLastQuerySchema = z.object({
  */
 export interface ListExercisesRequest extends RequestGenericInterface {
     Querystring: {
-        groupId?: string; /*!< Optional movement-group filter */
         equipment?: EquipmentType; /*!< Optional equipment-type filter */
         brandId?: string; /*!< Optional brand filter */
         muscle?: MuscleGroup; /*!< Optional muscle filter (matches primary or secondary) */
