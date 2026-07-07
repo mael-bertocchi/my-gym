@@ -160,19 +160,21 @@ enum API {
     struct EditExerciseRequest: Encodable {
         var name: String
         var primaryMuscle: MuscleGroup
+        var secondaryMuscles: [MuscleGroup]
         var equipment: EquipmentType
         var brandId: String?
         var groupId: String
         var isUnilateral: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, equipment, brandId, groupId, isUnilateral
+            case name, primaryMuscle, secondaryMuscles, equipment, brandId, groupId, isUnilateral
         }
 
         func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(name, forKey: .name)
             try container.encode(primaryMuscle, forKey: .primaryMuscle)
+            try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
             try container.encode(equipment, forKey: .equipment)
             try container.encode(brandId, forKey: .brandId)
             try container.encode(groupId, forKey: .groupId)

@@ -13,6 +13,7 @@ struct NewExerciseFormView: View {
     @State private var equipmentType: EquipmentType = .machine
     @State private var selectedBrandId: String?
     @State private var primaryMuscle: MuscleGroup?
+    @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
 
     @State private var isCreating = false
@@ -60,6 +61,7 @@ struct NewExerciseFormView: View {
                     equipmentTypeField
                     brandField
                     muscleField
+                    secondaryMuscleField
                     unilateralField
                 }
                 .padding(.horizontal, 24)
@@ -106,6 +108,7 @@ struct NewExerciseFormView: View {
             || equipmentType != .machine
             || selectedBrandId != nil
             || primaryMuscle != nil
+            || !secondaryMuscles.isEmpty
             || isUnilateral
     }
 
@@ -227,7 +230,27 @@ struct NewExerciseFormView: View {
                 isPlaceholder: primaryMuscle == nil
             ) {
                 ForEach(MuscleGroup.allCases) { muscle in
-                    Button(muscle.label) { primaryMuscle = muscle }
+                    Button(muscle.label) {
+                        primaryMuscle = muscle
+                        secondaryMuscles.remove(muscle)
+                    }
+                }
+            }
+        }
+    }
+
+    private var secondaryMuscleField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            NewExerciseFieldLabel("SECONDARY MUSCLES")
+            PickerWrapLayout(spacing: 8) {
+                ForEach(MuscleGroup.allCases.filter { $0 != primaryMuscle }) { muscle in
+                    FilterChip(title: muscle.label, isActive: secondaryMuscles.contains(muscle)) {
+                        if secondaryMuscles.contains(muscle) {
+                            secondaryMuscles.remove(muscle)
+                        } else {
+                            secondaryMuscles.insert(muscle)
+                        }
+                    }
                 }
             }
         }
@@ -333,7 +356,7 @@ struct NewExerciseFormView: View {
                     .init(
                         name: name,
                         primaryMuscle: muscle,
-                        secondaryMuscles: nil,
+                        secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                         equipment: equipmentType,
                         brandId: brand?.id,
                         groupId: group.id,

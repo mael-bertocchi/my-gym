@@ -12,6 +12,7 @@ struct EditExerciseFormView: View {
     @State private var equipment: EquipmentType
     @State private var brandId: String?
     @State private var primaryMuscle: MuscleGroup
+    @State private var secondaryMuscles: Set<MuscleGroup>
     @State private var isUnilateral: Bool
 
     @State private var isSaving = false
@@ -28,6 +29,7 @@ struct EditExerciseFormView: View {
         _equipment = State(initialValue: exercise.equipment)
         _brandId = State(initialValue: exercise.brandId)
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
+        _secondaryMuscles = State(initialValue: Set(exercise.secondaryMuscles))
         _isUnilateral = State(initialValue: exercise.isUnilateral)
     }
 
@@ -41,6 +43,7 @@ struct EditExerciseFormView: View {
                     equipmentField
                     brandField
                     muscleField
+                    secondaryMuscleField
                     unilateralField
                 }
                 .padding(.horizontal, 24)
@@ -135,7 +138,27 @@ struct EditExerciseFormView: View {
             EyebrowText("PRIMARY MUSCLE")
             ManageDropdownField(text: primaryMuscle.label, isPlaceholder: false) {
                 ForEach(MuscleGroup.allCases) { muscle in
-                    Button(muscle.label) { primaryMuscle = muscle }
+                    Button(muscle.label) {
+                        primaryMuscle = muscle
+                        secondaryMuscles.remove(muscle)
+                    }
+                }
+            }
+        }
+    }
+
+    private var secondaryMuscleField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("SECONDARY MUSCLES")
+            PickerWrapLayout(spacing: 8) {
+                ForEach(MuscleGroup.allCases.filter { $0 != primaryMuscle }) { muscle in
+                    FilterChip(title: muscle.label, isActive: secondaryMuscles.contains(muscle)) {
+                        if secondaryMuscles.contains(muscle) {
+                            secondaryMuscles.remove(muscle)
+                        } else {
+                            secondaryMuscles.insert(muscle)
+                        }
+                    }
                 }
             }
         }
@@ -197,6 +220,7 @@ struct EditExerciseFormView: View {
             || equipment != exercise.equipment
             || brandId != exercise.brandId
             || primaryMuscle != exercise.primaryMuscle
+            || secondaryMuscles != Set(exercise.secondaryMuscles)
             || isUnilateral != exercise.isUnilateral
     }
 
@@ -218,6 +242,7 @@ struct EditExerciseFormView: View {
                 let updated = try await API.editExercise(id: exercise.id, .init(
                     name: name,
                     primaryMuscle: primaryMuscle,
+                    secondaryMuscles: Array(secondaryMuscles),
                     equipment: equipment,
                     brandId: brandId,
                     groupId: group.id,
