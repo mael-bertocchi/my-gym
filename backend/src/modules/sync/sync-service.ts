@@ -40,6 +40,9 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                         settings: true,
                         supersetId: true,
                         createdAt: true,
+                        exercise: {
+                            select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true, groupId: true }
+                        },
                         sets: {
                             orderBy: { setNumber: Prisma.SortOrder.asc },
                             select: {
@@ -139,6 +142,9 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                             settings: true,
                             supersetId: true,
                             createdAt: true,
+                            exercise: {
+                                select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true, groupId: true }
+                            },
                             sets: {
                                 orderBy: { setNumber: Prisma.SortOrder.asc },
                                 select: {
