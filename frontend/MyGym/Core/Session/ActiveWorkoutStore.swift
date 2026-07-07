@@ -296,8 +296,26 @@ final class ActiveWorkoutStore {
         guard let entryIndex = entryIndex(entryId),
               let setIndex = workout?.exercises[entryIndex].sets.firstIndex(where: { $0.id == updated.id })
         else { return }
+        let previous = workout!.exercises[entryIndex].sets[setIndex]
         workout?.exercises[entryIndex].sets[setIndex] = updated
+        fillEmptyFollowingSets(entryIndex: entryIndex, from: setIndex, previous: previous, updated: updated)
         persist()
+    }
+
+    private func fillEmptyFollowingSets(entryIndex: Int, from setIndex: Int, previous: LocalSet, updated: LocalSet) {
+        guard let sets = workout?.exercises[entryIndex].sets else { return }
+        let fillsWeight = updated.weightKg != nil && updated.weightKg != previous.weightKg
+        let fillsReps = updated.reps != nil && updated.reps != previous.reps
+        guard fillsWeight || fillsReps else { return }
+        for index in sets.indices where index > setIndex {
+            guard sets[index].side == updated.side, !sets[index].isCompleted else { continue }
+            if fillsWeight, sets[index].weightKg == nil {
+                workout?.exercises[entryIndex].sets[index].weightKg = updated.weightKg
+            }
+            if fillsReps, sets[index].reps == nil {
+                workout?.exercises[entryIndex].sets[index].reps = updated.reps
+            }
+        }
     }
 
     func removeSet(entryId: String, setId: String) {

@@ -134,6 +134,7 @@ struct ActiveWorkoutSetRow: View {
             row
         }
         .onChange(of: weightText) { _, newValue in
+            guard focusedField == .weight else { return }
             touched.insert(.weight)
             var updated = set
             updated.weightKg = parseNumber(newValue).map { value in
@@ -142,10 +143,21 @@ struct ActiveWorkoutSetRow: View {
             activeWorkout.updateSet(entryId: entryId, set: updated)
         }
         .onChange(of: repsText) { _, newValue in
+            guard focusedField == .reps else { return }
             touched.insert(.reps)
             var updated = set
             updated.reps = Int(newValue.trimmingCharacters(in: .whitespaces))
             activeWorkout.updateSet(entryId: entryId, set: updated)
+        }
+        .onChange(of: set.weightKg) { _, newValue in
+            guard focusedField != .weight else { return }
+            let formatted = newValue.map { Formatting.weightNumber($0, unit: unit) } ?? ""
+            if formatted != weightText { weightText = formatted }
+        }
+        .onChange(of: set.reps) { _, newValue in
+            guard focusedField != .reps else { return }
+            let formatted = newValue.map(String.init) ?? ""
+            if formatted != repsText { repsText = formatted }
         }
     }
 
