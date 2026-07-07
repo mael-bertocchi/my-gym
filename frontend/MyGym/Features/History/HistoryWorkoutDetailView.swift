@@ -102,40 +102,33 @@ struct HistoryWorkoutDetailView: View {
     }
 
     private func prCallout(hits: [HistoryPRIndex.Hit]) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "star.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.accentBlue)
-                .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(hits) { hit in
-                    prLine(for: hit)
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
+                EyebrowText("New records")
+                Spacer(minLength: 0)
+                Text("\(hits.count) this session")
+                    .font(Theme.font(12))
+                    .foregroundStyle(Theme.muted2)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 13)
-        .padding(.horizontal, 15)
-        .tintedCard(radius: 14)
-    }
+            .padding(.bottom, 12)
 
-    private func prLine(for hit: HistoryPRIndex.Hit) -> Text {
-        let exercise = store.exercise(id: hit.exerciseId)
-        let brand = exercise
-            .flatMap { store.brand(id: $0.brandId) }?
-            .name
-        var descriptor = exercise?.name ?? "Exercise"
-        if let brand {
-            descriptor += " · \(brand)"
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(hits) { hit in
+                        NavigationLink {
+                            ExerciseDetailView(exerciseId: hit.exerciseId)
+                        } label: {
+                            PRCardView(hit: hit, unit: session.weightUnit)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .contentMargins(.horizontal, Theme.screenPadding, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .padding(.horizontal, -Theme.screenPadding)
         }
-        var value = Formatting.weight(hit.weightKg, unit: session.weightUnit)
-        if let reps = hit.reps {
-            value += " × \(reps)"
-        }
-        let title = Text("New record").font(Theme.font(13, .bold))
-        let details = Text(" · \(descriptor) · \(value)").font(Theme.font(13))
-        return Text("\(title)\(details)")
-            .foregroundStyle(Theme.inkSecondary)
     }
 
     private func exerciseList(for workout: LocalWorkout) -> some View {
@@ -190,6 +183,65 @@ private struct WorkoutDetailStatTile: View {
         .padding(12)
         .card(radius: Theme.controlRadius)
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct PRCardView: View {
+    @Environment(LocalStore.self) private var store
+
+    let hit: HistoryPRIndex.Hit
+    let unit: WeightUnit
+
+    var body: some View {
+        let exercise = store.exercise(id: hit.exerciseId)
+        let brand = exercise.flatMap { store.brand(id: $0.brandId) }?.name
+
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 5) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Theme.accentBlue)
+                Text("PR")
+                    .font(Theme.mono(10, .bold))
+                    .kerning(1.5)
+                    .foregroundStyle(Theme.accentBlueSoft)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(Formatting.weightNumber(hit.weightKg, unit: unit))
+                    .font(Theme.font(30, .heavy))
+                    .foregroundStyle(Theme.ink)
+                Text(unit.suffix)
+                    .font(Theme.font(13, .semibold))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.top, 14)
+
+            if let reps = hit.reps {
+                Text("× \(reps) reps")
+                    .font(Theme.mono(11))
+                    .foregroundStyle(Theme.muted2)
+                    .padding(.top, 5)
+            }
+
+            Spacer(minLength: 0)
+
+            Text(exercise?.name ?? "Exercise")
+                .font(Theme.font(13, .semibold))
+                .foregroundStyle(Theme.inkSecondary)
+                .lineSpacing(3)
+                .lineLimit(2)
+
+            if let brand {
+                Text(brand)
+                    .font(Theme.mono(10))
+                    .foregroundStyle(Theme.muted2)
+                    .padding(.top, 4)
+            }
+        }
+        .padding(14)
+        .frame(width: 150, height: 176, alignment: .topLeading)
+        .tintedCard(radius: 16)
     }
 }
 
