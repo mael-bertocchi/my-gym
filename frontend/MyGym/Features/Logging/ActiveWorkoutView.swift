@@ -22,8 +22,19 @@ struct ActiveWorkoutView: View {
     @State private var removeCandidate: LocalWorkoutExercise?
     @State private var groupingOrder: [String] = []
     @State private var draggingGroupingId: String?
+    @State private var detailRoute: ExerciseDetailRoute?
 
     var body: some View {
+        NavigationStack {
+            workoutBody
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(item: $detailRoute) { route in
+                    ExerciseDetailView(exerciseId: route.exerciseId)
+                }
+        }
+    }
+
+    private var workoutBody: some View {
         Group {
             if let workout = activeWorkout.workout {
                 content(workout)
@@ -161,6 +172,7 @@ struct ActiveWorkoutView: View {
                                     ActiveWorkoutExerciseCard(
                                         entry: entry,
                                         onOpenSettings: { settingsEntry = entry },
+                                        onOpenDetail: { openDetail(entry) },
                                         onRemove: { confirmRemove(entry) },
                                         onAddToSuperset: supersetPartnerExists(in: workout, excluding: entry)
                                             ? { supersetSource = entry }
@@ -179,6 +191,7 @@ struct ActiveWorkoutView: View {
                                     activeEntryId: expandedEntryId,
                                     onSelectMember: focus,
                                     onOpenSettings: { settingsEntry = $0 },
+                                    onOpenDetail: { openDetail($0) },
                                     onRemove: { confirmRemove($0) },
                                     onUnlink: {
                                         withAnimation(.snappy(duration: 0.2)) {
@@ -441,6 +454,10 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    private func openDetail(_ entry: LocalWorkoutExercise) {
+        detailRoute = ExerciseDetailRoute(exerciseId: entry.exerciseId)
+    }
+
     private func supersetPartnerExists(in workout: LocalWorkout, excluding entry: LocalWorkoutExercise) -> Bool {
         workout.exercises.contains { $0.id != entry.id && $0.supersetId == nil }
     }
@@ -486,6 +503,11 @@ struct ActiveWorkoutView: View {
             expandedEntryId = defaultExpandedId(in: workout)
         }
     }
+}
+
+private struct ExerciseDetailRoute: Identifiable, Hashable {
+    let exerciseId: String
+    var id: String { exerciseId }
 }
 
 private struct ExerciseReorderDropDelegate: DropDelegate {

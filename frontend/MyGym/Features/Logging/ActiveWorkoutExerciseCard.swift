@@ -3,6 +3,7 @@ import SwiftUI
 struct ActiveWorkoutExerciseCard: View {
     let entry: LocalWorkoutExercise
     var onOpenSettings: () -> Void
+    var onOpenDetail: () -> Void
     var onRemove: () -> Void
     var onAddToSuperset: (() -> Void)?
     var onFocusEntry: (String) -> Void = { _ in }
@@ -19,6 +20,7 @@ struct ActiveWorkoutExerciseCard: View {
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Menu {
+                    Button("View exercise", action: onOpenDetail)
                     Button("Machine settings", action: onOpenSettings)
                     if let onAddToSuperset {
                         Button("Add to superset", action: onAddToSuperset)

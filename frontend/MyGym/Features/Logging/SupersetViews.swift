@@ -6,6 +6,7 @@ struct SupersetUnifiedCard: View {
     let activeEntryId: String?
     var onSelectMember: (String) -> Void
     var onOpenSettings: (LocalWorkoutExercise) -> Void
+    var onOpenDetail: (LocalWorkoutExercise) -> Void
     var onRemove: (LocalWorkoutExercise) -> Void
     var onUnlink: () -> Void
     var onFocusEntry: (String) -> Void
@@ -46,6 +47,7 @@ struct SupersetUnifiedCard: View {
                 .kerning(1)
                 .foregroundStyle(Theme.muted)
             Menu {
+                Button("View exercise") { onOpenDetail(activeMember) }
                 Button("Machine settings") { onOpenSettings(activeMember) }
                 Button("Unlink superset", action: onUnlink)
                 Button("Remove \(exerciseName(activeMember))", role: .destructive) { onRemove(activeMember) }
