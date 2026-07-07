@@ -133,13 +133,6 @@ struct Brand: Codable, Identifiable, Equatable, Hashable {
     var updatedAt: Date
 }
 
-struct ExerciseGroup: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var name: String
-    var createdAt: Date
-    var updatedAt: Date
-}
-
 struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var name: String
@@ -147,7 +140,6 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var secondaryMuscles: [MuscleGroup]
     var equipment: EquipmentType
     var brandId: String?
-    var groupId: String?
     var isFavorite: Bool
     var isArchived: Bool
     var isUnilateral: Bool
@@ -158,7 +150,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
 extension Exercise {
     private enum CodingKeys: String, CodingKey {
         case id, name, primaryMuscle, secondaryMuscles, equipment
-        case brandId, groupId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
+        case brandId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -169,7 +161,6 @@ extension Exercise {
         secondaryMuscles = try container.decode([MuscleGroup].self, forKey: .secondaryMuscles)
         equipment = try container.decode(EquipmentType.self, forKey: .equipment)
         brandId = try container.decodeIfPresent(String.self, forKey: .brandId)
-        groupId = try container.decodeIfPresent(String.self, forKey: .groupId)
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false
@@ -218,7 +209,6 @@ struct WorkoutEntryExercise: Codable, Equatable, Hashable {
     var primaryMuscle: MuscleGroup
     var equipment: EquipmentType
     var brandId: String?
-    var groupId: String?
 }
 
 struct WorkoutEntry: Codable, Identifiable, Equatable {

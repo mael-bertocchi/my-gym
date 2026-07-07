@@ -128,74 +128,57 @@ enum DebugSeed {
         let technogym = mkBrand("Technogym")
         let cybex = mkBrand("Cybex")
 
-        let chestPressGroup = mkGroup("Chest Press")
-        let inclinePressGroup = mkGroup("Incline Press")
-        let cableFlyGroup = mkGroup("Cable Fly")
-        let benchPressGroup = mkGroup("Bench Press")
-        let legPressGroup = mkGroup("Leg Press")
-        let legCurlGroup = mkGroup("Leg Curl")
-        let latPulldownGroup = mkGroup("Lat Pulldown")
-        let seatedRowGroup = mkGroup("Seated Row")
-        let oneArmRowGroup = mkGroup("Single-Arm Row")
-        let squatGroup = mkGroup("Squat")
-        let shoulderPressGroup = mkGroup("Shoulder Press")
-
         let chestPress = mkExercise(
             "Chest Press", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, brandId: hammerStrength.id, groupId: chestPressGroup.id, favorite: true
+            equipment: .machine, brandId: hammerStrength.id, favorite: true
         )
         let chestPressTechnogym = mkExercise(
             "Chest Press (Technogym)", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, brandId: technogym.id, groupId: chestPressGroup.id
+            equipment: .machine, brandId: technogym.id
         )
         let benchPress = mkExercise(
             "Barbell Bench Press", .chest, secondary: [.triceps],
-            equipment: .barbell, brandId: nil, groupId: benchPressGroup.id
+            equipment: .barbell, brandId: nil
         )
         let inclineDumbbellPress = mkExercise(
             "Incline DB Press", .chest, secondary: [.frontDelts],
-            equipment: .dumbbell, brandId: nil, groupId: inclinePressGroup.id
+            equipment: .dumbbell, brandId: nil
         )
         let cableFly = mkExercise(
             "Cable Fly", .chest,
-            equipment: .cable, brandId: technogym.id, groupId: cableFlyGroup.id
+            equipment: .cable, brandId: technogym.id
         )
         let legPress = mkExercise(
             "Leg Press", .quadriceps, secondary: [.glutes],
-            equipment: .machine, brandId: technogym.id, groupId: legPressGroup.id
+            equipment: .machine, brandId: technogym.id
         )
         let legCurl = mkExercise(
             "Leg Curl", .hamstrings,
-            equipment: .machine, brandId: cybex.id, groupId: legCurlGroup.id
+            equipment: .machine, brandId: cybex.id
         )
         let latPulldown = mkExercise(
             "Lat Pulldown", .lats, secondary: [.biceps],
-            equipment: .machine, brandId: hammerStrength.id, groupId: latPulldownGroup.id
+            equipment: .machine, brandId: hammerStrength.id
         )
         let seatedRow = mkExercise(
             "Seated Row", .upperBack, secondary: [.biceps],
-            equipment: .cable, brandId: technogym.id, groupId: seatedRowGroup.id
+            equipment: .cable, brandId: technogym.id
         )
         let oneArmRow = mkExercise(
             "Single-Arm Row", .upperBack, secondary: [.biceps],
-            equipment: .dumbbell, brandId: nil, groupId: oneArmRowGroup.id, unilateral: true
+            equipment: .dumbbell, brandId: nil, unilateral: true
         )
         let squat = mkExercise(
             "Squat", .quadriceps, secondary: [.glutes],
-            equipment: .barbell, brandId: nil, groupId: squatGroup.id
+            equipment: .barbell, brandId: nil
         )
         let shoulderPress = mkExercise(
             "Shoulder Press", .frontDelts, secondary: [.sideDelts, .triceps],
-            equipment: .machine, brandId: cybex.id, groupId: shoulderPressGroup.id
+            equipment: .machine, brandId: cybex.id
         )
 
         store.applyCatalog(SyncPull.Catalog(
             brands: [hammerStrength, technogym, cybex],
-            exerciseGroups: [
-                chestPressGroup, inclinePressGroup, cableFlyGroup, benchPressGroup,
-                legPressGroup, legCurlGroup, latPulldownGroup, seatedRowGroup,
-                oneArmRowGroup, squatGroup, shoulderPressGroup,
-            ],
             exercises: [
                 chestPress, chestPressTechnogym, benchPress, inclineDumbbellPress,
                 cableFly, legPress, legCurl, latPulldown, seatedRow, oneArmRow, squat, shoulderPress,
@@ -523,17 +506,12 @@ enum DebugSeed {
         Brand(id: newId(), name: name, createdAt: catalogBirth, updatedAt: catalogBirth)
     }
 
-    private static func mkGroup(_ name: String) -> ExerciseGroup {
-        ExerciseGroup(id: newId(), name: name, createdAt: catalogBirth, updatedAt: catalogBirth)
-    }
-
     private static func mkExercise(
         _ name: String,
         _ primary: MuscleGroup,
         secondary: [MuscleGroup] = [],
         equipment: EquipmentType,
         brandId: String?,
-        groupId: String,
         favorite: Bool = false,
         unilateral: Bool = false
     ) -> Exercise {
@@ -544,7 +522,6 @@ enum DebugSeed {
             secondaryMuscles: secondary,
             equipment: equipment,
             brandId: brandId,
-            groupId: groupId,
             isFavorite: favorite,
             isArchived: false,
             isUnilateral: unilateral,

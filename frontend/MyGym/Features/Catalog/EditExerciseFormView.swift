@@ -8,7 +8,6 @@ struct EditExerciseFormView: View {
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
     @State private var name: String
-    @State private var groupId: String?
     @State private var equipment: EquipmentType
     @State private var brandId: String?
     @State private var primaryMuscle: MuscleGroup
@@ -17,15 +16,12 @@ struct EditExerciseFormView: View {
 
     @State private var isSaving = false
     @State private var alert: ManageAlert?
-    @State private var showsNewGroupAlert = false
-    @State private var newGroupName = ""
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
 
     init(exercise: Exercise) {
         self.exercise = exercise
         _name = State(initialValue: exercise.name)
-        _groupId = State(initialValue: exercise.groupId)
         _equipment = State(initialValue: exercise.equipment)
         _brandId = State(initialValue: exercise.brandId)
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
@@ -39,7 +35,6 @@ struct EditExerciseFormView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     nameField
-                    groupField
                     equipmentField
                     brandField
                     muscleField
@@ -65,34 +60,6 @@ struct EditExerciseFormView: View {
             text: $name,
             autocapitalization: .words
         )
-    }
-
-    private var groupField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            EyebrowText("MOVEMENT GROUP")
-            ManageDropdownField(
-                text: selectedGroup?.name ?? "Select group",
-                isPlaceholder: selectedGroup == nil
-            ) {
-                ForEach(sortedGroups) { group in
-                    Button(group.name) { groupId = group.id }
-                }
-                if !sortedGroups.isEmpty {
-                    Divider()
-                }
-                Button("New group…") {
-                    newGroupName = ""
-                    showsNewGroupAlert = true
-                }
-            }
-            .alert("New group", isPresented: $showsNewGroupAlert) {
-                TextField("Group name", text: $newGroupName)
-                Button("Cancel", role: .cancel) {}
-                Button("Create") { createGroup() }
-            } message: {
-                Text("Exercises in the same movement group are compared across machines.")
-            }
-        }
     }
 
     private var equipmentField: some View {
@@ -179,7 +146,7 @@ struct EditExerciseFormView: View {
         PrimaryButton(
             title: "Save changes",
             isLoading: isSaving,
-            isDisabled: trimmedName.isEmpty || selectedGroup == nil || !hasEdits
+            isDisabled: trimmedName.isEmpty || !hasEdits
         ) {
             save()
         }
@@ -192,21 +159,10 @@ struct EditExerciseFormView: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var sortedGroups: [ExerciseGroup] {
-        store.exerciseGroups.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
     private var sortedBrands: [Brand] {
         store.brands.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
-    }
-
-    private var selectedGroup: ExerciseGroup? {
-        guard let groupId else { return nil }
-        return store.exerciseGroups.first { $0.id == groupId }
     }
 
     private var selectedBrand: Brand? {
@@ -216,7 +172,6 @@ struct EditExerciseFormView: View {
 
     private var hasEdits: Bool {
         trimmedName != exercise.name
-            || groupId != exercise.groupId
             || equipment != exercise.equipment
             || brandId != exercise.brandId
             || primaryMuscle != exercise.primaryMuscle
@@ -226,7 +181,7 @@ struct EditExerciseFormView: View {
 
     private func save() {
         let name = trimmedName
-        guard !name.isEmpty, let group = selectedGroup, !isSaving else { return }
+        guard !name.isEmpty, !isSaving else { return }
         guard !store.exercises.contains(where: {
             $0.id != exercise.id && $0.name.caseInsensitiveCompare(name) == .orderedSame
         }) else {
@@ -245,7 +200,6 @@ struct EditExerciseFormView: View {
                     secondaryMuscles: Array(secondaryMuscles),
                     equipment: equipment,
                     brandId: brandId,
-                    groupId: group.id,
                     isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: updated)
@@ -261,34 +215,6 @@ struct EditExerciseFormView: View {
                 isSaving = false
                 alert = ManageAlert(
                     title: "Couldn\u{2019}t save changes",
-                    message: ProfileSupport.message(for: error)
-                )
-            }
-        }
-    }
-
-    private func createGroup() {
-        let name = newGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let group = try await API.createExerciseGroup(name: name)
-                store.insert(group: group)
-                groupId = group.id
-            } catch let error as APIError where error.statusCode == 409 {
-                if let existing = store.exerciseGroups.first(where: {
-                    $0.name.caseInsensitiveCompare(name) == .orderedSame
-                }) {
-                    groupId = existing.id
-                } else {
-                    alert = ManageAlert(
-                        title: "Couldn\u{2019}t create group",
-                        message: ProfileSupport.message(for: error)
-                    )
-                }
-            } catch {
-                alert = ManageAlert(
-                    title: "Couldn\u{2019}t create group",
                     message: ProfileSupport.message(for: error)
                 )
             }

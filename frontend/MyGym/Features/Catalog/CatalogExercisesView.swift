@@ -3,43 +3,14 @@ import SwiftUI
 struct CatalogExercisesView: View {
     @Environment(LocalStore.self) private var store
 
-    @State private var showsNewGroupAlert = false
-    @State private var newGroupName = ""
+    @State private var showsAddSheet = false
     @State private var alert: ManageAlert?
     @State private var deleteConflict: CatalogExerciseDeleteConflict?
     @State private var selectedExercise: Exercise?
     @State private var editingExercise: Exercise?
 
-    private struct CatalogExerciseBucket: Identifiable {
-        let id: String
-        let name: String
-        let exercises: [Exercise]
-    }
-
-    private var buckets: [CatalogExerciseBucket] {
-        let groups = store.exerciseGroups.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-        let groupIds = Set(groups.map(\.id))
-        var result: [CatalogExerciseBucket] = groups.map { group in
-            CatalogExerciseBucket(
-                id: group.id,
-                name: group.name,
-                exercises: sortedExercises { $0.groupId == group.id }
-            )
-        }
-        let others = sortedExercises { exercise in
-            guard let groupId = exercise.groupId else { return true }
-            return !groupIds.contains(groupId)
-        }
-        if !others.isEmpty {
-            result.append(CatalogExerciseBucket(id: "administrator-ungrouped", name: "Other", exercises: others))
-        }
-        return result
-    }
-
-    private func sortedExercises(where predicate: (Exercise) -> Bool) -> [Exercise] {
-        store.exercises.filter(predicate).sorted {
+    private var exercises: [Exercise] {
+        store.exercises.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
@@ -47,52 +18,34 @@ struct CatalogExercisesView: View {
     var body: some View {
         List {
             ManageScreenTitle(title: "Exercises", subtitle: countLine) {
-                ManageAddButton {
-                    newGroupName = ""
-                    showsNewGroupAlert = true
-                }
+                ManageAddButton { showsAddSheet = true }
             }
             .manageTitleRow()
 
-            if buckets.isEmpty {
-                ManageInfoNote(text: "The exercise catalog is empty — tap + to create a movement group.")
+            if exercises.isEmpty {
+                ManageInfoNote(text: "The exercise catalog is empty — tap + to add your first exercise.")
                     .manageNoteRow()
             } else {
-                ForEach(buckets) { bucket in
-                    bucketHeader(bucket.name)
-                    if bucket.exercises.isEmpty {
-                        Text("No exercises yet")
-                            .font(Theme.font(12))
-                            .foregroundStyle(Theme.muted2)
-                            .manageListRow()
-                            .listRowSeparator(.hidden)
-                    } else {
-                        ForEach(bucket.exercises) { exercise in
-                            RevealActionsRow(
-                                actions: [
-                                    RevealAction(title: "Edit", tint: Theme.accentBlue) {
-                                        editingExercise = exercise
-                                    },
-                                    RevealAction(title: "Delete") { delete(exercise) },
-                                ],
-                                onTap: { selectedExercise = exercise }
-                            ) {
-                                row(exercise)
-                            }
-                            .manageListRow()
-                        }
+                ForEach(exercises) { exercise in
+                    RevealActionsRow(
+                        actions: [
+                            RevealAction(title: "Edit", tint: Theme.accentBlue) {
+                                editingExercise = exercise
+                            },
+                            RevealAction(title: "Delete") { delete(exercise) },
+                        ],
+                        onTap: { selectedExercise = exercise }
+                    ) {
+                        row(exercise)
                     }
+                    .manageListRow()
                 }
             }
         }
         .managePlainList()
         .manageNavigationChrome("Exercises")
-        .alert("New group", isPresented: $showsNewGroupAlert) {
-            TextField("Group name", text: $newGroupName)
-            Button("Cancel", role: .cancel) {}
-            Button("Create") { createGroup() }
-        } message: {
-            Text("Exercises in the same movement group are compared across machines.")
+        .sheet(isPresented: $showsAddSheet) {
+            CatalogExerciseAddSheet()
         }
         .alert(
             "Can\u{2019}t delete exercise",
@@ -116,16 +69,8 @@ struct CatalogExercisesView: View {
     }
 
     private var countLine: String {
-        let exerciseCount = store.exercises.count
-        let groupCount = store.exerciseGroups.count
-        return "\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises") · \(groupCount) \(groupCount == 1 ? "group" : "groups")"
-    }
-
-    private func bucketHeader(_ name: String) -> some View {
-        EyebrowText(name)
-            .listRowInsets(EdgeInsets(top: 18, leading: 22, bottom: 6, trailing: 22))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+        let count = store.exercises.count
+        return "\(count) \(count == 1 ? "exercise" : "exercises")"
     }
 
     private func row(_ exercise: Exercise) -> some View {
@@ -149,22 +94,6 @@ struct CatalogExercisesView: View {
         }
         .frame(minHeight: 38)
         .contentShape(Rectangle())
-    }
-
-    private func createGroup() {
-        let name = newGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let group = try await API.createExerciseGroup(name: name)
-                store.insert(group: group)
-            } catch {
-                alert = ManageAlert(
-                    title: "Couldn\u{2019}t create group",
-                    message: ProfileSupport.message(for: error)
-                )
-            }
-        }
     }
 
     private func delete(_ exercise: Exercise) {
@@ -191,4 +120,235 @@ struct CatalogExerciseDeleteConflict: Identifiable {
     let id = UUID()
     var exercise: Exercise
     var message: String
+}
+
+struct CatalogExerciseAddSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(LocalStore.self) private var store
+
+    @State private var name = ""
+    @State private var equipment: EquipmentType = .machine
+    @State private var brandId: String?
+    @State private var primaryMuscle: MuscleGroup?
+    @State private var secondaryMuscles: Set<MuscleGroup> = []
+    @State private var isUnilateral = false
+
+    @State private var isCreating = false
+    @State private var alert: ManageAlert?
+    @State private var showsNewBrandAlert = false
+    @State private var newBrandName = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ManageModalHeader(title: "New exercise")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    nameField
+                    equipmentField
+                    brandField
+                    muscleField
+                    secondaryMuscleField
+                    unilateralField
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            footer
+        }
+        .background(Theme.surface.ignoresSafeArea())
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isCreating)
+        .manageInfoAlert($alert)
+    }
+
+    private var nameField: some View {
+        LabeledField(
+            label: "NAME",
+            placeholder: "e.g. Chest Press",
+            text: $name,
+            autocapitalization: .words
+        )
+    }
+
+    private var equipmentField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("EQUIPMENT TYPE")
+            PickerWrapLayout(spacing: 8) {
+                ForEach(EquipmentType.allCases) { type in
+                    FilterChip(title: type.label, isActive: equipment == type) {
+                        equipment = type
+                    }
+                }
+            }
+        }
+    }
+
+    private var brandField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("BRAND")
+            ManageDropdownField(
+                text: selectedBrand?.name ?? "No brand",
+                isPlaceholder: false
+            ) {
+                Button("No brand") { brandId = nil }
+                ForEach(sortedBrands) { brand in
+                    Button(brand.name) { brandId = brand.id }
+                }
+                Divider()
+                Button("New brand…") {
+                    newBrandName = ""
+                    showsNewBrandAlert = true
+                }
+            }
+            .alert("New brand", isPresented: $showsNewBrandAlert) {
+                TextField("Brand name", text: $newBrandName)
+                Button("Cancel", role: .cancel) {}
+                Button("Create") { createBrand() }
+            }
+        }
+    }
+
+    private var muscleField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("PRIMARY MUSCLE")
+            ManageDropdownField(
+                text: primaryMuscle?.label ?? "Select muscle",
+                isPlaceholder: primaryMuscle == nil
+            ) {
+                ForEach(MuscleGroup.allCases) { muscle in
+                    Button(muscle.label) {
+                        primaryMuscle = muscle
+                        secondaryMuscles.remove(muscle)
+                    }
+                }
+            }
+        }
+    }
+
+    private var secondaryMuscleField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("SECONDARY MUSCLES")
+            PickerWrapLayout(spacing: 8) {
+                ForEach(MuscleGroup.allCases.filter { $0 != primaryMuscle }) { muscle in
+                    FilterChip(title: muscle.label, isActive: secondaryMuscles.contains(muscle)) {
+                        if secondaryMuscles.contains(muscle) {
+                            secondaryMuscles.remove(muscle)
+                        } else {
+                            secondaryMuscles.insert(muscle)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var unilateralField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            EyebrowText("SET LOGGING")
+            ManageToggleRow(
+                title: "Single-arm",
+                subtitle: "Log each set for the left and right side.",
+                isOn: $isUnilateral
+            )
+        }
+    }
+
+    private var footer: some View {
+        PrimaryButton(
+            title: "Add exercise",
+            isLoading: isCreating,
+            isDisabled: trimmedName.isEmpty || primaryMuscle == nil
+        ) {
+            create()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var sortedBrands: [Brand] {
+        store.brands.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    private var selectedBrand: Brand? {
+        guard let brandId else { return nil }
+        return store.brands.first { $0.id == brandId }
+    }
+
+    private func create() {
+        let name = trimmedName
+        guard !name.isEmpty, let muscle = primaryMuscle, !isCreating else { return }
+        guard !store.exercises.contains(where: {
+            $0.name.caseInsensitiveCompare(name) == .orderedSame
+        }) else {
+            alert = ManageAlert(
+                title: "Couldn\u{2019}t add exercise",
+                message: "An exercise named \u{201C}\(name)\u{201D} already exists."
+            )
+            return
+        }
+        isCreating = true
+        Task {
+            do {
+                let exercise = try await API.createExercise(.init(
+                    name: name,
+                    primaryMuscle: muscle,
+                    secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
+                    equipment: equipment,
+                    brandId: brandId,
+                    isUnilateral: isUnilateral
+                ))
+                store.insert(exercise: exercise)
+                isCreating = false
+                dismiss()
+            } catch let error as APIError where error.statusCode == 409 {
+                isCreating = false
+                alert = ManageAlert(
+                    title: "Couldn\u{2019}t add exercise",
+                    message: "An exercise named \u{201C}\(name)\u{201D} already exists."
+                )
+            } catch {
+                isCreating = false
+                alert = ManageAlert(
+                    title: "Couldn\u{2019}t add exercise",
+                    message: ProfileSupport.message(for: error)
+                )
+            }
+        }
+    }
+
+    private func createBrand() {
+        let name = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        Task {
+            do {
+                let brand = try await API.createBrand(name: name)
+                store.insert(brand: brand)
+                brandId = brand.id
+            } catch let error as APIError where error.statusCode == 409 {
+                if let existing = store.brands.first(where: {
+                    $0.name.caseInsensitiveCompare(name) == .orderedSame
+                }) {
+                    brandId = existing.id
+                } else {
+                    alert = ManageAlert(
+                        title: "Couldn\u{2019}t create brand",
+                        message: ProfileSupport.message(for: error)
+                    )
+                }
+            } catch {
+                alert = ManageAlert(
+                    title: "Couldn\u{2019}t create brand",
+                    message: ProfileSupport.message(for: error)
+                )
+            }
+        }
+    }
 }

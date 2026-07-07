@@ -20,7 +20,6 @@ struct CatalogView: View {
                 LazyVGrid(columns: tileColumns, spacing: 12) {
                     CatalogCountTile(value: store.brands.count, caption: "Brands")
                     CatalogCountTile(value: store.exercises.count, caption: "Exercises")
-                    CatalogCountTile(value: store.exerciseGroups.count, caption: "Groups")
                     CatalogCountTile(value: store.gyms.count, caption: "Gyms")
                 }
                 .padding(.bottom, 20)
@@ -34,7 +33,7 @@ struct CatalogView: View {
                         CatalogBrandsView()
                     }
                     RowDivider()
-                    ManageHubRow(title: "Exercises & groups") {
+                    ManageHubRow(title: "Exercises") {
                         CatalogExercisesView()
                     }
                     RowDivider()

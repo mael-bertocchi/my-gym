@@ -7,22 +7,9 @@ struct ExerciseDetailView: View {
     @Environment(LocalStore.self) private var store
     @Environment(AppSession.self) private var session
 
-    @State private var scope: Scope = .thisMachine
     @State private var range: StatsMath.Range = .threeMonths
     @State private var workoutRoute: HistoryWorkoutRoute?
     @State private var favoriteError: String?
-
-    private enum Scope {
-        case thisMachine
-        case compareBrands
-    }
-
-    private static let palette: [Color] = [
-        Theme.accentBlue,
-        Theme.resumeRing,
-        Theme.chartSoft,
-        Theme.chartMuted,
-    ]
 
     var body: some View {
         Group {
@@ -69,24 +56,9 @@ struct ExerciseDetailView: View {
                     .padding(.bottom, 16)
 
                 StatsRangeChips(selection: $range)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 18)
 
-                HStack(spacing: 8) {
-                    FilterChip(title: "This machine", isActive: scope == .thisMachine) {
-                        scope = .thisMachine
-                    }
-                    FilterChip(title: "Compare brands", isActive: scope == .compareBrands) {
-                        scope = .compareBrands
-                    }
-                }
-                .padding(.bottom, 18)
-
-                switch scope {
-                case .thisMachine:
-                    thisMachineSection(exercise: exercise, windowWorkouts: windowWorkouts)
-                case .compareBrands:
-                    compareSection(for: exercise, windowWorkouts: windowWorkouts)
-                }
+                thisMachineSection(exercise: exercise, windowWorkouts: windowWorkouts)
             }
             .padding(.top, 8)
             .padding(.horizontal, Theme.screenPadding)
@@ -359,152 +331,6 @@ struct ExerciseDetailView: View {
         return "\(number) × \(reps)"
     }
 
-    @ViewBuilder
-    private func compareSection(for exercise: Exercise, windowWorkouts: [LocalWorkout]) -> some View {
-        let members = groupMembers(for: exercise)
-        if members.count < 2 {
-            Text("No other machines in this movement group yet.")
-                .font(Theme.font(13))
-                .foregroundStyle(Theme.inkSecondary)
-                .lineSpacing(3)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 13)
-                .padding(.horizontal, 15)
-                .tintedCard(radius: 14)
-        } else {
-            let seriesList = compareSeries(for: members, windowWorkouts: windowWorkouts)
-            compareChartCard(seriesList: seriesList)
-                .padding(.bottom, 18)
-            compareRows(seriesList: seriesList)
-        }
-    }
-
-    private func groupMembers(for exercise: Exercise) -> [Exercise] {
-        guard let groupId = exercise.groupId else { return [exercise] }
-        var members = store.exercises.filter { $0.groupId == groupId }
-        if let index = members.firstIndex(where: { $0.id == exercise.id }) {
-            let selected = members.remove(at: index)
-            members.insert(selected, at: 0)
-        }
-        return members
-    }
-
-    private func compareSeries(
-        for members: [Exercise],
-        windowWorkouts: [LocalWorkout]
-    ) -> [ExerciseDetailSeries] {
-        var usedLabels: Set<String> = []
-        return members.enumerated().map { index, member in
-            let brand = store.brandLine(for: member)
-            var label = brand.isBranded ? brand.text : member.name
-            if usedLabels.contains(label) { label = member.name }
-            if usedLabels.contains(label) { label = "\(label) \(index + 1)" }
-            usedLabels.insert(label)
-
-            let allPoints = StatsMath.sessions(for: member.id, workouts: store.workouts)
-            let windowPoints = StatsMath.sessions(for: member.id, workouts: windowWorkouts)
-            return ExerciseDetailSeries(
-                exercise: member,
-                label: label,
-                color: Self.palette[min(index, Self.palette.count - 1)],
-                isBranded: brand.isBranded,
-                brandText: brand.text,
-                chartPoints: windowPoints.compactMap { point in
-                    point.bestOneRepMaxKg.map {
-                        ExerciseDetailChartPoint(date: point.date, valueKg: $0, workoutId: point.workoutId)
-                    }
-                },
-                heaviestKg: allPoints.compactMap(\.heaviestKg).max(),
-                bestOneRepMaxKg: allPoints.compactMap(\.bestOneRepMaxKg).max()
-            )
-        }
-    }
-
-    private func compareChartCard(seriesList: [ExerciseDetailSeries]) -> some View {
-        let chartSeries = seriesList.filter { $0.chartPoints.count >= 2 }
-        return VStack(alignment: .leading, spacing: 14) {
-            EyebrowText("EST. 1RM BY MACHINE", size: 10)
-            if chartSeries.isEmpty {
-                ExerciseDetailEmptyNote(height: 110)
-            } else {
-                Chart {
-                    ForEach(chartSeries) { series in
-                        ForEach(series.chartPoints) { point in
-                            LineMark(
-                                x: .value("Date", point.date),
-                                y: .value("Est. 1RM", point.valueKg),
-                                series: .value("Machine", series.label)
-                            )
-                            .foregroundStyle(by: .value("Machine", series.label))
-                            .interpolationMethod(.catmullRom)
-                            .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                        }
-                    }
-                }
-                .chartForegroundStyleScale(
-                    domain: chartSeries.map(\.label),
-                    range: chartSeries.map(\.color)
-                )
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .chartLegend(.hidden)
-                .frame(height: 110)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    ForEach(chartSeries) { series in
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(series.color)
-                                .frame(width: 6, height: 6)
-                            Text(series.label)
-                                .font(Theme.mono(10))
-                                .foregroundStyle(Theme.muted)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .card(radius: 18)
-    }
-
-    private func compareRows(seriesList: [ExerciseDetailSeries]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            EyebrowText("MACHINES", size: 10)
-            VStack(spacing: 0) {
-                ForEach(Array(seriesList.enumerated()), id: \.element.id) { index, series in
-                    if index > 0 {
-                        RowDivider()
-                    }
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(series.exercise.name)
-                                .font(Theme.font(15, .bold))
-                                .foregroundStyle(Theme.ink)
-                            Text(series.brandText)
-                                .font(Theme.mono(11))
-                                .foregroundStyle(series.isBranded ? Theme.accentBlue : Theme.muted2)
-                        }
-                        Spacer(minLength: 0)
-                        Text(compareValues(for: series))
-                            .font(Theme.mono(13))
-                            .foregroundStyle(Theme.ink)
-                    }
-                    .padding(.vertical, 10)
-                }
-            }
-        }
-    }
-
-    private func compareValues(for series: ExerciseDetailSeries) -> String {
-        guard let heaviest = series.heaviestKg else { return "—" }
-        let heaviestLabel = Formatting.weight(heaviest, unit: unit)
-        guard let oneRM = series.bestOneRepMaxKg else { return heaviestLabel }
-        return "\(heaviestLabel) / \(wholeWeight(oneRM))\(unit.suffix)"
-    }
-
     private var missingState: some View {
         VStack(spacing: 8) {
             Text("Exercise unavailable")
@@ -556,19 +382,6 @@ private struct ExerciseDetailChartPoint: Identifiable {
     let date: Date
     let valueKg: Double
     let workoutId: String
-}
-
-private struct ExerciseDetailSeries: Identifiable {
-    let exercise: Exercise
-    let label: String
-    let color: Color
-    let isBranded: Bool
-    let brandText: String
-    let chartPoints: [ExerciseDetailChartPoint]
-    let heaviestKg: Double?
-    let bestOneRepMaxKg: Double?
-
-    var id: String { exercise.id }
 }
 
 private struct ExerciseDetailEmptyNote: View {

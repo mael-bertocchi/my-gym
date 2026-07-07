@@ -1,15 +1,12 @@
 import SwiftUI
 
 struct NewExerciseFormView: View {
-    var prefilledGroup: ExerciseGroup?
-    var suggestedGroupName: String?
     var onCreated: (Exercise) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(LocalStore.self) private var store
 
     @State private var exerciseName: String
-    @State private var selectedGroupId: String?
     @State private var equipmentType: EquipmentType = .machine
     @State private var selectedBrandId: String?
     @State private var primaryMuscle: MuscleGroup?
@@ -20,28 +17,16 @@ struct NewExerciseFormView: View {
     @State private var errorMessage: String?
     @State private var showsError = false
 
-    @State private var showsNewGroupAlert = false
-    @State private var newGroupName = ""
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
     @State private var showsDiscardConfirm = false
 
     private let initialName: String
-    private let initialGroupId: String?
 
-    init(
-        prefilledGroup: ExerciseGroup? = nil,
-        suggestedGroupName: String? = nil,
-        onCreated: @escaping (Exercise) -> Void
-    ) {
-        self.prefilledGroup = prefilledGroup
-        self.suggestedGroupName = suggestedGroupName
+    init(onCreated: @escaping (Exercise) -> Void) {
         self.onCreated = onCreated
-        let name = suggestedGroupName ?? prefilledGroup?.name ?? ""
-        initialName = name
-        initialGroupId = prefilledGroup?.id
-        _exerciseName = State(initialValue: name)
-        _selectedGroupId = State(initialValue: prefilledGroup?.id)
+        initialName = ""
+        _exerciseName = State(initialValue: "")
     }
 
     var body: some View {
@@ -52,12 +37,7 @@ struct NewExerciseFormView: View {
                 .padding(.bottom, 20)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if let group = selectedGroup {
-                        infoBanner(groupName: group.name)
-                            .padding(.bottom, 4)
-                    }
                     nameField
-                    groupField
                     equipmentTypeField
                     brandField
                     muscleField
@@ -104,7 +84,6 @@ struct NewExerciseFormView: View {
 
     private var hasEdits: Bool {
         trimmedName != initialName.trimmingCharacters(in: .whitespacesAndNewlines)
-            || selectedGroupId != initialGroupId
             || equipmentType != .machine
             || selectedBrandId != nil
             || primaryMuscle != nil
@@ -116,24 +95,13 @@ struct NewExerciseFormView: View {
         PrimaryButton(
             title: "Create & add to workout",
             isLoading: isCreating,
-            isDisabled: trimmedName.isEmpty || selectedGroup == nil || primaryMuscle == nil
+            isDisabled: trimmedName.isEmpty || primaryMuscle == nil
         ) {
             create()
         }
         .padding(.top, 16)
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
-    }
-
-    private func infoBanner(groupName: String) -> some View {
-        Text("Reuses the \(Text(groupName).fontWeight(.bold)) movement group, so it joins the cross-machine comparison automatically.")
-            .font(Theme.font(12))
-            .foregroundStyle(Theme.inkSecondary)
-            .lineSpacing(4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .tintedCard(radius: 14)
     }
 
     private var nameField: some View {
@@ -151,36 +119,6 @@ struct NewExerciseFormView: View {
                     RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
                         .strokeBorder(Theme.fieldBorder, lineWidth: 1)
                 )
-        }
-    }
-
-    private var groupField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            NewExerciseFieldLabel("MOVEMENT GROUP")
-            NewExerciseDropdown(
-                text: selectedGroup?.name ?? "Select group",
-                isPlaceholder: selectedGroup == nil
-            ) {
-                ForEach(sortedGroups) { group in
-                    Button(group.name) { selectedGroupId = group.id }
-                }
-                if !sortedGroups.isEmpty {
-                    Divider()
-                }
-                Button("New group…") {
-                    if newGroupName.isEmpty {
-                        newGroupName = suggestedGroupName ?? ""
-                    }
-                    showsNewGroupAlert = true
-                }
-            }
-            .alert("New group", isPresented: $showsNewGroupAlert) {
-                TextField("Group name", text: $newGroupName)
-                Button("Cancel", role: .cancel) {}
-                Button("Create") { createGroup() }
-            } message: {
-                Text("Exercises in the same movement group are compared across machines.")
-            }
         }
     }
 
@@ -267,51 +205,15 @@ struct NewExerciseFormView: View {
         }
     }
 
-    private var sortedGroups: [ExerciseGroup] {
-        store.exerciseGroups.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
     private var sortedBrands: [Brand] {
         store.brands.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
 
-    private var selectedGroup: ExerciseGroup? {
-        guard let selectedGroupId else { return nil }
-        if let group = store.exerciseGroups.first(where: { $0.id == selectedGroupId }) {
-            return group
-        }
-        return prefilledGroup?.id == selectedGroupId ? prefilledGroup : nil
-    }
-
     private var selectedBrand: Brand? {
         guard let selectedBrandId else { return nil }
         return store.brands.first { $0.id == selectedBrandId }
-    }
-
-    private func createGroup() {
-        let name = newGroupName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let group = try await API.createExerciseGroup(name: name)
-                store.insert(group: group)
-                selectedGroupId = group.id
-            } catch let error as APIError where error.statusCode == 409 {
-                if let existing = store.exerciseGroups.first(where: {
-                    $0.name.caseInsensitiveCompare(name) == .orderedSame
-                }) {
-                    selectedGroupId = existing.id
-                } else {
-                    presentError(error)
-                }
-            } catch {
-                presentError(error)
-            }
-        }
     }
 
     private func createBrand() {
@@ -342,7 +244,7 @@ struct NewExerciseFormView: View {
 
     private func create() {
         let name = trimmedName
-        guard !name.isEmpty, let group = selectedGroup, let muscle = primaryMuscle, !isCreating else { return }
+        guard !name.isEmpty, let muscle = primaryMuscle, !isCreating else { return }
         guard !store.exercises.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) else {
             errorMessage = "An exercise named \u{201C}\(name)\u{201D} already exists."
             showsError = true
@@ -359,7 +261,6 @@ struct NewExerciseFormView: View {
                         secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                         equipment: equipmentType,
                         brandId: brand?.id,
-                        groupId: group.id,
                         isUnilateral: isUnilateral
                     )
                 )

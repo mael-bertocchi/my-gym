@@ -5,7 +5,6 @@ import Observation
 @Observable
 final class LocalStore {
     private(set) var brands: [Brand] = []
-    private(set) var exerciseGroups: [ExerciseGroup] = []
     private(set) var exercises: [Exercise] = []
     private(set) var gyms: [Gym] = []
 
@@ -27,7 +26,6 @@ final class LocalStore {
 
     func applyCatalog(_ catalog: SyncPull.Catalog, replacing: Bool = false) {
         brands = replacing ? catalog.brands : merge(brands, with: catalog.brands)
-        exerciseGroups = replacing ? catalog.exerciseGroups : merge(exerciseGroups, with: catalog.exerciseGroups)
         exercises = replacing ? catalog.exercises : merge(exercises, with: catalog.exercises)
         gyms = replacing ? catalog.gyms : merge(gyms, with: catalog.gyms)
         sortCatalog()
@@ -35,12 +33,10 @@ final class LocalStore {
     }
 
     func insert(brand: Brand) { brands = merge(brands, with: [brand]); sortCatalog(); save() }
-    func insert(group: ExerciseGroup) { exerciseGroups = merge(exerciseGroups, with: [group]); sortCatalog(); save() }
     func insert(exercise: Exercise) { exercises = merge(exercises, with: [exercise]); sortCatalog(); save() }
     func insert(gym: Gym) { gyms = merge(gyms, with: [gym]); sortCatalog(); save() }
 
     func removeBrand(id: String) { brands.removeAll { $0.id == id }; save() }
-    func removeGroup(id: String) { exerciseGroups.removeAll { $0.id == id }; save() }
     func removeExercise(id: String) { exercises.removeAll { $0.id == id }; save() }
     func removeGym(id: String) { gyms.removeAll { $0.id == id }; save() }
 
@@ -183,7 +179,6 @@ final class LocalStore {
 
     func clearAll() {
         brands = []
-        exerciseGroups = []
         exercises = []
         gyms = []
         workouts = []
@@ -197,7 +192,6 @@ final class LocalStore {
 
     private struct Snapshot: Codable {
         var brands: [Brand]
-        var exerciseGroups: [ExerciseGroup]
         var exercises: [Exercise]
         var gyms: [Gym]
         var workouts: [LocalWorkout]
@@ -218,7 +212,6 @@ final class LocalStore {
         guard let data = try? Data(contentsOf: Self.fileURL),
               let snapshot = try? APIClient.decoder.decode(Snapshot.self, from: data) else { return }
         brands = snapshot.brands
-        exerciseGroups = snapshot.exerciseGroups
         exercises = snapshot.exercises
         gyms = snapshot.gyms
         workouts = snapshot.workouts
@@ -232,7 +225,6 @@ final class LocalStore {
     func save() {
         let snapshot = Snapshot(
             brands: brands,
-            exerciseGroups: exerciseGroups,
             exercises: exercises,
             gyms: gyms,
             workouts: workouts,
@@ -257,7 +249,6 @@ final class LocalStore {
 
     private func sortCatalog() {
         brands.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        exerciseGroups.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         exercises.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         gyms.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }

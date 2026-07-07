@@ -27,11 +27,8 @@ struct AddExercisePicker: View {
             }
             .background(Theme.surface.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: PickerFormDestination.self) { destination in
-                NewExerciseFormView(
-                    prefilledGroup: destination.group,
-                    suggestedGroupName: destination.suggestedGroupName
-                ) { exercise in
+            .navigationDestination(for: PickerFormDestination.self) { _ in
+                NewExerciseFormView { exercise in
                     onSelect(exercise)
                     dismiss()
                 }
@@ -77,7 +74,7 @@ struct AddExercisePicker: View {
                 if activeExercises.isEmpty {
                     PickerEmptyState()
                     PickerCreateRow(title: endCreateTitle) {
-                        path.append(endCreateDestination)
+                        path.append(PickerFormDestination())
                     }
                 } else {
                     ForEach(sections) { section in
@@ -93,7 +90,7 @@ struct AddExercisePicker: View {
                             .padding(.vertical, 24)
                     }
                     PickerCreateRow(title: endCreateTitle) {
-                        path.append(endCreateDestination)
+                        path.append(PickerFormDestination())
                     }
                 }
             }
@@ -105,36 +102,23 @@ struct AddExercisePicker: View {
     }
 
     private func sectionView(_ section: PickerListSection, bests: [String: LocalSet]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            EyebrowText(section.title)
-                .padding(.top, 8)
-                .padding(.bottom, 12)
-            VStack(spacing: 10) {
-                ForEach(section.exercises) { exercise in
-                    PickerExerciseRow(
-                        exercise: exercise,
-                        brandLine: store.brandLine(for: exercise),
-                        prText: bests[exercise.id].flatMap(prLabel(for:))
-                    ) {
-                        onSelect(exercise)
-                        dismiss()
-                    }
-                }
-                if let group = section.group, hasFilterContext {
-                    PickerCreateRow(title: "New \(group.name) machine") {
-                        path.append(PickerFormDestination(group: group))
-                    }
+        VStack(spacing: 10) {
+            ForEach(section.exercises) { exercise in
+                PickerExerciseRow(
+                    exercise: exercise,
+                    brandLine: store.brandLine(for: exercise),
+                    prText: bests[exercise.id].flatMap(prLabel(for:))
+                ) {
+                    onSelect(exercise)
+                    dismiss()
                 }
             }
         }
+        .padding(.top, 8)
     }
 
     private var trimmedQuery: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var hasFilterContext: Bool {
-        !trimmedQuery.isEmpty || filter != .all
     }
 
     private var activeExercises: [Exercise] {
@@ -166,58 +150,18 @@ struct AddExercisePicker: View {
 
     private var listSections: [PickerListSection] {
         let filtered = filteredExercises
-        let grouped = Dictionary(grouping: filtered, by: \.groupId)
-        let groups = store.exerciseGroups.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-        var sections: [PickerListSection] = []
-        for group in groups {
-            guard let members = grouped[group.id], !members.isEmpty else { continue }
-            sections.append(PickerListSection(
-                id: group.id,
-                group: group,
-                title: sectionTitle(name: group.name, count: members.count),
-                exercises: members.sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
-            ))
-        }
-        let knownGroupIds = Set(groups.map(\.id))
-        let ungrouped = filtered.filter { exercise in
-            guard let groupId = exercise.groupId else { return true }
-            return !knownGroupIds.contains(groupId)
-        }
-        if !ungrouped.isEmpty {
-            sections.append(PickerListSection(
-                id: "picker-other",
-                group: nil,
-                title: sectionTitle(name: "Other", count: ungrouped.count),
-                exercises: ungrouped.sorted {
-                    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                }
-            ))
-        }
-        return sections
-    }
-
-    private func sectionTitle(name: String, count: Int) -> String {
-        "\(name) — \(count) \(count == 1 ? "movement" : "movements")"
+        guard !filtered.isEmpty else { return [] }
+        return [PickerListSection(
+            id: "picker-all",
+            exercises: filtered.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        )]
     }
 
     private var endCreateTitle: String {
         let query = trimmedQuery
-        return query.isEmpty ? "New machine" : "New \(query) machine"
-    }
-
-    private var endCreateDestination: PickerFormDestination {
-        let query = trimmedQuery
-        guard !query.isEmpty else { return PickerFormDestination() }
-        if let match = store.exerciseGroups.first(where: {
-            $0.name.compare(query, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
-        }) {
-            return PickerFormDestination(group: match)
-        }
-        return PickerFormDestination(suggestedGroupName: query)
+        return query.isEmpty ? "New exercise" : "New \(query) exercise"
     }
 
     private func bestCompletedSets() -> [String: LocalSet] {
@@ -259,14 +203,9 @@ private enum PickerFilter: Hashable {
     case muscle(MuscleGroup)
 }
 
-struct PickerFormDestination: Hashable {
-    var group: ExerciseGroup? = nil
-    var suggestedGroupName: String? = nil
-}
+struct PickerFormDestination: Hashable {}
 
 private struct PickerListSection: Identifiable {
     var id: String
-    var group: ExerciseGroup?
-    var title: String
     var exercises: [Exercise]
 }

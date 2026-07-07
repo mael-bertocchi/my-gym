@@ -103,16 +103,7 @@ enum API {
         let _: Message = try await client.delete("brands/\(id)")
     }
 
-    static func exerciseGroups(search: String? = nil, cursor: String? = nil) async throws -> Page<ExerciseGroup> {
-        try await client.page("exercise-groups", query: ["search": search, "cursor": cursor, "limit": "100"])
-    }
-
-    static func createExerciseGroup(name: String) async throws -> ExerciseGroup {
-        try await client.post("exercise-groups", body: ["name": name])
-    }
-
     static func exercises(
-        groupId: String? = nil,
         equipment: EquipmentType? = nil,
         brandId: String? = nil,
         muscle: MuscleGroup? = nil,
@@ -120,7 +111,6 @@ enum API {
         cursor: String? = nil
     ) async throws -> Page<Exercise> {
         try await client.page("exercises", query: [
-            "groupId": groupId,
             "equipment": equipment?.rawValue,
             "brandId": brandId,
             "muscle": muscle?.rawValue,
@@ -136,7 +126,6 @@ enum API {
         var secondaryMuscles: [MuscleGroup]?
         var equipment: EquipmentType
         var brandId: String?
-        var groupId: String?
         var isUnilateral: Bool
     }
 
@@ -163,11 +152,10 @@ enum API {
         var secondaryMuscles: [MuscleGroup]
         var equipment: EquipmentType
         var brandId: String?
-        var groupId: String
         var isUnilateral: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, secondaryMuscles, equipment, brandId, groupId, isUnilateral
+            case name, primaryMuscle, secondaryMuscles, equipment, brandId, isUnilateral
         }
 
         func encode(to encoder: Encoder) throws {
@@ -177,7 +165,6 @@ enum API {
             try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
             try container.encode(equipment, forKey: .equipment)
             try container.encode(brandId, forKey: .brandId)
-            try container.encode(groupId, forKey: .groupId)
             try container.encode(isUnilateral, forKey: .isUnilateral)
         }
     }

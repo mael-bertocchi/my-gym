@@ -36,7 +36,6 @@ enum ProfileDataExporter {
         var user: ExportUser?
         var gyms: [Gym]
         var brands: [Brand]
-        var exerciseGroups: [ExerciseGroup]
         var exercises: [Exercise]
         var workouts: [LocalWorkout]
         var exerciseSettings: [LocalExerciseSetting]
@@ -51,7 +50,6 @@ enum ProfileDataExporter {
             },
             gyms: store.gyms,
             brands: store.brands,
-            exerciseGroups: store.exerciseGroups,
             exercises: store.exercises,
             workouts: store.workouts,
             exerciseSettings: store.exerciseSettings
