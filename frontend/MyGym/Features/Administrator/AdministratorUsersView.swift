@@ -8,6 +8,7 @@ struct AdministratorUsersView: View {
     @State private var loadNote: String?
     @State private var showsCreateSheet = false
     @State private var managingUser: UserProfile?
+    @State private var searchText = ""
 
     var body: some View {
         ScrollView {
@@ -16,6 +17,14 @@ struct AdministratorUsersView: View {
                     ManageAddButton { showsCreateSheet = true }
                 }
                 .padding(.bottom, 20)
+                if showsSearch {
+                    SearchField(
+                        text: $searchText,
+                        prompt: "Search accounts…",
+                        accessibilityLabel: "Search accounts"
+                    )
+                    .padding(.bottom, 16)
+                }
                 content
             }
             .padding(.horizontal, 22)
@@ -35,8 +44,15 @@ struct AdministratorUsersView: View {
                 applyUpdate(updated)
             }
         }
-        .task { await load() }
+        .task(id: searchText) { await loadDebounced() }
         .refreshable { await load() }
+    }
+
+    private var showsSearch: Bool {
+        if isLoading && users.isEmpty {
+            return false
+        }
+        return !users.isEmpty || !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var subtitle: String {
@@ -58,7 +74,7 @@ struct AdministratorUsersView: View {
             }
             .padding(.vertical, 48)
         } else if users.isEmpty {
-            ManageInfoNote(text: loadNote ?? "Connect to manage accounts.")
+            ManageInfoNote(text: emptyText)
         } else {
             VStack(spacing: 0) {
                 ForEach(users) { user in
@@ -99,7 +115,26 @@ struct AdministratorUsersView: View {
         .buttonStyle(.plain)
     }
 
+    private var emptyText: String {
+        let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !term.isEmpty {
+            return "No accounts match \u{201C}\(term)\u{201D}."
+        }
+        return loadNote ?? "Connect to manage accounts."
+    }
+
+    private func loadDebounced() async {
+        if !searchText.isEmpty {
+            try? await Task.sleep(for: .milliseconds(300))
+            if Task.isCancelled {
+                return
+            }
+        }
+        await load()
+    }
+
     private func load() async {
+        let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if users.isEmpty {
             isLoading = true
         }
@@ -108,14 +143,20 @@ struct AdministratorUsersView: View {
             var cursor: String?
             var pages = 0
             repeat {
-                let page = try await API.users(cursor: cursor)
+                let page = try await API.users(search: term.isEmpty ? nil : term, cursor: cursor)
                 collected.append(contentsOf: page.data)
                 cursor = page.nextCursor
                 pages += 1
             } while cursor != nil && pages < 20
+            if Task.isCancelled {
+                return
+            }
             users = collected
             loadNote = nil
         } catch {
+            if Task.isCancelled {
+                return
+            }
             if users.isEmpty {
                 loadNote = error is NetworkError
                     ? "Connect to manage accounts."

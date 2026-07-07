@@ -8,11 +8,35 @@ struct CatalogExercisesView: View {
     @State private var deleteConflict: CatalogExerciseDeleteConflict?
     @State private var selectedExercise: Exercise?
     @State private var editingExercise: Exercise?
+    @State private var searchText = ""
+    @State private var filter: CatalogExerciseFilter = .all
 
     private var exercises: [Exercise] {
         store.exercises.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+
+    private var filteredExercises: [Exercise] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return exercises.filter { exercise in
+            if !query.isEmpty, !exercise.name.localizedCaseInsensitiveContains(query) {
+                return false
+            }
+            switch filter {
+            case .all:
+                return true
+            case .favorites:
+                return exercise.isFavorite
+            case .muscle(let muscle):
+                return exercise.primaryMuscle == muscle
+            }
+        }
+    }
+
+    private var occurringMuscles: [MuscleGroup] {
+        let present = Set(store.exercises.map(\.primaryMuscle))
+        return MuscleGroup.allCases.filter { present.contains($0) }
     }
 
     var body: some View {
@@ -26,19 +50,35 @@ struct CatalogExercisesView: View {
                 ManageInfoNote(text: "The exercise catalog is empty — tap + to add your first exercise.")
                     .manageNoteRow()
             } else {
-                ForEach(exercises) { exercise in
-                    RevealActionsRow(
-                        actions: [
-                            RevealAction(title: "Edit", tint: Theme.accentBlue) {
-                                editingExercise = exercise
-                            },
-                            RevealAction(title: "Delete") { delete(exercise) },
-                        ],
-                        onTap: { selectedExercise = exercise }
-                    ) {
-                        row(exercise)
+                SearchField(
+                    text: $searchText,
+                    prompt: "Search exercises…",
+                    accessibilityLabel: "Search exercises"
+                )
+                .manageSearchRow()
+
+                filterChips
+                    .manageFilterRow()
+
+                let results = filteredExercises
+                if results.isEmpty {
+                    ManageInfoNote(text: noResultsText)
+                        .manageNoteRow()
+                } else {
+                    ForEach(results) { exercise in
+                        RevealActionsRow(
+                            actions: [
+                                RevealAction(title: "Edit", tint: Theme.accentBlue) {
+                                    editingExercise = exercise
+                                },
+                                RevealAction(title: "Delete") { delete(exercise) },
+                            ],
+                            onTap: { selectedExercise = exercise }
+                        ) {
+                            row(exercise)
+                        }
+                        .manageListRow()
                     }
-                    .manageListRow()
                 }
             }
         }
@@ -71,6 +111,33 @@ struct CatalogExercisesView: View {
     private var countLine: String {
         let count = store.exercises.count
         return "\(count) \(count == 1 ? "exercise" : "exercises")"
+    }
+
+    private var filterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                FilterChip(title: "All", isActive: filter == .all) {
+                    filter = .all
+                }
+                FilterChip(title: "Favorites", systemImage: "star.fill", isActive: filter == .favorites) {
+                    filter = filter == .favorites ? .all : .favorites
+                }
+                ForEach(occurringMuscles) { muscle in
+                    FilterChip(title: muscle.label, isActive: filter == .muscle(muscle)) {
+                        filter = filter == .muscle(muscle) ? .all : .muscle(muscle)
+                    }
+                }
+            }
+            .padding(.horizontal, 22)
+        }
+    }
+
+    private var noResultsText: String {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !query.isEmpty {
+            return "No exercises match \u{201C}\(query)\u{201D}."
+        }
+        return "No exercises match this filter."
     }
 
     private func row(_ exercise: Exercise) -> some View {
@@ -114,6 +181,12 @@ struct CatalogExercisesView: View {
             }
         }
     }
+}
+
+enum CatalogExerciseFilter: Hashable {
+    case all
+    case favorites
+    case muscle(MuscleGroup)
 }
 
 struct CatalogExerciseDeleteConflict: Identifiable {

@@ -103,6 +103,48 @@ struct FilterChip: View {
     }
 }
 
+struct SearchField: View {
+    @Binding var text: String
+    var prompt: String = "Search"
+    var accessibilityLabel: String = "Search"
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Theme.muted2)
+            TextField(
+                "",
+                text: $text,
+                prompt: Text(prompt).foregroundStyle(Theme.muted2)
+            )
+            .font(Theme.font(14))
+            .foregroundStyle(Theme.ink)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .accessibilityLabel(accessibilityLabel)
+            if !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.muted2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 44)
+        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
+                .strokeBorder(Theme.fieldBorder, lineWidth: 1)
+        )
+    }
+}
+
 struct SegmentedPicker<T: Hashable>: View {
     let options: [(value: T, label: String)]
     @Binding var selection: T

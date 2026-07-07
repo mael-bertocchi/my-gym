@@ -91,6 +91,20 @@ extension View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }
+
+    func manageSearchRow() -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 12, trailing: 22))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    func manageFilterRow() -> some View {
+        self
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
 }
 
 struct ManageScreenTitle<Trailing: View>: View {

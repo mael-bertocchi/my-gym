@@ -7,11 +7,18 @@ struct CatalogBrandsView: View {
     @State private var newBrandName = ""
     @State private var alert: ManageAlert?
     @State private var deleteCandidate: Brand?
+    @State private var searchText = ""
 
     private var brands: [Brand] {
         store.brands.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+    }
+
+    private var filteredBrands: [Brand] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return brands }
+        return brands.filter { $0.name.localizedCaseInsensitiveContains(query) }
     }
 
     var body: some View {
@@ -28,17 +35,30 @@ struct CatalogBrandsView: View {
                 ManageInfoNote(text: "No brands yet.")
                     .manageNoteRow()
             } else {
-                ForEach(brands) { brand in
-                    RevealActionsRow(actions: [
-                        RevealAction(title: "Delete") { deleteCandidate = brand }
-                    ]) {
-                        Text(brand.name)
-                            .font(Theme.font(15))
-                            .foregroundStyle(Theme.ink)
-                            .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
-                            .contentShape(Rectangle())
+                SearchField(
+                    text: $searchText,
+                    prompt: "Search brands…",
+                    accessibilityLabel: "Search brands"
+                )
+                .manageSearchRow()
+
+                let results = filteredBrands
+                if results.isEmpty {
+                    ManageInfoNote(text: "No brands match \u{201C}\(searchText.trimmingCharacters(in: .whitespacesAndNewlines))\u{201D}.")
+                        .manageNoteRow()
+                } else {
+                    ForEach(results) { brand in
+                        RevealActionsRow(actions: [
+                            RevealAction(title: "Delete") { deleteCandidate = brand }
+                        ]) {
+                            Text(brand.name)
+                                .font(Theme.font(15))
+                                .foregroundStyle(Theme.ink)
+                                .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+                                .contentShape(Rectangle())
+                        }
+                        .manageListRow()
                     }
-                    .manageListRow()
                 }
             }
         }

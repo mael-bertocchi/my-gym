@@ -6,10 +6,20 @@ struct CatalogGymsView: View {
     @State private var showsAddSheet = false
     @State private var alert: ManageAlert?
     @State private var deleteCandidate: Gym?
+    @State private var searchText = ""
 
     private var gyms: [Gym] {
         store.gyms.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    private var filteredGyms: [Gym] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return gyms }
+        return gyms.filter { gym in
+            gym.name.localizedCaseInsensitiveContains(query)
+                || (gym.address?.localizedCaseInsensitiveContains(query) ?? false)
         }
     }
 
@@ -24,13 +34,26 @@ struct CatalogGymsView: View {
                 ManageInfoNote(text: "No gyms yet.")
                     .manageNoteRow()
             } else {
-                ForEach(gyms) { gym in
-                    RevealActionsRow(actions: [
-                        RevealAction(title: "Delete") { deleteCandidate = gym }
-                    ]) {
-                        row(gym)
+                SearchField(
+                    text: $searchText,
+                    prompt: "Search gyms…",
+                    accessibilityLabel: "Search gyms"
+                )
+                .manageSearchRow()
+
+                let results = filteredGyms
+                if results.isEmpty {
+                    ManageInfoNote(text: "No gyms match \u{201C}\(searchText.trimmingCharacters(in: .whitespacesAndNewlines))\u{201D}.")
+                        .manageNoteRow()
+                } else {
+                    ForEach(results) { gym in
+                        RevealActionsRow(actions: [
+                            RevealAction(title: "Delete") { deleteCandidate = gym }
+                        ]) {
+                            row(gym)
+                        }
+                        .manageListRow()
                     }
-                    .manageListRow()
                 }
             }
         }

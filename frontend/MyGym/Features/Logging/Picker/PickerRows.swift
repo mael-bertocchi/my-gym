@@ -4,27 +4,10 @@ struct PickerSearchField: View {
     @Binding var text: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Theme.muted2)
-            TextField(
-                "",
-                text: $text,
-                prompt: Text("Search exercises…").foregroundStyle(Theme.muted2)
-            )
-            .font(Theme.font(14))
-            .foregroundStyle(Theme.ink)
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
-            .accessibilityLabel("Search exercises")
-        }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 44)
-        .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous)
-                .strokeBorder(Theme.fieldBorder, lineWidth: 1)
+        SearchField(
+            text: $text,
+            prompt: "Search exercises…",
+            accessibilityLabel: "Search exercises"
         )
     }
 }
