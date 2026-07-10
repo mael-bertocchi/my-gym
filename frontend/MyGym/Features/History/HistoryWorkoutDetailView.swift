@@ -34,7 +34,7 @@ struct HistoryWorkoutDetailView: View {
     }
 
     private func detail(for workout: LocalWorkout) -> some View {
-        let prHits = HistoryPRIndex(workouts: store.workouts).hits(for: workout.id)
+        let personalRecordHits = HistoryPersonalRecordIndex(workouts: store.workouts).hits(for: workout.id)
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center, spacing: 12) {
@@ -71,10 +71,10 @@ struct HistoryWorkoutDetailView: View {
                         caption: "sets"
                     )
                 }
-                .padding(.bottom, prHits.isEmpty ? 20 : 18)
+                .padding(.bottom, personalRecordHits.isEmpty ? 20 : 18)
 
-                if !prHits.isEmpty {
-                    prCallout(hits: prHits)
+                if !personalRecordHits.isEmpty {
+                    personalRecordCallout(hits: personalRecordHits)
                         .padding(.bottom, 20)
                 }
 
@@ -101,7 +101,7 @@ struct HistoryWorkoutDetailView: View {
             .joined(separator: " · ")
     }
 
-    private func prCallout(hits: [HistoryPRIndex.Hit]) -> some View {
+    private func personalRecordCallout(hits: [HistoryPersonalRecordIndex.Hit]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 EyebrowText("New records")
@@ -118,7 +118,7 @@ struct HistoryWorkoutDetailView: View {
                         NavigationLink {
                             ExerciseDetailView(exerciseId: hit.exerciseId)
                         } label: {
-                            PRCardView(hit: hit, unit: session.weightUnit)
+                            PersonalRecordCardView(hit: hit, unit: session.weightUnit)
                         }
                         .buttonStyle(.plain)
                     }
@@ -186,10 +186,10 @@ private struct WorkoutDetailStatTile: View {
     }
 }
 
-private struct PRCardView: View {
+private struct PersonalRecordCardView: View {
     @Environment(LocalStore.self) private var store
 
-    let hit: HistoryPRIndex.Hit
+    let hit: HistoryPersonalRecordIndex.Hit
     let unit: WeightUnit
 
     var body: some View {
@@ -201,7 +201,7 @@ private struct PRCardView: View {
                 Image(systemName: "star.fill")
                     .font(.system(size: 10))
                     .foregroundStyle(Theme.accentBlue)
-                Text("PR")
+                Text("PERSONAL RECORD")
                     .font(Theme.mono(10, .bold))
                     .kerning(1.5)
                     .foregroundStyle(Theme.accentBlueSoft)

@@ -248,7 +248,7 @@ struct ExerciseDetailView: View {
     }
 
     private func prTimeline(exerciseId: String) -> some View {
-        let events = Array(StatsMath.prEvents(for: exerciseId, workouts: store.workouts).prefix(4))
+        let events = Array(StatsMath.personalRecordEvents(for: exerciseId, workouts: store.workouts).prefix(4))
         return VStack(alignment: .leading, spacing: 10) {
             EyebrowText("RECORD TIMELINE", size: 10)
             if events.isEmpty {

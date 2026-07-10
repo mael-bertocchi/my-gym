@@ -1,6 +1,6 @@
 import Foundation
 
-struct HistoryPRIndex {
+struct HistoryPersonalRecordIndex {
     struct Hit: Identifiable {
         let exerciseId: String
         let weightKg: Double
@@ -54,7 +54,7 @@ struct HistoryPRIndex {
         hitsByWorkout[workoutId] ?? []
     }
 
-    func prCount(for workoutId: String) -> Int {
+    func personalRecordCount(for workoutId: String) -> Int {
         hitsByWorkout[workoutId]?.count ?? 0
     }
 }

@@ -121,7 +121,7 @@ struct HistoryView: View {
         if filtered.isEmpty {
             emptyCard
         } else {
-            let prIndex = HistoryPRIndex(workouts: store.workouts)
+            let personalRecordIndex = HistoryPersonalRecordIndex(workouts: store.workouts)
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(monthGroups(filtered)) { group in
                     Text(Formatting.monthLabel(group.month))
@@ -138,7 +138,7 @@ struct HistoryView: View {
                                 HistoryWorkoutCard(
                                     workout: workout,
                                     gymName: store.gym(id: workout.gymId)?.name,
-                                    prCount: prIndex.prCount(for: workout.id),
+                                    personalRecordCount: personalRecordIndex.personalRecordCount(for: workout.id),
                                     unit: session.weightUnit
                                 )
                             }
@@ -215,7 +215,7 @@ private struct HistoryMonthGroup: Identifiable {
 private struct HistoryWorkoutCard: View {
     let workout: LocalWorkout
     let gymName: String?
-    let prCount: Int
+    let personalRecordCount: Int
     let unit: WeightUnit
 
     var body: some View {
@@ -240,11 +240,11 @@ private struct HistoryWorkoutCard: View {
                     number: Formatting.compactVolume(workout.totalVolume, unit: unit),
                     unit: unit.suffix
                 )
-                if prCount > 0 {
+                if personalRecordCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 11, weight: .semibold))
-                        Text("\(prCount) record\(prCount > 1 ? "s" : "")")
+                        Text("\(personalRecordCount) record\(personalRecordCount > 1 ? "s" : "")")
                             .font(Theme.font(13, .bold))
                     }
                     .foregroundStyle(Theme.accentBlue)

@@ -310,7 +310,7 @@ enum StatsMath {
         }
     }
 
-    struct PREvent: Identifiable {
+    struct PersonalRecordEvent: Identifiable {
         enum Kind: String {
             case heaviest = "Heaviest"
             case oneRepMax = "Est. 1RM"
@@ -325,13 +325,13 @@ enum StatsMath {
         var id: String { "\(workoutId)-\(kind.rawValue)" }
     }
 
-    static func prEvents(for exerciseId: String, workouts: [LocalWorkout]) -> [PREvent] {
+    static func personalRecordEvents(for exerciseId: String, workouts: [LocalWorkout]) -> [PersonalRecordEvent] {
         var maxHeaviest = 0.0
         var maxOneRM = 0.0
-        var events: [PREvent] = []
+        var events: [PersonalRecordEvent] = []
         for session in sessions(for: exerciseId, workouts: workouts) {
             if let heaviest = session.heaviestKg, heaviest > maxHeaviest {
-                events.append(PREvent(
+                events.append(PersonalRecordEvent(
                     kind: .heaviest,
                     valueKg: heaviest,
                     deltaKg: maxHeaviest > 0 ? heaviest - maxHeaviest : nil,
@@ -341,7 +341,7 @@ enum StatsMath {
                 maxHeaviest = heaviest
             }
             if let oneRM = session.bestOneRepMaxKg, oneRM > maxOneRM {
-                events.append(PREvent(
+                events.append(PersonalRecordEvent(
                     kind: .oneRepMax,
                     valueKg: oneRM,
                     deltaKg: maxOneRM > 0 ? oneRM - maxOneRM : nil,

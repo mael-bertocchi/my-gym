@@ -105,7 +105,7 @@ struct ExerciseStats: Codable, Equatable {
         var id: Date { date }
     }
 
-    struct RepPR: Codable, Equatable, Identifiable {
+    struct RepPersonalRecord: Codable, Equatable, Identifiable {
         var reps: Int
         var weightKg: Double
         var estimated1RM: Double
@@ -118,7 +118,7 @@ struct ExerciseStats: Codable, Equatable {
         var maxWeightKg: Double?
         var bestEstimated1RM: Double?
         var bestTotalVolume: Double?
-        var repPRs: [RepPR]
+        var repPersonalRecords: [RepPersonalRecord]
     }
 
     var exerciseId: String
