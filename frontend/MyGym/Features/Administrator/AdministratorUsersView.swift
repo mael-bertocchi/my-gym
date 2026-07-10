@@ -4,7 +4,9 @@ struct AdministratorUsersView: View {
     @Environment(ApplicationSession.self) private var session
 
     @State private var users: [UserProfile] = []
-    @State private var isLoading = true
+    @State private var hasLoaded = false
+    @State private var hasAccounts = false
+    @State private var displayedTerm = ""
     @State private var loadNote: String?
     @State private var showsCreateSheet = false
     @State private var managingUser: UserProfile?
@@ -17,7 +19,7 @@ struct AdministratorUsersView: View {
                     ManageAddButton { showsCreateSheet = true }
                 }
                 .padding(.bottom, 20)
-                if showsSearch {
+                if hasAccounts {
                     SearchField(
                         text: $searchText,
                         prompt: "Search accounts…",
@@ -36,6 +38,7 @@ struct AdministratorUsersView: View {
         .sheet(isPresented: $showsCreateSheet) {
             AdministratorCreateUserSheet { created in
                 users.insert(created, at: 0)
+                hasAccounts = true
                 loadNote = nil
             }
         }
@@ -48,15 +51,8 @@ struct AdministratorUsersView: View {
         .refreshable { await load() }
     }
 
-    private var showsSearch: Bool {
-        if isLoading && users.isEmpty {
-            return false
-        }
-        return !users.isEmpty || !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
     private var subtitle: String {
-        if isLoading && users.isEmpty {
+        if !hasLoaded {
             return "Invite-only"
         }
         let noun = users.count == 1 ? "account" : "accounts"
@@ -65,7 +61,7 @@ struct AdministratorUsersView: View {
 
     @ViewBuilder
     private var content: some View {
-        if isLoading && users.isEmpty {
+        if !hasLoaded {
             HStack {
                 Spacer()
                 ProgressView()
@@ -116,9 +112,8 @@ struct AdministratorUsersView: View {
     }
 
     private var emptyText: String {
-        let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !term.isEmpty {
-            return "No accounts match \u{201C}\(term)\u{201D}."
+        if !displayedTerm.isEmpty {
+            return "No accounts match \u{201C}\(displayedTerm)\u{201D}."
         }
         return loadNote ?? "Connect to manage accounts."
     }
@@ -135,9 +130,6 @@ struct AdministratorUsersView: View {
 
     private func load() async {
         let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if users.isEmpty {
-            isLoading = true
-        }
         do {
             var collected: [UserProfile] = []
             var cursor: String?
@@ -163,7 +155,11 @@ struct AdministratorUsersView: View {
                     : ProfileSupport.message(for: error)
             }
         }
-        isLoading = false
+        if term.isEmpty {
+            hasAccounts = !users.isEmpty
+        }
+        displayedTerm = term
+        hasLoaded = true
     }
 
     private func applyUpdate(_ updated: UserProfile) {
