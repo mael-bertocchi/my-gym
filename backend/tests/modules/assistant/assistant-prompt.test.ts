@@ -12,7 +12,7 @@ const context: AssistantContext = {
 };
 
 describe('formatContext', () => {
-    it('includes the athlete, recent workout, PR, and muscle data', () => {
+    it('includes the athlete, recent workout, personal record, and muscle data', () => {
         const text = formatContext(context);
         expect(text).toContain('Maël Bertocchi');
         expect(text).toContain('Chest Press');

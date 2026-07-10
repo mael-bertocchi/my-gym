@@ -33,10 +33,10 @@ export interface SessionStats {
 }
 
 /**
- * @interface RepPR
+ * @interface RepPersonalRecord
  * @description The heaviest external load lifted for a given rep count across all of an exercise's sessions.
  */
-export interface RepPR {
+export interface RepPersonalRecord {
     reps: number; /*!< Rep count */
     weightKg: number; /*!< Heaviest load lifted for that rep count */
     estimated1RM: number; /*!< Epley estimated 1RM for that load and rep count */
@@ -51,7 +51,7 @@ export interface ExerciseStatsSummary {
     maxWeightKg: Maybe<number>; /*!< Heaviest load across sessions */
     bestEstimated1RM: Maybe<number>; /*!< Best estimated 1RM across sessions */
     bestTotalVolume: Maybe<number>; /*!< Highest session volume */
-    repPRs: RepPR[]; /*!< Heaviest load per rep count, ascending by reps */
+    repPersonalRecords: RepPersonalRecord[]; /*!< Heaviest load per rep count, ascending by reps */
 }
 
 /**
@@ -64,13 +64,13 @@ export interface ExerciseStats {
 }
 
 /**
- * @function computeRepPRs
+ * @function computeRepPersonalRecords
  * @description Finds the heaviest weighted load lifted for each rep count across all sessions.
  *
  * @param {RawSession[]} sessions The variant's sessions.
- * @returns {RepPR[]} One entry per rep count, ascending by reps.
+ * @returns {RepPersonalRecord[]} One entry per rep count, ascending by reps.
  */
-function computeRepPRs(sessions: RawSession[]): RepPR[] {
+function computeRepPersonalRecords(sessions: RawSession[]): RepPersonalRecord[] {
     const heaviestByReps = new Map<number, number>();
 
     for (const session of sessions) {
@@ -163,7 +163,7 @@ export function computeExerciseStats(sessions: RawSession[]): ExerciseStats {
             maxWeightKg,
             bestEstimated1RM,
             bestTotalVolume,
-            repPRs: computeRepPRs(sessions)
+            repPersonalRecords: computeRepPersonalRecords(sessions)
         }
     };
 }

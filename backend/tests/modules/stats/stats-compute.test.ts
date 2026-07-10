@@ -39,16 +39,16 @@ describe('computeExerciseStats', () => {
             { date: '2026-06-10T10:00:00.000Z', sets: [{ weightKg: 100, reps: 5 }, { weightKg: 90, reps: 8 }] },
             { date: '2026-06-17T10:00:00.000Z', sets: [{ weightKg: 105, reps: 5 }, { weightKg: 60, reps: 5 }] }
         ]);
-        expect(stats.summary.repPRs).toEqual([
+        expect(stats.summary.repPersonalRecords).toEqual([
             { reps: 5, weightKg: 105, estimated1RM: 122.5 },
             { reps: 8, weightKg: 90, estimated1RM: 114 }
         ]);
     });
 
-    it('excludes bodyweight and null-rep sets from rep PRs', () => {
+    it('excludes bodyweight and null-rep sets from rep personal records', () => {
         const stats = computeExerciseStats([
             { date: '2026-06-17T10:00:00.000Z', sets: [{ weightKg: null, reps: 10 }, { weightKg: 80, reps: null }] }
         ]);
-        expect(stats.summary.repPRs).toEqual([]);
+        expect(stats.summary.repPersonalRecords).toEqual([]);
     });
 });
