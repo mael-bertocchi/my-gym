@@ -25,6 +25,7 @@ export const WorkoutExerciseParamsSchema = z.object({
  */
 export const CreateWorkoutExerciseSchema = z.object({
     exerciseId: z.uuid(),
+    brandId: z.uuid().nullable().optional(),
     position: z.number().int().positive().optional(),
     notes: z.string().max(2000).optional(),
     settings: SettingsSchema.optional(),
@@ -39,9 +40,10 @@ export type CreateWorkoutExerciseBody = z.infer<typeof CreateWorkoutExerciseSche
 
 /**
  * @constant UpdateWorkoutExerciseSchema
- * @description Zod schema for the update-workout-exercise request body. Each field is optional, but at least one must be provided. A null notes/settings/supersetId clears that field.
+ * @description Zod schema for the update-workout-exercise request body. Each field is optional, but at least one must be provided. A null brandId/notes/settings/supersetId clears that field.
  */
 export const UpdateWorkoutExerciseSchema = z.object({
+    brandId: z.uuid().nullable().optional(),
     position: z.number().int().positive().optional(),
     notes: z.string().max(2000).nullable().optional(),
     settings: SettingsSchema.nullable().optional(),

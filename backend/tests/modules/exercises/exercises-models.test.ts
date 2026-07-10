@@ -33,6 +33,19 @@ describe('CreateExerciseSchema', () => {
         }
     });
 
+    it('defaults requiresBrand to false and accepts an override', () => {
+        const omitted = CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS', equipment: 'BARBELL' });
+        expect(omitted.success).toBe(true);
+        if (omitted.success) {
+            expect(omitted.data.requiresBrand).toBe(false);
+        }
+        const set = CreateExerciseSchema.safeParse({ name: 'Chest Press', primaryMuscle: 'CHEST', equipment: 'MACHINE', requiresBrand: true });
+        expect(set.success).toBe(true);
+        if (set.success) {
+            expect(set.data.requiresBrand).toBe(true);
+        }
+    });
+
     it('rejects a missing equipment type', () => {
         expect(CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS' }).success).toBe(false);
     });
@@ -55,12 +68,12 @@ describe('UpdateExerciseSchema', () => {
         expect(UpdateExerciseSchema.safeParse({ isArchived: true }).success).toBe(true);
     });
 
-    it('accepts a brand detach', () => {
-        expect(UpdateExerciseSchema.safeParse({ brandId: null }).success).toBe(true);
-    });
-
     it('accepts toggling isUnilateral', () => {
         expect(UpdateExerciseSchema.safeParse({ isUnilateral: true }).success).toBe(true);
+    });
+
+    it('accepts toggling requiresBrand', () => {
+        expect(UpdateExerciseSchema.safeParse({ requiresBrand: true }).success).toBe(true);
     });
 
     it('rejects an empty update', () => {

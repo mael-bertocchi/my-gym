@@ -33,6 +33,7 @@ export const SyncSetSchema = z.object({
 export const SyncWorkoutExerciseSchema = z.object({
     id: z.uuid(),
     exerciseId: z.uuid(),
+    brandId: z.uuid().nullable().optional(),
     position: z.number().int().positive(),
     notes: z.string().max(2000).nullable().optional(),
     settings: SettingsSchema.nullable().optional(),
@@ -52,6 +53,8 @@ export const SyncWorkoutSchema = z.object({
     endedAt: z.coerce.date().nullable().optional(),
     notes: z.string().max(2000).nullable().optional(),
     averageHeartRate: z.number().int().min(1).max(300).nullable().optional(),
+    difficultyRating: z.number().int().min(1).max(10).nullable().optional(),
+    enjoymentRating: z.number().int().min(1).max(5).nullable().optional(),
     updatedAt: z.coerce.date(),
     exercises: z.array(SyncWorkoutExerciseSchema).max(MAX_BATCH)
 });

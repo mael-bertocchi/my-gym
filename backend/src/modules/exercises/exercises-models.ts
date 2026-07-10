@@ -17,11 +17,10 @@ export const EquipmentTypeSchema = z.enum(EquipmentType);
 
 /**
  * @constant ListExercisesQuerySchema
- * @description Zod schema for the list-exercises query string (cursor pagination plus equipment/brand/muscle/name filters).
+ * @description Zod schema for the list-exercises query string (cursor pagination plus equipment/muscle/name filters).
  */
 export const ListExercisesQuerySchema = CursorQuerySchema.extend({
     equipment: EquipmentTypeSchema.optional(),
-    brandId: z.uuid().optional(),
     muscle: MuscleGroupSchema.optional(),
     q: z.string().max(200).optional()
 });
@@ -35,8 +34,8 @@ export const CreateExerciseSchema = z.object({
     primaryMuscle: MuscleGroupSchema,
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
-    brandId: z.uuid().optional(),
-    isUnilateral: z.boolean().optional().default(false)
+    isUnilateral: z.boolean().optional().default(false),
+    requiresBrand: z.boolean().optional().default(false)
 });
 
 /**
@@ -47,17 +46,17 @@ export type CreateExerciseBody = z.infer<typeof CreateExerciseSchema>;
 
 /**
  * @constant UpdateExerciseSchema
- * @description Zod schema for the update-exercise request body. Each field is optional, but at least one must be provided. A null brandId detaches that link.
+ * @description Zod schema for the update-exercise request body. Each field is optional, but at least one must be provided.
  */
 export const UpdateExerciseSchema = z.object({
     name: z.string().min(1).max(120).optional(),
     primaryMuscle: MuscleGroupSchema.optional(),
     secondaryMuscles: z.array(MuscleGroupSchema).optional(),
     equipment: EquipmentTypeSchema.optional(),
-    brandId: z.uuid().nullable().optional(),
     isFavorite: z.boolean().optional(),
     isArchived: z.boolean().optional(),
-    isUnilateral: z.boolean().optional()
+    isUnilateral: z.boolean().optional(),
+    requiresBrand: z.boolean().optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
 });
@@ -95,7 +94,6 @@ export const ExerciseLastQuerySchema = z.object({
 export interface ListExercisesRequest extends RequestGenericInterface {
     Querystring: {
         equipment?: EquipmentType; /*!< Optional equipment-type filter */
-        brandId?: string; /*!< Optional brand filter */
         muscle?: MuscleGroup; /*!< Optional muscle filter (matches primary or secondary) */
         q?: string; /*!< Optional case-insensitive search across the exercise name */
         limit?: number; /*!< Optional page size (1..MAX_LIMIT) */

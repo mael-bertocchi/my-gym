@@ -1,9 +1,8 @@
 // my-gym — workout tracker backend.
 // Conventions: UUID string PKs, camelCase fields mapped to snake_case columns/tables,
 // created/updated timestamps. The datasource connection URL is supplied at runtime
-// via prisma.config.ts. The catalog (brands, exercises, gyms) is
-// shared and administrator-managed; workouts, remembered settings, and assistant
-// conversations are per-user.
+// via prisma.config.ts. The catalog (brands, exercises, gyms), like workouts,
+// remembered settings, and assistant conversations, is per-user.
 
 generator client {
   provider            = "prisma-client"
@@ -123,7 +122,7 @@ model Brand {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name   String
 
-  exercises Exercise[]
+  workoutEntries WorkoutExercise[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -134,18 +133,17 @@ model Brand {
 }
 
 model Exercise {
-  id               String         @id @default(uuid())
-  userId           String         @map("user_id")
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name             String
-  primaryMuscle    MuscleGroup    @map("primary_muscle")
-  secondaryMuscles MuscleGroup[]  @map("secondary_muscles")
-  equipment        EquipmentType  @default(OTHER)
-  brandId          String?        @map("brand_id")
-  brand            Brand?         @relation(fields: [brandId], references: [id], onDelete: Restrict)
-  isFavorite       Boolean        @default(false) @map("is_favorite")
-  isArchived       Boolean        @default(false) @map("is_archived")
-  isUnilateral     Boolean        @default(false) @map("is_unilateral")
+  primaryMuscle    MuscleGroup   @map("primary_muscle")
+  secondaryMuscles MuscleGroup[] @map("secondary_muscles")
+  equipment        EquipmentType @default(OTHER)
+  isFavorite       Boolean       @default(false) @map("is_favorite")
+  isArchived       Boolean       @default(false) @map("is_archived")
+  isUnilateral     Boolean       @default(false) @map("is_unilateral")
+  requiresBrand    Boolean       @default(false) @map("requires_brand")
 
   workoutEntries WorkoutExercise[]
   settings       ExerciseSetting[]
@@ -156,7 +154,6 @@ model Exercise {
   @@unique([userId, name])
   @@index([userId])
   @@index([primaryMuscle])
-  @@index([brandId])
   @@map("exercises")
 }
 
@@ -190,6 +187,8 @@ model Workout {
   endedAt          DateTime? @map("ended_at")
   notes            String?
   averageHeartRate Int?      @map("average_heart_rate")
+  difficultyRating Int?      @map("difficulty_rating")
+  enjoymentRating  Int?      @map("enjoyment_rating")
 
   entries WorkoutExercise[]
 
@@ -207,6 +206,8 @@ model WorkoutExercise {
   workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exerciseId String   @map("exercise_id")
   exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  brandId    String?  @map("brand_id")
+  brand      Brand?   @relation(fields: [brandId], references: [id], onDelete: Restrict)
   position   Int
   notes      String?
   settings   Json?
@@ -218,6 +219,7 @@ model WorkoutExercise {
 
   @@index([workoutId, position])
   @@index([exerciseId])
+  @@index([brandId])
   @@map("workout_exercises")
 }
 

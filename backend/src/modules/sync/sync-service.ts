@@ -27,6 +27,8 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                 endedAt: true,
                 notes: true,
                 averageHeartRate: true,
+                difficultyRating: true,
+                enjoymentRating: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {
@@ -34,13 +36,14 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                     select: {
                         id: true,
                         exerciseId: true,
+                        brandId: true,
                         position: true,
                         notes: true,
                         settings: true,
                         supersetId: true,
                         createdAt: true,
                         exercise: {
-                            select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
+                            select: { id: true, name: true, primaryMuscle: true, equipment: true }
                         },
                         sets: {
                             orderBy: { setNumber: Prisma.SortOrder.asc },
@@ -113,6 +116,14 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
             }
         }
 
+        const brandIds = [...new Set(workout.exercises.map((entry) => entry.brandId).filter((brandId): brandId is string => brandId !== undefined && brandId !== null))];
+        if (brandIds.length !== 0) {
+            const foundBrands = await prisma.brand.findMany({ where: { id: { in: brandIds }, userId }, select: { id: true } });
+            if (foundBrands.length !== brandIds.length) {
+                return { id: workout.id, status: 'error', message: 'One or more brands not found' };
+            }
+        }
+
         const existing = await prisma.workout.findUnique({ where: { id: workout.id }, select: { userId: true, updatedAt: true } });
 
         if (existing !== null && existing.userId !== userId) {
@@ -129,6 +140,8 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                     endedAt: true,
                     notes: true,
                     averageHeartRate: true,
+                    difficultyRating: true,
+                    enjoymentRating: true,
                     createdAt: true,
                     updatedAt: true,
                     entries: {
@@ -136,13 +149,14 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                         select: {
                             id: true,
                             exerciseId: true,
+                            brandId: true,
                             position: true,
                             notes: true,
                             settings: true,
                             supersetId: true,
                             createdAt: true,
                             exercise: {
-                                select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
+                                select: { id: true, name: true, primaryMuscle: true, equipment: true }
                             },
                             sets: {
                                 orderBy: { setNumber: Prisma.SortOrder.asc },
@@ -169,8 +183,8 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
         await prisma.$transaction(async (tx) => {
             await tx.workout.upsert({
                 where: { id: workout.id },
-                create: { id: workout.id, userId, gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, updatedAt: workout.updatedAt },
-                update: { gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, updatedAt: workout.updatedAt }
+                create: { id: workout.id, userId, gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, difficultyRating: workout.difficultyRating ?? null, enjoymentRating: workout.enjoymentRating ?? null, updatedAt: workout.updatedAt },
+                update: { gymId, name: workout.name ?? null, startedAt: workout.startedAt, endedAt: workout.endedAt ?? null, notes: workout.notes ?? null, averageHeartRate: workout.averageHeartRate ?? null, difficultyRating: workout.difficultyRating ?? null, enjoymentRating: workout.enjoymentRating ?? null, updatedAt: workout.updatedAt }
             });
 
             await tx.workoutExercise.deleteMany({ where: { workoutId: workout.id } });
@@ -183,6 +197,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                         id: entry.id,
                         workoutId: workout.id,
                         exerciseId: entry.exerciseId,
+                        brandId: entry.brandId ?? null,
                         position: entry.position,
                         notes: entry.notes ?? null,
                         settings: settings !== null ? (settings as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
@@ -214,6 +229,8 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                 endedAt: true,
                 notes: true,
                 averageHeartRate: true,
+                difficultyRating: true,
+                enjoymentRating: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {
@@ -221,13 +238,14 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                     select: {
                         id: true,
                         exerciseId: true,
+                        brandId: true,
                         position: true,
                         notes: true,
                         settings: true,
                         supersetId: true,
                         createdAt: true,
                         exercise: {
-                            select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
+                            select: { id: true, name: true, primaryMuscle: true, equipment: true }
                         },
                         sets: {
                             orderBy: { setNumber: Prisma.SortOrder.asc },

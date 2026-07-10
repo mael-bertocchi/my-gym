@@ -24,7 +24,7 @@ async function ensureExercise(request: FastifyRequest, id: string): Promise<void
 
 /**
  * @function listExercises
- * @description Lists the caller's exercises with equipment/brand/muscle/name filters and cursor pagination.
+ * @description Lists the caller's exercises with equipment/muscle/name filters and cursor pagination.
  *
  * @returns {Promise<void>} Resolves when the list is sent.
  */
@@ -35,9 +35,6 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
 
     if (request.query.equipment !== undefined) {
         where.equipment = request.query.equipment;
-    }
-    if (request.query.brandId !== undefined) {
-        where.brandId = request.query.brandId;
     }
     if (request.query.muscle !== undefined) {
         where.OR = [
@@ -57,10 +54,10 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
-            brandId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            requiresBrand: true,
             createdAt: true,
             updatedAt: true
         },
@@ -88,10 +85,10 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
-            brandId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            requiresBrand: true,
             createdAt: true,
             updatedAt: true
         }
@@ -106,7 +103,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
 
 /**
  * @function createExercise
- * @description Creates an exercise owned by the caller, optionally linked to one of their brands.
+ * @description Creates an exercise owned by the caller.
  *
  * @returns {Promise<void>} Resolves when the exercise is created.
  */
@@ -117,14 +114,6 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
         throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
     }
 
-    if (request.body.brandId !== undefined) {
-        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
-
-        if (brand === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
-        }
-    }
-
     const created = await request.server.prisma.exercise.create({
         data: {
             userId: request.user.id,
@@ -132,8 +121,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             primaryMuscle: request.body.primaryMuscle,
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
-            brandId: request.body.brandId,
-            isUnilateral: request.body.isUnilateral
+            isUnilateral: request.body.isUnilateral,
+            requiresBrand: request.body.requiresBrand
         },
         select: {
             id: true,
@@ -141,10 +130,10 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
-            brandId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            requiresBrand: true,
             createdAt: true,
             updatedAt: true
         }
@@ -175,13 +164,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
         }
     }
-    if (request.body.brandId !== undefined && request.body.brandId !== null) {
-        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
-
-        if (brand === null) {
-            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
-        }
-    }
 
     const data: Prisma.ExerciseUncheckedUpdateInput = {};
 
@@ -197,9 +179,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.equipment !== undefined) {
         data.equipment = request.body.equipment;
     }
-    if (request.body.brandId !== undefined) {
-        data.brandId = request.body.brandId;
-    }
     if (request.body.isFavorite !== undefined) {
         data.isFavorite = request.body.isFavorite;
     }
@@ -208,6 +187,9 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     }
     if (request.body.isUnilateral !== undefined) {
         data.isUnilateral = request.body.isUnilateral;
+    }
+    if (request.body.requiresBrand !== undefined) {
+        data.requiresBrand = request.body.requiresBrand;
     }
 
     const updated = await request.server.prisma.exercise.update({
@@ -219,10 +201,10 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
-            brandId: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            requiresBrand: true,
             createdAt: true,
             updatedAt: true
         }
@@ -310,7 +292,7 @@ async function getExerciseHistory(request: FastifyRequest<ExerciseRangeRequest>,
 
 /**
  * @function getExerciseStats
- * @description Returns the caller's PRs, estimated 1RM, and per-session progression for an exercise.
+ * @description Returns the caller's personal records, estimated 1RM, and per-session progression for an exercise.
  *
  * @returns {Promise<void>} Resolves when the stats are sent.
  */

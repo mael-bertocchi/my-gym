@@ -33,6 +33,8 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            difficultyRating: true,
+            enjoymentRating: true,
             createdAt: true,
             updatedAt: true
         },
@@ -62,6 +64,8 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            difficultyRating: true,
+            enjoymentRating: true,
             createdAt: true,
             updatedAt: true,
             entries: {
@@ -69,13 +73,14 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
                 select: {
                     id: true,
                     exerciseId: true,
+                    brandId: true,
                     position: true,
                     notes: true,
                     settings: true,
                     supersetId: true,
                     createdAt: true,
                     exercise: {
-                        select: { id: true, name: true, primaryMuscle: true, equipment: true, brandId: true }
+                        select: { id: true, name: true, primaryMuscle: true, equipment: true }
                     },
                     sets: {
                         orderBy: { setNumber: Prisma.SortOrder.asc },
@@ -125,7 +130,9 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             gymId: request.body.gymId,
             name: request.body.name,
             startedAt: request.body.startedAt ?? new Date(),
-            notes: request.body.notes
+            notes: request.body.notes,
+            difficultyRating: request.body.difficultyRating,
+            enjoymentRating: request.body.enjoymentRating
         },
         select: {
             id: true,
@@ -135,6 +142,8 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            difficultyRating: true,
+            enjoymentRating: true,
             createdAt: true,
             updatedAt: true
         }
@@ -175,6 +184,12 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
     if (request.body.averageHeartRate !== undefined) {
         data.averageHeartRate = request.body.averageHeartRate;
     }
+    if (request.body.difficultyRating !== undefined) {
+        data.difficultyRating = request.body.difficultyRating;
+    }
+    if (request.body.enjoymentRating !== undefined) {
+        data.enjoymentRating = request.body.enjoymentRating;
+    }
     if (request.body.gymId !== undefined) {
         if (request.body.gymId !== null) {
             const gym = await request.server.prisma.gym.findFirst({ where: { id: request.body.gymId, userId: request.user.id } });
@@ -197,6 +212,8 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            difficultyRating: true,
+            enjoymentRating: true,
             createdAt: true,
             updatedAt: true
         }

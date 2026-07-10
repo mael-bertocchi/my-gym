@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const EXERCISE_ID = '22222222-2222-4222-8222-222222222222';
 const SUPERSET_ID = '66666666-6666-4666-8666-666666666666';
+const BRAND_ID = '77777777-7777-4777-8777-777777777777';
 
 describe('CreateWorkoutExerciseSchema', () => {
     it('accepts an exerciseId', () => {
@@ -15,6 +16,14 @@ describe('CreateWorkoutExerciseSchema', () => {
 
     it('accepts a supersetId', () => {
         expect(CreateWorkoutExerciseSchema.safeParse({ exerciseId: EXERCISE_ID, supersetId: SUPERSET_ID }).success).toBe(true);
+    });
+
+    it('accepts a brandId', () => {
+        expect(CreateWorkoutExerciseSchema.safeParse({ exerciseId: EXERCISE_ID, brandId: BRAND_ID }).success).toBe(true);
+    });
+
+    it('rejects a non-uuid brandId', () => {
+        expect(CreateWorkoutExerciseSchema.safeParse({ exerciseId: EXERCISE_ID, brandId: 'hammer' }).success).toBe(false);
     });
 
     it('rejects a non-uuid supersetId', () => {
@@ -41,5 +50,10 @@ describe('UpdateWorkoutExerciseSchema', () => {
 
     it('accepts clearing the superset link with null', () => {
         expect(UpdateWorkoutExerciseSchema.safeParse({ supersetId: null }).success).toBe(true);
+    });
+
+    it('accepts setting a brand and clearing it with null', () => {
+        expect(UpdateWorkoutExerciseSchema.safeParse({ brandId: BRAND_ID }).success).toBe(true);
+        expect(UpdateWorkoutExerciseSchema.safeParse({ brandId: null }).success).toBe(true);
     });
 });

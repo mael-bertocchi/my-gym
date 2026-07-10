@@ -7,6 +7,7 @@ const EXERCISE_ID = '33333333-3333-4333-8333-333333333333';
 const SET_ID = '44444444-4444-4444-8444-444444444444';
 const GYM_ID = '55555555-5555-4555-8555-555555555555';
 const SUPERSET_ID = '66666666-6666-4666-8666-666666666666';
+const BRAND_ID = '77777777-7777-4777-8777-777777777777';
 
 function aggregate(): unknown {
     return {
@@ -78,6 +79,28 @@ describe('SyncWorkoutSchema', () => {
         expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
     });
 
+    it('accepts an exercise entry with a brandId and keeps it', () => {
+        const branded = aggregate() as { exercises: { brandId?: string | null }[] };
+        branded.exercises[0].brandId = BRAND_ID;
+        const result = SyncWorkoutSchema.safeParse(branded);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.exercises[0].brandId).toBe(BRAND_ID);
+        }
+    });
+
+    it('accepts an exercise entry with a null brandId', () => {
+        const detached = aggregate() as { exercises: { brandId?: string | null }[] };
+        detached.exercises[0].brandId = null;
+        expect(SyncWorkoutSchema.safeParse(detached).success).toBe(true);
+    });
+
+    it('rejects a non-uuid brandId', () => {
+        const bad = aggregate() as { exercises: { brandId?: string }[] };
+        bad.exercises[0].brandId = 'hammer';
+        expect(SyncWorkoutSchema.safeParse(bad).success).toBe(false);
+    });
+
     it('accepts a workout with an averageHeartRate and keeps it', () => {
         const timed = aggregate() as { averageHeartRate?: number };
         timed.averageHeartRate = 128;
@@ -103,6 +126,39 @@ describe('SyncWorkoutSchema', () => {
         const excessive = aggregate() as { averageHeartRate?: number };
         excessive.averageHeartRate = 400;
         expect(SyncWorkoutSchema.safeParse(excessive).success).toBe(false);
+    });
+
+    it('accepts a workout with ratings and keeps them', () => {
+        const rated = aggregate() as { difficultyRating?: number | null; enjoymentRating?: number | null };
+        rated.difficultyRating = 8;
+        rated.enjoymentRating = 3;
+        const result = SyncWorkoutSchema.safeParse(rated);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.difficultyRating).toBe(8);
+            expect(result.data.enjoymentRating).toBe(3);
+        }
+    });
+
+    it('accepts a workout without ratings', () => {
+        const result = SyncWorkoutSchema.safeParse(aggregate());
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.difficultyRating).toBeUndefined();
+            expect(result.data.enjoymentRating).toBeUndefined();
+        }
+    });
+
+    it('rejects a non-integer or out-of-range rating', () => {
+        const fractional = aggregate() as { difficultyRating?: number };
+        fractional.difficultyRating = 7.5;
+        expect(SyncWorkoutSchema.safeParse(fractional).success).toBe(false);
+        const excessive = aggregate() as { difficultyRating?: number };
+        excessive.difficultyRating = 11;
+        expect(SyncWorkoutSchema.safeParse(excessive).success).toBe(false);
+        const overjoyed = aggregate() as { enjoymentRating?: number };
+        overjoyed.enjoymentRating = 6;
+        expect(SyncWorkoutSchema.safeParse(overjoyed).success).toBe(false);
     });
 });
 

@@ -25,6 +25,14 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
         throw new RequestError(StatusCodes.NOT_FOUND, 'Exercise not found');
     }
 
+    if (request.body.brandId !== undefined && request.body.brandId !== null) {
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
+
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
+        }
+    }
+
     let position = request.body.position;
     if (position === undefined) {
         const last = await request.server.prisma.workoutExercise.findFirst({
@@ -37,6 +45,7 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
     const data: Prisma.WorkoutExerciseUncheckedCreateInput = {
         workoutId: request.params.workoutId,
         exerciseId: request.body.exerciseId,
+        brandId: request.body.brandId,
         position,
         notes: request.body.notes,
         supersetId: request.body.supersetId
@@ -52,6 +61,7 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
             id: true,
             workoutId: true,
             exerciseId: true,
+            brandId: true,
             position: true,
             notes: true,
             settings: true,
@@ -67,7 +77,7 @@ async function createWorkoutExercise(request: FastifyRequest<CreateWorkoutExerci
 
 /**
  * @function updateWorkoutExercise
- * @description Updates a workout exercise's order, notes, session settings, or superset link. Only the provided fields change.
+ * @description Updates a workout exercise's brand, order, notes, session settings, or superset link. Only the provided fields change.
  *
  * @returns {Promise<void>} Resolves when the workout exercise is updated.
  */
@@ -80,8 +90,19 @@ async function updateWorkoutExercise(request: FastifyRequest<UpdateWorkoutExerci
         throw new RequestError(StatusCodes.NOT_FOUND, 'Workout exercise not found');
     }
 
+    if (request.body.brandId !== undefined && request.body.brandId !== null) {
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id } });
+
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
+        }
+    }
+
     const data: Prisma.WorkoutExerciseUncheckedUpdateInput = {};
 
+    if (request.body.brandId !== undefined) {
+        data.brandId = request.body.brandId;
+    }
     if (request.body.position !== undefined) {
         data.position = request.body.position;
     }
@@ -102,6 +123,7 @@ async function updateWorkoutExercise(request: FastifyRequest<UpdateWorkoutExerci
             id: true,
             workoutId: true,
             exerciseId: true,
+            brandId: true,
             position: true,
             notes: true,
             settings: true,
