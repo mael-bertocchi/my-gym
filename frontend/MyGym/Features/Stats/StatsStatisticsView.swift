@@ -22,8 +22,9 @@ struct StatsStatisticsBody: View {
 
             splitRow(windowed: windowed)
 
-            StatsMonthCompareCard(
-                comparison: StatsMath.monthComparison(workouts: store.workouts),
+            StatsPeriodCompareCard(
+                comparison: StatsMath.periodComparison(workouts: store.workouts, weekCount: weekCount),
+                rangeLabel: range == .all ? nil : range.rawValue,
                 unit: session.weightUnit
             )
 
@@ -88,14 +89,14 @@ struct ChartTooltip: View {
         VStack(alignment: .leading, spacing: 1) {
             Text(hover.value)
                 .font(Theme.mono(11, .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.tooltipText)
             Text(hover.label)
                 .font(Theme.mono(10))
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(Theme.tooltipText.opacity(0.65))
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
-        .background(Theme.ink, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .background(Theme.tooltipFill, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         .fixedSize()
         .position(
             x: min(max(hover.location.x, 46), bounds.width - 46),
@@ -299,19 +300,20 @@ private struct StatsValueCard: View {
     }
 }
 
-private struct StatsMonthCompareCard: View {
-    let comparison: StatsMath.MonthComparison
+private struct StatsPeriodCompareCard: View {
+    let comparison: StatsMath.PeriodComparison
+    let rangeLabel: String?
     let unit: WeightUnit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            EyebrowText("THIS MONTH VS LAST", size: 10)
+            EyebrowText(eyebrow, size: 10)
                 .padding(.bottom, 14)
             VStack(spacing: 12) {
                 row(
                     label: "Workouts",
                     value: "\(comparison.workoutsThis)",
-                    delta: StatsMath.deltaPercent(
+                    delta: delta(
                         current: Double(comparison.workoutsThis),
                         previous: Double(comparison.workoutsLast)
                     )
@@ -319,7 +321,7 @@ private struct StatsMonthCompareCard: View {
                 row(
                     label: "Volume (\(unit.label))",
                     value: volumeLabel(comparison.volumeKgThis),
-                    delta: StatsMath.deltaPercent(
+                    delta: delta(
                         current: comparison.volumeKgThis,
                         previous: comparison.volumeKgLast
                     )
@@ -327,7 +329,7 @@ private struct StatsMonthCompareCard: View {
                 row(
                     label: "Avg duration (min)",
                     value: "\(comparison.avgMinutesThis)",
-                    delta: StatsMath.deltaPercent(
+                    delta: delta(
                         current: Double(comparison.avgMinutesThis),
                         previous: Double(comparison.avgMinutesLast)
                     )
@@ -339,11 +341,20 @@ private struct StatsMonthCompareCard: View {
         .card(radius: 20)
     }
 
+    private var eyebrow: String {
+        rangeLabel.map { "LAST \($0) VS PREVIOUS \($0)" } ?? "ALL TIME"
+    }
+
+    private func delta(current: Double, previous: Double) -> Int? {
+        guard rangeLabel != nil else { return nil }
+        return StatsMath.deltaPercent(current: current, previous: previous)
+    }
+
     private func volumeLabel(_ kilograms: Double) -> String {
         "\(Int(Formatting.displayWeight(kilograms, unit: unit).rounded()))"
     }
 
-    private func row(label: String, value: String, delta: Int) -> some View {
+    private func row(label: String, value: String, delta: Int?) -> some View {
         HStack {
             Text(label)
                 .font(Theme.font(13))
@@ -353,7 +364,9 @@ private struct StatsMonthCompareCard: View {
                 Text(value)
                     .font(Theme.mono(13))
                     .foregroundStyle(Theme.ink)
-                TrendDeltaText(percent: delta)
+                if let delta {
+                    TrendDeltaText(percent: delta)
+                }
             }
         }
     }
@@ -416,7 +429,14 @@ private struct StatsBodyweightCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .card(radius: 20)
-        .task { entries = await healthKit.bodyweightHistory() }
+        .task {
+            entries = await healthKit.bodyweightHistory()
+            #if DEBUG
+            if UserDefaults.standard.bool(forKey: "stats-hover") {
+                selectedDate = entries.last?.date
+            }
+            #endif
+        }
     }
 
     private var inputRow: some View {
@@ -436,10 +456,10 @@ private struct StatsBodyweightCard: View {
             Button(action: submit) {
                 Text("Add")
                     .font(Theme.font(12, .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Theme.onAccent)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 14)
-                    .background(Theme.ink, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
+                    .background(Theme.accentBlue, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
                     .expandedTapTarget(vertical: 6, horizontal: 2)
             }
             .buttonStyle(.plain)

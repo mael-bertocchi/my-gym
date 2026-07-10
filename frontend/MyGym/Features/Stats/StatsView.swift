@@ -57,6 +57,10 @@ struct StatsView: View {
             }
             .onAppear {
                 #if DEBUG
+                if let raw = UserDefaults.standard.string(forKey: "stats-range"),
+                   let debugRange = StatsMath.Range(rawValue: raw) {
+                    range = debugRange
+                }
                 switch UserDefaults.standard.string(forKey: "open") {
                 case "exercise-detail":
                     if let exercise = store.exercises.first(where: { $0.name == "Chest Press" }) ?? store.exercises.first {

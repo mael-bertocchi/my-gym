@@ -208,7 +208,7 @@ enum StatsMath {
         return (Int((exerciseTotal / categoryTotal * 100).rounded()), category)
     }
 
-    struct MonthComparison {
+    struct PeriodComparison {
         let workoutsThis: Int
         let workoutsLast: Int
         let volumeKgThis: Double
@@ -217,18 +217,21 @@ enum StatsMath {
         let avgMinutesLast: Int
     }
 
-    static func monthComparison(workouts: [LocalWorkout], now: Date = .now) -> MonthComparison {
-        let calendar = Calendar.current
-        guard let thisMonth = calendar.dateInterval(of: .month, for: now),
-              let lastMonthStart = calendar.date(byAdding: .month, value: -1, to: thisMonth.start) else {
-            return MonthComparison(
+    static func periodComparison(
+        workouts: [LocalWorkout],
+        weekCount: Int,
+        now: Date = .now
+    ) -> PeriodComparison {
+        guard let currentStart = windowStart(weekCount: weekCount, now: now),
+              let previousStart = weekCalendar.date(byAdding: .weekOfYear, value: -weekCount, to: currentStart) else {
+            return PeriodComparison(
                 workoutsThis: 0, workoutsLast: 0,
                 volumeKgThis: 0, volumeKgLast: 0,
                 avgMinutesThis: 0, avgMinutesLast: 0
             )
         }
-        let inThis = workouts.filter { $0.startedAt >= thisMonth.start && $0.startedAt < now }
-        let inLast = workouts.filter { $0.startedAt >= lastMonthStart && $0.startedAt < thisMonth.start }
+        let inThis = workouts.filter { $0.startedAt >= currentStart }
+        let inLast = workouts.filter { $0.startedAt >= previousStart && $0.startedAt < currentStart }
 
         func avgMinutes(_ workouts: [LocalWorkout]) -> Int {
             let durations = workouts.compactMap(\.duration)
@@ -236,7 +239,7 @@ enum StatsMath {
             return Int((durations.reduce(0, +) / Double(durations.count) / 60).rounded())
         }
 
-        return MonthComparison(
+        return PeriodComparison(
             workoutsThis: inThis.count,
             workoutsLast: inLast.count,
             volumeKgThis: inThis.reduce(0) { $0 + $1.totalVolume },
@@ -246,8 +249,8 @@ enum StatsMath {
         )
     }
 
-    static func deltaPercent(current: Double, previous: Double) -> Int {
-        guard previous != 0 else { return current > 0 ? 100 : 0 }
+    static func deltaPercent(current: Double, previous: Double) -> Int? {
+        guard previous > 0 else { return nil }
         return Int(((current - previous) / previous * 100).rounded())
     }
 

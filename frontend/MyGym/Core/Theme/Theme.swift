@@ -37,6 +37,9 @@ enum Theme {
     static let restBarFill = dyn(light: 0xEAF1FE, dark: 0x1A2740)
 
     static let onAccent = dyn(light: 0xFFFFFF, dark: 0x0E0F13)
+
+    static let tooltipFill = dyn(light: 0x15181C, dark: 0x3A414E)
+    static let tooltipText = dyn(light: 0xFFFFFF, dark: 0xEEF1F5)
     static let segmentTrack = dyn(light: 0xF1F3F6, dark: 0x191C22)
     static let supersetTokenInactive = dyn(light: 0x9098A0, dark: 0x3A4152)
 
