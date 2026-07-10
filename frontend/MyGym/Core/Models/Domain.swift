@@ -133,13 +133,20 @@ struct Brand: Codable, Identifiable, Equatable, Hashable {
     var updatedAt: Date
 }
 
+enum ExerciseBrandMode: String, Codable, CaseIterable {
+    case none = "NONE"
+    case single = "SINGLE"
+    case multiple = "MULTIPLE"
+}
+
 struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var name: String
     var primaryMuscle: MuscleGroup
     var secondaryMuscles: [MuscleGroup]
     var equipment: EquipmentType
-    var requiresBrand: Bool
+    var brandMode: ExerciseBrandMode
+    var brandId: String?
     var isFavorite: Bool
     var isArchived: Bool
     var isUnilateral: Bool
@@ -150,7 +157,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
 extension Exercise {
     private enum CodingKeys: String, CodingKey {
         case id, name, primaryMuscle, secondaryMuscles, equipment
-        case requiresBrand, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
+        case brandMode, brandId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -160,7 +167,8 @@ extension Exercise {
         primaryMuscle = try container.decode(MuscleGroup.self, forKey: .primaryMuscle)
         secondaryMuscles = try container.decode([MuscleGroup].self, forKey: .secondaryMuscles)
         equipment = try container.decode(EquipmentType.self, forKey: .equipment)
-        requiresBrand = try container.decodeIfPresent(Bool.self, forKey: .requiresBrand) ?? false
+        brandMode = try container.decodeIfPresent(ExerciseBrandMode.self, forKey: .brandMode) ?? ExerciseBrandMode.none
+        brandId = try container.decodeIfPresent(String.self, forKey: .brandId)
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false

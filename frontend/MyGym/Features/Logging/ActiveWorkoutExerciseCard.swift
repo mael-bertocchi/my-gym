@@ -24,7 +24,7 @@ struct ActiveWorkoutExerciseCard: View {
                 Menu {
                     Button("View exercise", action: onOpenDetail)
                     Button("Machine settings", action: onOpenSettings)
-                    if requiresBrand {
+                    if canSelectBrand {
                         Button("Select brand") { brandEntry = entry }
                     }
                     if let onAddToSuperset {
@@ -106,8 +106,8 @@ struct ActiveWorkoutExerciseCard: View {
         store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
     }
 
-    private var requiresBrand: Bool {
-        store.exercise(id: entry.exerciseId)?.requiresBrand ?? false
+    private var canSelectBrand: Bool {
+        store.exercise(id: entry.exerciseId)?.brandMode == .multiple
     }
 
     private func tableHeaderCell(_ text: String) -> some View {

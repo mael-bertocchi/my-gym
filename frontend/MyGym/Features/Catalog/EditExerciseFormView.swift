@@ -9,7 +9,10 @@ struct EditExerciseFormView: View {
 
     @State private var name: String
     @State private var equipment: EquipmentType
-    @State private var requiresBrand: Bool
+    @State private var brandMode: ExerciseBrandMode
+    @State private var brandId: String?
+    @State private var showsNewBrandAlert = false
+    @State private var newBrandName = ""
     @State private var primaryMuscle: MuscleGroup
     @State private var secondaryMuscles: Set<MuscleGroup>
     @State private var isUnilateral: Bool
@@ -21,7 +24,8 @@ struct EditExerciseFormView: View {
         self.exercise = exercise
         _name = State(initialValue: exercise.name)
         _equipment = State(initialValue: exercise.equipment)
-        _requiresBrand = State(initialValue: exercise.requiresBrand)
+        _brandMode = State(initialValue: exercise.brandMode)
+        _brandId = State(initialValue: exercise.brandId)
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
         _secondaryMuscles = State(initialValue: Set(exercise.secondaryMuscles))
         _isUnilateral = State(initialValue: exercise.isUnilateral)
@@ -49,6 +53,11 @@ struct EditExerciseFormView: View {
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isSaving)
         .manageInfoAlert($alert)
+        .alert("New brand", isPresented: $showsNewBrandAlert) {
+            TextField("e.g. Technogym", text: $newBrandName)
+            Button("Cancel", role: .cancel) { newBrandName = "" }
+            Button("Add") { Task { await createBrand() } }
+        }
     }
 
     private var nameField: some View {
@@ -77,13 +86,44 @@ struct EditExerciseFormView: View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("BRAND")
             SegmentedPicker(
-                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
-                selection: $requiresBrand
+                options: [
+                    (value: ExerciseBrandMode.none, label: "No brand"),
+                    (value: ExerciseBrandMode.single, label: "Branded"),
+                    (value: ExerciseBrandMode.multiple, label: "Multiple"),
+                ],
+                selection: $brandMode
             )
-            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+            if brandMode == .single {
+                ManageDropdownField(
+                    text: selectedBrand?.name ?? "Select brand",
+                    isPlaceholder: selectedBrand == nil
+                ) {
+                    ForEach(sortedBrands) { brand in
+                        Button(brand.name) { brandId = brand.id }
+                    }
+                    Button("New brand\u{2026}") { showsNewBrandAlert = true }
+                }
+            }
+            Text(brandModeCaption)
                 .font(Theme.font(12))
                 .foregroundStyle(Theme.muted2)
         }
+    }
+
+    private var brandModeCaption: String {
+        switch brandMode {
+        case .none: "This exercise never asks for a brand."
+        case .single: "Always logged with the brand picked here."
+        case .multiple: "Asks which brand you used each time you add this exercise to a workout."
+        }
+    }
+
+    private var sortedBrands: [Brand] {
+        store.brands.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private var selectedBrand: Brand? {
+        store.brand(id: brandId)
     }
 
     private var muscleField: some View {
@@ -132,7 +172,7 @@ struct EditExerciseFormView: View {
         PrimaryButton(
             title: "Save changes",
             isLoading: isSaving,
-            isDisabled: trimmedName.isEmpty || !hasEdits
+            isDisabled: trimmedName.isEmpty || !hasEdits || (brandMode == .single && brandId == nil)
         ) {
             save()
         }
@@ -148,7 +188,8 @@ struct EditExerciseFormView: View {
     private var hasEdits: Bool {
         trimmedName != exercise.name
             || equipment != exercise.equipment
-            || requiresBrand != exercise.requiresBrand
+            || brandMode != exercise.brandMode
+            || (brandMode == .single ? brandId : nil) != exercise.brandId
             || primaryMuscle != exercise.primaryMuscle
             || secondaryMuscles != Set(exercise.secondaryMuscles)
             || isUnilateral != exercise.isUnilateral
@@ -174,7 +215,8 @@ struct EditExerciseFormView: View {
                     primaryMuscle: primaryMuscle,
                     secondaryMuscles: Array(secondaryMuscles),
                     equipment: equipment,
-                    requiresBrand: requiresBrand,
+                    brandMode: brandMode,
+                    brandId: brandMode == .single ? brandId : nil,
                     isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: updated)
@@ -193,6 +235,22 @@ struct EditExerciseFormView: View {
                     message: ProfileSupport.message(for: error)
                 )
             }
+        }
+    }
+
+    private func createBrand() async {
+        let trimmed = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newBrandName = ""
+        guard !trimmed.isEmpty else { return }
+        do {
+            let brand = try await API.createBrand(name: trimmed)
+            store.insert(brand: brand)
+            brandId = brand.id
+        } catch {
+            alert = ManageAlert(
+                title: "Couldn\u{2019}t add brand",
+                message: ProfileSupport.message(for: error)
+            )
         }
     }
 }

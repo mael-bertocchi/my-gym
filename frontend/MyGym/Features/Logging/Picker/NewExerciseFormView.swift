@@ -8,7 +8,10 @@ struct NewExerciseFormView: View {
 
     @State private var exerciseName: String
     @State private var equipmentType: EquipmentType = .machine
-    @State private var requiresBrand = false
+    @State private var brandMode: ExerciseBrandMode = .none
+    @State private var brandId: String?
+    @State private var showsNewBrandAlert = false
+    @State private var newBrandName = ""
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
@@ -56,6 +59,11 @@ struct NewExerciseFormView: View {
         } message: {
             Text(errorMessage ?? "Something went wrong.")
         }
+        .alert("New brand", isPresented: $showsNewBrandAlert) {
+            TextField("e.g. Technogym", text: $newBrandName)
+            Button("Cancel", role: .cancel) { newBrandName = "" }
+            Button("Add") { Task { await createBrand() } }
+        }
         .confirmationDialog(
             "Discard this exercise?",
             isPresented: $showsDiscardConfirm,
@@ -83,7 +91,7 @@ struct NewExerciseFormView: View {
     private var hasEdits: Bool {
         trimmedName != initialName.trimmingCharacters(in: .whitespacesAndNewlines)
             || equipmentType != .machine
-            || requiresBrand
+            || brandMode != .none
             || primaryMuscle != nil
             || !secondaryMuscles.isEmpty
             || isUnilateral
@@ -93,7 +101,7 @@ struct NewExerciseFormView: View {
         PrimaryButton(
             title: "Create & add to workout",
             isLoading: isCreating,
-            isDisabled: trimmedName.isEmpty || primaryMuscle == nil
+            isDisabled: trimmedName.isEmpty || primaryMuscle == nil || (brandMode == .single && brandId == nil)
         ) {
             create()
         }
@@ -137,13 +145,44 @@ struct NewExerciseFormView: View {
         VStack(alignment: .leading, spacing: 8) {
             NewExerciseFieldLabel("BRAND")
             SegmentedPicker(
-                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
-                selection: $requiresBrand
+                options: [
+                    (value: ExerciseBrandMode.none, label: "No brand"),
+                    (value: ExerciseBrandMode.single, label: "Branded"),
+                    (value: ExerciseBrandMode.multiple, label: "Multiple"),
+                ],
+                selection: $brandMode
             )
-            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+            if brandMode == .single {
+                NewExerciseDropdown(
+                    text: selectedBrand?.name ?? "Select brand",
+                    isPlaceholder: selectedBrand == nil
+                ) {
+                    ForEach(sortedBrands) { brand in
+                        Button(brand.name) { brandId = brand.id }
+                    }
+                    Button("New brand\u{2026}") { showsNewBrandAlert = true }
+                }
+            }
+            Text(brandModeCaption)
                 .font(Theme.font(12))
                 .foregroundStyle(Theme.muted2)
         }
+    }
+
+    private var brandModeCaption: String {
+        switch brandMode {
+        case .none: "This exercise never asks for a brand."
+        case .single: "Always logged with the brand picked here."
+        case .multiple: "Asks which brand you used each time you add this exercise to a workout."
+        }
+    }
+
+    private var sortedBrands: [Brand] {
+        store.brands.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private var selectedBrand: Brand? {
+        store.brand(id: brandId)
     }
 
     private var muscleField: some View {
@@ -212,7 +251,8 @@ struct NewExerciseFormView: View {
                         primaryMuscle: muscle,
                         secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                         equipment: equipmentType,
-                        requiresBrand: requiresBrand,
+                        brandMode: brandMode,
+                        brandId: brandMode == .single ? brandId : nil,
                         isUnilateral: isUnilateral
                     )
                 )
@@ -227,6 +267,19 @@ struct NewExerciseFormView: View {
                 isCreating = false
                 presentError(error)
             }
+        }
+    }
+
+    private func createBrand() async {
+        let trimmed = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newBrandName = ""
+        guard !trimmed.isEmpty else { return }
+        do {
+            let brand = try await API.createBrand(name: trimmed)
+            store.insert(brand: brand)
+            brandId = brand.id
+        } catch {
+            presentError(error)
         }
     }
 

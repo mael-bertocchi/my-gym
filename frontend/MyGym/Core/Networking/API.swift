@@ -123,7 +123,8 @@ enum API {
         var primaryMuscle: MuscleGroup
         var secondaryMuscles: [MuscleGroup]?
         var equipment: EquipmentType
-        var requiresBrand: Bool
+        var brandMode: ExerciseBrandMode
+        var brandId: String?
         var isUnilateral: Bool
     }
 
@@ -149,11 +150,12 @@ enum API {
         var primaryMuscle: MuscleGroup
         var secondaryMuscles: [MuscleGroup]
         var equipment: EquipmentType
-        var requiresBrand: Bool
+        var brandMode: ExerciseBrandMode
+        var brandId: String?
         var isUnilateral: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, secondaryMuscles, equipment, requiresBrand, isUnilateral
+            case name, primaryMuscle, secondaryMuscles, equipment, brandMode, brandId, isUnilateral
         }
 
         func encode(to encoder: Encoder) throws {
@@ -162,7 +164,8 @@ enum API {
             try container.encode(primaryMuscle, forKey: .primaryMuscle)
             try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
             try container.encode(equipment, forKey: .equipment)
-            try container.encode(requiresBrand, forKey: .requiresBrand)
+            try container.encode(brandMode, forKey: .brandMode)
+            try container.encode(brandId, forKey: .brandId)
             try container.encode(isUnilateral, forKey: .isUnilateral)
         }
     }

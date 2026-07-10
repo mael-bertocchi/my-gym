@@ -54,7 +54,7 @@ struct SupersetUnifiedCard: View {
             Menu {
                 Button("View exercise") { onOpenDetail(activeMember) }
                 Button("Machine settings") { onOpenSettings(activeMember) }
-                if store.exercise(id: activeMember.exerciseId)?.requiresBrand == true {
+                if store.exercise(id: activeMember.exerciseId)?.brandMode == .multiple {
                     Button("Select brand") { brandEntry = activeMember }
                 }
                 Button("Unlink superset", action: onUnlink)

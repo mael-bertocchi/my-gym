@@ -56,7 +56,7 @@ final class LocalStore {
         if let brand = brand(id: brandId) {
             return (brand.name.uppercased(), true)
         }
-        if exercise.requiresBrand {
+        if exercise.brandMode != .none {
             return ("\(exercise.equipment.rawValue) · no brand", false)
         }
         return (exercise.equipment.rawValue, false)

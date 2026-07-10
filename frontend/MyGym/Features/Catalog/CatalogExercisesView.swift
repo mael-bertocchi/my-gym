@@ -141,16 +141,17 @@ struct CatalogExercisesView: View {
     }
 
     private func row(_ exercise: Exercise) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        let line = brandModeLine(exercise)
+        return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise.name)
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                Text(exercise.equipment.rawValue)
+                Text(line.text)
                     .font(Theme.mono(11, .semibold))
                     .kerning(0.5)
-                    .foregroundStyle(Theme.muted2)
+                    .foregroundStyle(line.isBranded ? Theme.accentBlue : Theme.muted2)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
@@ -160,6 +161,20 @@ struct CatalogExercisesView: View {
         }
         .frame(minHeight: 38)
         .contentShape(Rectangle())
+    }
+
+    private func brandModeLine(_ exercise: Exercise) -> (text: String, isBranded: Bool) {
+        switch exercise.brandMode {
+        case .none:
+            return (exercise.equipment.rawValue, false)
+        case .single:
+            guard let brand = store.brand(id: exercise.brandId) else {
+                return (exercise.equipment.rawValue, false)
+            }
+            return (brand.name.uppercased(), true)
+        case .multiple:
+            return ("\(exercise.equipment.rawValue) · multiple brands", false)
+        }
     }
 
     private func delete(_ exercise: Exercise) {
@@ -200,7 +215,10 @@ struct CatalogExerciseAddSheet: View {
 
     @State private var name = ""
     @State private var equipment: EquipmentType = .machine
-    @State private var requiresBrand = false
+    @State private var brandMode: ExerciseBrandMode = .none
+    @State private var brandId: String?
+    @State private var showsNewBrandAlert = false
+    @State private var newBrandName = ""
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
@@ -230,6 +248,11 @@ struct CatalogExerciseAddSheet: View {
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isCreating)
         .manageInfoAlert($alert)
+        .alert("New brand", isPresented: $showsNewBrandAlert) {
+            TextField("e.g. Technogym", text: $newBrandName)
+            Button("Cancel", role: .cancel) { newBrandName = "" }
+            Button("Add") { Task { await createBrand() } }
+        }
     }
 
     private var nameField: some View {
@@ -258,13 +281,44 @@ struct CatalogExerciseAddSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("BRAND")
             SegmentedPicker(
-                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
-                selection: $requiresBrand
+                options: [
+                    (value: ExerciseBrandMode.none, label: "No brand"),
+                    (value: ExerciseBrandMode.single, label: "Branded"),
+                    (value: ExerciseBrandMode.multiple, label: "Multiple"),
+                ],
+                selection: $brandMode
             )
-            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+            if brandMode == .single {
+                ManageDropdownField(
+                    text: selectedBrand?.name ?? "Select brand",
+                    isPlaceholder: selectedBrand == nil
+                ) {
+                    ForEach(sortedBrands) { brand in
+                        Button(brand.name) { brandId = brand.id }
+                    }
+                    Button("New brand\u{2026}") { showsNewBrandAlert = true }
+                }
+            }
+            Text(brandModeCaption)
                 .font(Theme.font(12))
                 .foregroundStyle(Theme.muted2)
         }
+    }
+
+    private var brandModeCaption: String {
+        switch brandMode {
+        case .none: "This exercise never asks for a brand."
+        case .single: "Always logged with the brand picked here."
+        case .multiple: "Asks which brand you used each time you add this exercise to a workout."
+        }
+    }
+
+    private var sortedBrands: [Brand] {
+        store.brands.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private var selectedBrand: Brand? {
+        store.brand(id: brandId)
     }
 
     private var muscleField: some View {
@@ -316,7 +370,7 @@ struct CatalogExerciseAddSheet: View {
         PrimaryButton(
             title: "Add exercise",
             isLoading: isCreating,
-            isDisabled: trimmedName.isEmpty || primaryMuscle == nil
+            isDisabled: trimmedName.isEmpty || primaryMuscle == nil || (brandMode == .single && brandId == nil)
         ) {
             create()
         }
@@ -349,7 +403,8 @@ struct CatalogExerciseAddSheet: View {
                     primaryMuscle: muscle,
                     secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                     equipment: equipment,
-                    requiresBrand: requiresBrand,
+                    brandMode: brandMode,
+                    brandId: brandMode == .single ? brandId : nil,
                     isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: exercise)
@@ -368,6 +423,22 @@ struct CatalogExerciseAddSheet: View {
                     message: ProfileSupport.message(for: error)
                 )
             }
+        }
+    }
+
+    private func createBrand() async {
+        let trimmed = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newBrandName = ""
+        guard !trimmed.isEmpty else { return }
+        do {
+            let brand = try await API.createBrand(name: trimmed)
+            store.insert(brand: brand)
+            brandId = brand.id
+        } catch {
+            alert = ManageAlert(
+                title: "Couldn\u{2019}t add brand",
+                message: ProfileSupport.message(for: error)
+            )
         }
     }
 }

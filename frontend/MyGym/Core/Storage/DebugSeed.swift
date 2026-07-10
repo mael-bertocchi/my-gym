@@ -132,11 +132,11 @@ enum DebugSeed {
 
         let chestPress = mkExercise(
             "Chest Press", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, requiresBrand: true, favorite: true
+            equipment: .machine, brandMode: .multiple, favorite: true
         )
         let chestPressTechnogym = mkExercise(
             "Chest Press (Technogym)", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, requiresBrand: true
+            equipment: .machine, brandMode: .single, brandId: technogym.id
         )
         let benchPress = mkExercise(
             "Barbell Bench Press", .chest, secondary: [.triceps],
@@ -148,23 +148,23 @@ enum DebugSeed {
         )
         let cableFly = mkExercise(
             "Cable Fly", .chest,
-            equipment: .cable, requiresBrand: true
+            equipment: .cable, brandMode: .single, brandId: technogym.id
         )
         let legPress = mkExercise(
             "Leg Press", .quadriceps, secondary: [.glutes],
-            equipment: .machine, requiresBrand: true
+            equipment: .machine, brandMode: .multiple
         )
         let legCurl = mkExercise(
             "Leg Curl", .hamstrings,
-            equipment: .machine, requiresBrand: true
+            equipment: .machine, brandMode: .single, brandId: cybex.id
         )
         let latPulldown = mkExercise(
             "Lat Pulldown", .lats, secondary: [.biceps],
-            equipment: .machine, requiresBrand: true
+            equipment: .machine, brandMode: .single, brandId: hammerStrength.id
         )
         let seatedRow = mkExercise(
             "Seated Row", .upperBack, secondary: [.biceps],
-            equipment: .cable, requiresBrand: true
+            equipment: .cable, brandMode: .single, brandId: technogym.id
         )
         let oneArmRow = mkExercise(
             "Single-Arm Row", .upperBack, secondary: [.biceps],
@@ -176,7 +176,7 @@ enum DebugSeed {
         )
         let shoulderPress = mkExercise(
             "Shoulder Press", .frontDelts, secondary: [.sideDelts, .triceps],
-            equipment: .machine, requiresBrand: true
+            equipment: .machine, brandMode: .single, brandId: cybex.id
         )
 
         store.applyCatalog(SyncPull.Catalog(
@@ -526,7 +526,8 @@ enum DebugSeed {
         _ primary: MuscleGroup,
         secondary: [MuscleGroup] = [],
         equipment: EquipmentType,
-        requiresBrand: Bool = false,
+        brandMode: ExerciseBrandMode = .none,
+        brandId: String? = nil,
         favorite: Bool = false,
         unilateral: Bool = false
     ) -> Exercise {
@@ -536,7 +537,8 @@ enum DebugSeed {
             primaryMuscle: primary,
             secondaryMuscles: secondary,
             equipment: equipment,
-            requiresBrand: requiresBrand,
+            brandMode: brandMode,
+            brandId: brandId,
             isFavorite: favorite,
             isArchived: false,
             isUnilateral: unilateral,

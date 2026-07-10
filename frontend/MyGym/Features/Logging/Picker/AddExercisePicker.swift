@@ -46,11 +46,15 @@ struct AddExercisePicker: View {
     }
 
     private func finishSelection(_ exercise: Exercise) {
-        if exercise.requiresBrand {
-            path = [.brand(exercise)]
-        } else {
+        switch exercise.brandMode {
+        case .none:
             onSelect(exercise, nil)
             dismiss()
+        case .single:
+            onSelect(exercise, exercise.brandId)
+            dismiss()
+        case .multiple:
+            path = [.brand(exercise)]
         }
     }
 
@@ -122,7 +126,7 @@ struct AddExercisePicker: View {
             ForEach(section.exercises) { exercise in
                 PickerExerciseRow(
                     exercise: exercise,
-                    subtitle: exercise.equipment.rawValue,
+                    subtitle: rowSubtitle(exercise),
                     prText: bests[exercise.id].flatMap(prLabel(for:))
                 ) {
                     finishSelection(exercise)
@@ -130,6 +134,17 @@ struct AddExercisePicker: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    private func rowSubtitle(_ exercise: Exercise) -> String {
+        switch exercise.brandMode {
+        case .none:
+            exercise.equipment.rawValue
+        case .single:
+            store.brand(id: exercise.brandId)?.name.uppercased() ?? exercise.equipment.rawValue
+        case .multiple:
+            "\(exercise.equipment.rawValue) · multiple brands"
+        }
     }
 
     private var trimmedQuery: String {
