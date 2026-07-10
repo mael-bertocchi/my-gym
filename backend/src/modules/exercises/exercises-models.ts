@@ -1,5 +1,5 @@
 import type { RequestGenericInterface } from 'fastify';
-import { EquipmentType, MuscleGroup } from 'prisma/generated/prisma/client';
+import { EquipmentType, ExerciseBrandMode, MuscleGroup } from 'prisma/generated/prisma/client';
 import { CursorQuerySchema } from 'src/shared/schemas';
 import { z } from 'zod';
 
@@ -14,6 +14,12 @@ export const MuscleGroupSchema = z.enum(MuscleGroup);
  * @description Zod schema validating a value against the Prisma EquipmentType enum.
  */
 export const EquipmentTypeSchema = z.enum(EquipmentType);
+
+/**
+ * @constant ExerciseBrandModeSchema
+ * @description Zod schema validating a value against the Prisma ExerciseBrandMode enum.
+ */
+export const ExerciseBrandModeSchema = z.enum(ExerciseBrandMode);
 
 /**
  * @constant ListExercisesQuerySchema
@@ -35,7 +41,10 @@ export const CreateExerciseSchema = z.object({
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
     isUnilateral: z.boolean().optional().default(false),
-    requiresBrand: z.boolean().optional().default(false)
+    brandMode: ExerciseBrandModeSchema.optional().default('NONE'),
+    brandId: z.uuid().nullable().optional()
+}).refine((value) => (value.brandMode === 'SINGLE') === (value.brandId !== undefined && value.brandId !== null), {
+    message: 'brandId must be provided exactly when brandMode is SINGLE'
 });
 
 /**
@@ -56,7 +65,8 @@ export const UpdateExerciseSchema = z.object({
     isFavorite: z.boolean().optional(),
     isArchived: z.boolean().optional(),
     isUnilateral: z.boolean().optional(),
-    requiresBrand: z.boolean().optional()
+    brandMode: ExerciseBrandModeSchema.optional(),
+    brandId: z.uuid().nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided'
 });

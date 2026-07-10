@@ -124,7 +124,7 @@ async function updateBrand(request: FastifyRequest<UpdateBrandRequest>, reply: F
 
 /**
  * @function deleteBrand
- * @description Removes a brand, unless workout exercises reference it.
+ * @description Removes a brand, unless exercises or workout exercises reference it.
  *
  * @returns {Promise<void>} Resolves when the brand is deleted.
  */
@@ -139,6 +139,12 @@ async function deleteBrand(request: FastifyRequest<BrandParamsRequest>, reply: F
 
     if (referenceCount !== 0) {
         throw new RequestError(StatusCodes.CONFLICT, 'Brand is referenced by one or more workout exercises');
+    }
+
+    const exerciseCount = await request.server.prisma.exercise.count({ where: { brandId: request.params.id } });
+
+    if (exerciseCount !== 0) {
+        throw new RequestError(StatusCodes.CONFLICT, 'Brand is used by one or more exercises');
     }
 
     await request.server.prisma.brand.delete({ where: { id: request.params.id } });

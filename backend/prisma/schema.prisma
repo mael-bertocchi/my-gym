@@ -116,12 +116,19 @@ model RefreshSession {
   @@map("refresh_sessions")
 }
 
+enum ExerciseBrandMode {
+  NONE
+  SINGLE
+  MULTIPLE
+}
+
 model Brand {
   id     String @id @default(uuid())
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name   String
 
+  exercises      Exercise[]
   workoutEntries WorkoutExercise[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -133,17 +140,19 @@ model Brand {
 }
 
 model Exercise {
-  id               String        @id @default(uuid())
-  userId           String        @map("user_id")
-  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String            @id @default(uuid())
+  userId           String            @map("user_id")
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   name             String
-  primaryMuscle    MuscleGroup   @map("primary_muscle")
-  secondaryMuscles MuscleGroup[] @map("secondary_muscles")
-  equipment        EquipmentType @default(OTHER)
-  isFavorite       Boolean       @default(false) @map("is_favorite")
-  isArchived       Boolean       @default(false) @map("is_archived")
-  isUnilateral     Boolean       @default(false) @map("is_unilateral")
-  requiresBrand    Boolean       @default(false) @map("requires_brand")
+  primaryMuscle    MuscleGroup       @map("primary_muscle")
+  secondaryMuscles MuscleGroup[]     @map("secondary_muscles")
+  equipment        EquipmentType     @default(OTHER)
+  isFavorite       Boolean           @default(false) @map("is_favorite")
+  isArchived       Boolean           @default(false) @map("is_archived")
+  isUnilateral     Boolean           @default(false) @map("is_unilateral")
+  brandMode        ExerciseBrandMode @default(NONE) @map("brand_mode")
+  brandId          String?           @map("brand_id")
+  brand            Brand?            @relation(fields: [brandId], references: [id], onDelete: Restrict)
 
   workoutEntries WorkoutExercise[]
   settings       ExerciseSetting[]
@@ -154,6 +163,7 @@ model Exercise {
   @@unique([userId, name])
   @@index([userId])
   @@index([primaryMuscle])
+  @@index([brandId])
   @@map("exercises")
 }
 

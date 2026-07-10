@@ -57,7 +57,8 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
-            requiresBrand: true,
+            brandMode: true,
+            brandId: true,
             createdAt: true,
             updatedAt: true
         },
@@ -88,7 +89,8 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
-            requiresBrand: true,
+            brandMode: true,
+            brandId: true,
             createdAt: true,
             updatedAt: true
         }
@@ -114,6 +116,14 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
         throw new RequestError(StatusCodes.CONFLICT, 'An exercise with this name already exists');
     }
 
+    if (request.body.brandId !== undefined && request.body.brandId !== null) {
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id }, select: { id: true } });
+
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
+        }
+    }
+
     const created = await request.server.prisma.exercise.create({
         data: {
             userId: request.user.id,
@@ -122,7 +132,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
             isUnilateral: request.body.isUnilateral,
-            requiresBrand: request.body.requiresBrand
+            brandMode: request.body.brandMode,
+            brandId: request.body.brandId ?? null
         },
         select: {
             id: true,
@@ -133,7 +144,8 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
-            requiresBrand: true,
+            brandMode: true,
+            brandId: true,
             createdAt: true,
             updatedAt: true
         }
@@ -188,8 +200,33 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.isUnilateral !== undefined) {
         data.isUnilateral = request.body.isUnilateral;
     }
-    if (request.body.requiresBrand !== undefined) {
-        data.requiresBrand = request.body.requiresBrand;
+
+    const brandMode = request.body.brandMode ?? existing.brandMode;
+    const effectiveBrandId = request.body.brandId !== undefined ? request.body.brandId : existing.brandId;
+
+    if (brandMode === 'SINGLE' && effectiveBrandId === null) {
+        throw new RequestError(StatusCodes.BAD_REQUEST, 'A branded exercise requires a brandId');
+    }
+    if (brandMode !== 'SINGLE' && request.body.brandId !== undefined && request.body.brandId !== null) {
+        throw new RequestError(StatusCodes.BAD_REQUEST, 'brandId can only be set when brandMode is SINGLE');
+    }
+    if (request.body.brandId !== undefined && request.body.brandId !== null) {
+        const brand = await request.server.prisma.brand.findFirst({ where: { id: request.body.brandId, userId: request.user.id }, select: { id: true } });
+
+        if (brand === null) {
+            throw new RequestError(StatusCodes.NOT_FOUND, 'Brand not found');
+        }
+    }
+
+    if (request.body.brandMode !== undefined) {
+        data.brandMode = request.body.brandMode;
+
+        if (request.body.brandMode !== 'SINGLE') {
+            data.brandId = null;
+        }
+    }
+    if (request.body.brandId !== undefined) {
+        data.brandId = request.body.brandId;
     }
 
     const updated = await request.server.prisma.exercise.update({
@@ -204,7 +241,8 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
-            requiresBrand: true,
+            brandMode: true,
+            brandId: true,
             createdAt: true,
             updatedAt: true
         }

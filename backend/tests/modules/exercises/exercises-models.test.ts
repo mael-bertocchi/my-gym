@@ -33,17 +33,23 @@ describe('CreateExerciseSchema', () => {
         }
     });
 
-    it('defaults requiresBrand to false and accepts an override', () => {
+    it('defaults brandMode to NONE', () => {
         const omitted = CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS', equipment: 'BARBELL' });
         expect(omitted.success).toBe(true);
         if (omitted.success) {
-            expect(omitted.data.requiresBrand).toBe(false);
+            expect(omitted.data.brandMode).toBe('NONE');
+            expect(omitted.data.brandId).toBeUndefined();
         }
-        const set = CreateExerciseSchema.safeParse({ name: 'Chest Press', primaryMuscle: 'CHEST', equipment: 'MACHINE', requiresBrand: true });
-        expect(set.success).toBe(true);
-        if (set.success) {
-            expect(set.data.requiresBrand).toBe(true);
-        }
+    });
+
+    it('requires a brandId exactly when brandMode is SINGLE', () => {
+        const base = { name: 'Chest Press', primaryMuscle: 'CHEST', equipment: 'MACHINE' };
+        expect(CreateExerciseSchema.safeParse({ ...base, brandMode: 'SINGLE' }).success).toBe(false);
+        expect(CreateExerciseSchema.safeParse({ ...base, brandMode: 'SINGLE', brandId: null }).success).toBe(false);
+        expect(CreateExerciseSchema.safeParse({ ...base, brandMode: 'SINGLE', brandId: '7f4d3f5e-8a4e-4a7d-9f68-2a4c5d6e7f80' }).success).toBe(true);
+        expect(CreateExerciseSchema.safeParse({ ...base, brandMode: 'MULTIPLE' }).success).toBe(true);
+        expect(CreateExerciseSchema.safeParse({ ...base, brandMode: 'MULTIPLE', brandId: '7f4d3f5e-8a4e-4a7d-9f68-2a4c5d6e7f80' }).success).toBe(false);
+        expect(CreateExerciseSchema.safeParse({ ...base, brandId: '7f4d3f5e-8a4e-4a7d-9f68-2a4c5d6e7f80' }).success).toBe(false);
     });
 
     it('rejects a missing equipment type', () => {
@@ -72,8 +78,11 @@ describe('UpdateExerciseSchema', () => {
         expect(UpdateExerciseSchema.safeParse({ isUnilateral: true }).success).toBe(true);
     });
 
-    it('accepts toggling requiresBrand', () => {
-        expect(UpdateExerciseSchema.safeParse({ requiresBrand: true }).success).toBe(true);
+    it('accepts brand mode changes', () => {
+        expect(UpdateExerciseSchema.safeParse({ brandMode: 'MULTIPLE' }).success).toBe(true);
+        expect(UpdateExerciseSchema.safeParse({ brandMode: 'SINGLE', brandId: '7f4d3f5e-8a4e-4a7d-9f68-2a4c5d6e7f80' }).success).toBe(true);
+        expect(UpdateExerciseSchema.safeParse({ brandId: null }).success).toBe(true);
+        expect(UpdateExerciseSchema.safeParse({ brandMode: 'ROTATING' }).success).toBe(false);
     });
 
     it('rejects an empty update', () => {
