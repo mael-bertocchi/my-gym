@@ -12,6 +12,8 @@ struct ActiveWorkoutExerciseCard: View {
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
+    @State private var brandEntry: LocalWorkoutExercise?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
@@ -22,6 +24,9 @@ struct ActiveWorkoutExerciseCard: View {
                 Menu {
                     Button("View exercise", action: onOpenDetail)
                     Button("Machine settings", action: onOpenSettings)
+                    if requiresBrand {
+                        Button("Select brand") { brandEntry = entry }
+                    }
                     if let onAddToSuperset {
                         Button("Add to superset", action: onAddToSuperset)
                     }
@@ -37,7 +42,7 @@ struct ActiveWorkoutExerciseCard: View {
             }
             .padding(.bottom, 4)
 
-            ActiveWorkoutBrandLine(exerciseId: entry.exerciseId)
+            ActiveWorkoutBrandLine(entry: entry)
                 .padding(.bottom, 14)
 
             HStack(spacing: 8) {
@@ -88,6 +93,9 @@ struct ActiveWorkoutExerciseCard: View {
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
         .card()
+        .sheet(item: $brandEntry) { entry in
+            EntryBrandSheet(entry: entry)
+        }
     }
 
     private var exerciseName: String {
@@ -96,6 +104,10 @@ struct ActiveWorkoutExerciseCard: View {
 
     private var isUnilateral: Bool {
         store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
+    }
+
+    private var requiresBrand: Bool {
+        store.exercise(id: entry.exerciseId)?.requiresBrand ?? false
     }
 
     private func tableHeaderCell(_ text: String) -> some View {
@@ -165,10 +177,18 @@ struct ActiveWorkoutSetRow: View {
 
     private var row: some View {
         HStack(spacing: 8) {
-            Text(set.side?.short ?? "\(set.setNumber)")
-                .font(Theme.font(13, .bold))
-                .foregroundStyle(set.isCompleted ? Theme.muted2 : Theme.ink)
-                .frame(width: 28)
+            if activeWorkout.isPersonalRecord(entryId: entryId, set: set) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Theme.accentBlue)
+                    .frame(width: 28)
+                    .accessibilityLabel("Personal record, \(positionLabel)")
+            } else {
+                Text(set.side?.short ?? "\(set.setNumber)")
+                    .font(Theme.font(13, .bold))
+                    .foregroundStyle(set.isCompleted ? Theme.muted2 : Theme.ink)
+                    .frame(width: 28)
+            }
 
             if set.isCompleted {
                 completedCell(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "", isBold: true)
@@ -288,66 +308,14 @@ struct ActiveWorkoutSetRow: View {
     }
 }
 
-struct ActiveWorkoutCondensedCard: View {
-    let entry: LocalWorkoutExercise
-    var onTap: () -> Void
-
-    @Environment(ApplicationSession.self) private var session
-    @Environment(LocalStore.self) private var store
-
-    var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center, spacing: 8) {
-                    Text(exerciseName)
-                        .font(Theme.font(15, .bold))
-                        .foregroundStyle(Theme.ink)
-                }
-                ActiveWorkoutBrandLine(exerciseId: entry.exerciseId)
-                    .padding(.top, 2)
-                Text(summary)
-                    .font(Theme.font(12))
-                    .foregroundStyle(Theme.muted)
-                    .padding(.top, 10)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
-            .card()
-            .opacity(0.96)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var exerciseName: String {
-        store.exercise(id: entry.exerciseId)?.name ?? "Exercise"
-    }
-
-    private var isUnilateral: Bool {
-        store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
-    }
-
-    private var summary: String {
-        let completed = entry.sets.filter(\.isCompleted)
-        let count = isUnilateral ? Set(completed.map(\.setNumber)).count : completed.count
-        var text = "\(count) \(count == 1 ? "set" : "sets") logged"
-        if let last = completed.last, let weight = last.weightKg, let reps = last.reps {
-            let side = last.side.map { "\($0.short) " } ?? ""
-            text += " · last: \(side)\(Formatting.weight(weight, unit: session.weightUnit)) × \(reps)"
-        }
-        return text
-    }
-}
-
 struct ActiveWorkoutBrandLine: View {
-    let exerciseId: String
+    let entry: LocalWorkoutExercise
 
     @Environment(LocalStore.self) private var store
 
     var body: some View {
-        if let exercise = store.exercise(id: exerciseId) {
-            let line = store.brandLine(for: exercise)
+        if let exercise = store.exercise(id: entry.exerciseId) {
+            let line = store.brandLine(brandId: entry.brandId, exercise: exercise)
             Text(line.text)
                 .font(Theme.mono(11))
                 .kerning(0.5)

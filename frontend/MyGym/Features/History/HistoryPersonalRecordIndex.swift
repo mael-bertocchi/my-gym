@@ -5,6 +5,7 @@ struct HistoryPersonalRecordIndex {
         let exerciseId: String
         let weightKg: Double
         let reps: Int?
+        let brandId: String?
 
         var id: String { exerciseId }
     }
@@ -16,9 +17,9 @@ struct HistoryPersonalRecordIndex {
             .filter { $0.endedAt != nil }
             .sorted { $0.startedAt < $1.startedAt }
 
-        var bests: [String: [(workoutId: String, weightKg: Double, reps: Int?)]] = [:]
+        var bests: [String: [(workoutId: String, weightKg: Double, reps: Int?, brandId: String?)]] = [:]
         for workout in finished {
-            var workoutBest: [String: (weightKg: Double, reps: Int?)] = [:]
+            var workoutBest: [String: (weightKg: Double, reps: Int?, brandId: String?)] = [:]
             for entry in workout.exercises {
                 for set in entry.sets where set.isCompleted {
                     guard let weight = set.weightKg else { continue }
@@ -26,15 +27,15 @@ struct HistoryPersonalRecordIndex {
                         let isHeavier = weight > current.weightKg
                         let isMoreReps = weight == current.weightKg && (set.reps ?? 0) > (current.reps ?? 0)
                         if isHeavier || isMoreReps {
-                            workoutBest[entry.exerciseId] = (weight, set.reps)
+                            workoutBest[entry.exerciseId] = (weight, set.reps, entry.brandId)
                         }
                     } else {
-                        workoutBest[entry.exerciseId] = (weight, set.reps)
+                        workoutBest[entry.exerciseId] = (weight, set.reps, entry.brandId)
                     }
                 }
             }
             for (exerciseId, best) in workoutBest {
-                bests[exerciseId, default: []].append((workout.id, best.weightKg, best.reps))
+                bests[exerciseId, default: []].append((workout.id, best.weightKg, best.reps, best.brandId))
             }
         }
 
@@ -44,7 +45,7 @@ struct HistoryPersonalRecordIndex {
                   let first = records.first(where: { $0.weightKg == allTimeMax })
             else { continue }
             hits[first.workoutId, default: []].append(
-                Hit(exerciseId: exerciseId, weightKg: allTimeMax, reps: first.reps)
+                Hit(exerciseId: exerciseId, weightKg: allTimeMax, reps: first.reps, brandId: first.brandId)
             )
         }
         hitsByWorkout = hits

@@ -52,11 +52,23 @@ final class LocalStore {
         id.flatMap { id in gyms.first { $0.id == id } }
     }
 
-    func brandLine(for exercise: Exercise) -> (text: String, isBranded: Bool) {
-        if let brand = brand(id: exercise.brandId) {
+    func brandLine(brandId: String?, exercise: Exercise) -> (text: String, isBranded: Bool) {
+        if let brand = brand(id: brandId) {
             return (brand.name.uppercased(), true)
         }
-        return ("\(exercise.equipment.rawValue) · no brand", false)
+        if exercise.requiresBrand {
+            return ("\(exercise.equipment.rawValue) · no brand", false)
+        }
+        return (exercise.equipment.rawValue, false)
+    }
+
+    func lastUsedBrandId(exerciseId: String) -> String? {
+        for workout in workouts.sorted(by: { $0.startedAt > $1.startedAt }) {
+            if let entry = workout.exercises.first(where: { $0.exerciseId == exerciseId }) {
+                return entry.brandId
+            }
+        }
+        return nil
     }
 
     func upsertWorkout(_ workout: LocalWorkout, markDirty: Bool = true) {

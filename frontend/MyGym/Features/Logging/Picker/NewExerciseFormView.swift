@@ -8,7 +8,7 @@ struct NewExerciseFormView: View {
 
     @State private var exerciseName: String
     @State private var equipmentType: EquipmentType = .machine
-    @State private var selectedBrandId: String?
+    @State private var requiresBrand = false
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
@@ -17,8 +17,6 @@ struct NewExerciseFormView: View {
     @State private var errorMessage: String?
     @State private var showsError = false
 
-    @State private var showsNewBrandAlert = false
-    @State private var newBrandName = ""
     @State private var showsDiscardConfirm = false
 
     private let initialName: String
@@ -85,7 +83,7 @@ struct NewExerciseFormView: View {
     private var hasEdits: Bool {
         trimmedName != initialName.trimmingCharacters(in: .whitespacesAndNewlines)
             || equipmentType != .machine
-            || selectedBrandId != nil
+            || requiresBrand
             || primaryMuscle != nil
             || !secondaryMuscles.isEmpty
             || isUnilateral
@@ -138,25 +136,13 @@ struct NewExerciseFormView: View {
     private var brandField: some View {
         VStack(alignment: .leading, spacing: 8) {
             NewExerciseFieldLabel("BRAND")
-            NewExerciseDropdown(
-                text: selectedBrand?.name ?? "No brand",
-                isPlaceholder: false
-            ) {
-                Button("No brand") { selectedBrandId = nil }
-                ForEach(sortedBrands) { brand in
-                    Button(brand.name) { selectedBrandId = brand.id }
-                }
-                Divider()
-                Button("New brand…") {
-                    newBrandName = ""
-                    showsNewBrandAlert = true
-                }
-            }
-            .alert("New brand", isPresented: $showsNewBrandAlert) {
-                TextField("Brand name", text: $newBrandName)
-                Button("Cancel", role: .cancel) {}
-                Button("Create") { createBrand() }
-            }
+            SegmentedPicker(
+                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
+                selection: $requiresBrand
+            )
+            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
         }
     }
 
@@ -205,39 +191,6 @@ struct NewExerciseFormView: View {
         }
     }
 
-    private var sortedBrands: [Brand] {
-        store.brands.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
-    private var selectedBrand: Brand? {
-        guard let selectedBrandId else { return nil }
-        return store.brands.first { $0.id == selectedBrandId }
-    }
-
-    private func createBrand() {
-        let name = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let brand = try await API.createBrand(name: name)
-                store.insert(brand: brand)
-                selectedBrandId = brand.id
-            } catch let error as APIError where error.statusCode == 409 {
-                if let existing = store.brands.first(where: {
-                    $0.name.caseInsensitiveCompare(name) == .orderedSame
-                }) {
-                    selectedBrandId = existing.id
-                } else {
-                    presentError(error)
-                }
-            } catch {
-                presentError(error)
-            }
-        }
-    }
-
     private var trimmedName: String {
         exerciseName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -250,7 +203,6 @@ struct NewExerciseFormView: View {
             showsError = true
             return
         }
-        let brand = selectedBrand
         isCreating = true
         Task {
             do {
@@ -260,7 +212,7 @@ struct NewExerciseFormView: View {
                         primaryMuscle: muscle,
                         secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                         equipment: equipmentType,
-                        brandId: brand?.id,
+                        requiresBrand: requiresBrand,
                         isUnilateral: isUnilateral
                     )
                 )

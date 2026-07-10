@@ -139,7 +139,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var primaryMuscle: MuscleGroup
     var secondaryMuscles: [MuscleGroup]
     var equipment: EquipmentType
-    var brandId: String?
+    var requiresBrand: Bool
     var isFavorite: Bool
     var isArchived: Bool
     var isUnilateral: Bool
@@ -150,7 +150,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
 extension Exercise {
     private enum CodingKeys: String, CodingKey {
         case id, name, primaryMuscle, secondaryMuscles, equipment
-        case brandId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
+        case requiresBrand, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -160,7 +160,7 @@ extension Exercise {
         primaryMuscle = try container.decode(MuscleGroup.self, forKey: .primaryMuscle)
         secondaryMuscles = try container.decode([MuscleGroup].self, forKey: .secondaryMuscles)
         equipment = try container.decode(EquipmentType.self, forKey: .equipment)
-        brandId = try container.decodeIfPresent(String.self, forKey: .brandId)
+        requiresBrand = try container.decodeIfPresent(Bool.self, forKey: .requiresBrand) ?? false
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false
@@ -186,6 +186,8 @@ struct WorkoutSummary: Codable, Identifiable, Equatable {
     var endedAt: Date?
     var notes: String?
     var averageHeartRate: Int?
+    var difficultyRating: Int?
+    var enjoymentRating: Int?
     var createdAt: Date
     var updatedAt: Date
 }
@@ -208,7 +210,6 @@ struct WorkoutEntryExercise: Codable, Equatable, Hashable {
     var name: String
     var primaryMuscle: MuscleGroup
     var equipment: EquipmentType
-    var brandId: String?
 }
 
 struct WorkoutEntry: Codable, Identifiable, Equatable {
@@ -218,6 +219,7 @@ struct WorkoutEntry: Codable, Identifiable, Equatable {
     var notes: String?
     var settings: [String: JSONValue]?
     var supersetId: String?
+    var brandId: String?
     var createdAt: Date
     var exercise: WorkoutEntryExercise
     var sets: [WorkoutSet]
@@ -231,6 +233,8 @@ struct WorkoutDetail: Codable, Identifiable, Equatable {
     var endedAt: Date?
     var notes: String?
     var averageHeartRate: Int?
+    var difficultyRating: Int?
+    var enjoymentRating: Int?
     var createdAt: Date
     var updatedAt: Date
     var entries: [WorkoutEntry]

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AddExercisePicker: View {
-    var onSelect: (Exercise) -> Void
+    var onSelect: (Exercise, String?) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(LocalStore.self) private var store
@@ -10,7 +10,7 @@ struct AddExercisePicker: View {
 
     @State private var searchText = ""
     @State private var filter: PickerFilter = .all
-    @State private var path: [PickerFormDestination] = []
+    @State private var path: [PickerDestination] = []
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -27,10 +27,17 @@ struct AddExercisePicker: View {
             }
             .background(Theme.surface.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: PickerFormDestination.self) { _ in
-                NewExerciseFormView { exercise in
-                    onSelect(exercise)
-                    dismiss()
+            .navigationDestination(for: PickerDestination.self) { destination in
+                switch destination {
+                case .newExercise:
+                    NewExerciseFormView { exercise in
+                        finishSelection(exercise)
+                    }
+                case .brand(let exercise):
+                    PickerBrandStep(exercise: exercise) { brandId in
+                        onSelect(exercise, brandId)
+                        dismiss()
+                    }
                 }
             }
         }
@@ -38,11 +45,20 @@ struct AddExercisePicker: View {
         .interactiveDismissDisabled(!path.isEmpty)
     }
 
+    private func finishSelection(_ exercise: Exercise) {
+        if exercise.requiresBrand {
+            path = [.brand(exercise)]
+        } else {
+            onSelect(exercise, nil)
+            dismiss()
+        }
+    }
+
     private var navRow: some View {
         ModalHeader(
             title: "Add exercise",
             trailingTitle: "New",
-            trailingAction: { path.append(PickerFormDestination()) }
+            trailingAction: { path.append(.newExercise) }
         )
     }
 
@@ -74,7 +90,7 @@ struct AddExercisePicker: View {
                 if activeExercises.isEmpty {
                     PickerEmptyState()
                     PickerCreateRow(title: endCreateTitle) {
-                        path.append(PickerFormDestination())
+                        path.append(.newExercise)
                     }
                 } else {
                     ForEach(sections) { section in
@@ -90,7 +106,7 @@ struct AddExercisePicker: View {
                             .padding(.vertical, 24)
                     }
                     PickerCreateRow(title: endCreateTitle) {
-                        path.append(PickerFormDestination())
+                        path.append(.newExercise)
                     }
                 }
             }
@@ -106,11 +122,10 @@ struct AddExercisePicker: View {
             ForEach(section.exercises) { exercise in
                 PickerExerciseRow(
                     exercise: exercise,
-                    brandLine: store.brandLine(for: exercise),
+                    subtitle: exercise.equipment.rawValue,
                     prText: bests[exercise.id].flatMap(prLabel(for:))
                 ) {
-                    onSelect(exercise)
-                    dismiss()
+                    finishSelection(exercise)
                 }
             }
         }
@@ -203,7 +218,10 @@ private enum PickerFilter: Hashable {
     case muscle(MuscleGroup)
 }
 
-struct PickerFormDestination: Hashable {}
+enum PickerDestination: Hashable {
+    case newExercise
+    case brand(Exercise)
+}
 
 private struct PickerListSection: Identifiable {
     var id: String

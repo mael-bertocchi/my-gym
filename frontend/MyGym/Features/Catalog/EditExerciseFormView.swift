@@ -9,21 +9,19 @@ struct EditExerciseFormView: View {
 
     @State private var name: String
     @State private var equipment: EquipmentType
-    @State private var brandId: String?
+    @State private var requiresBrand: Bool
     @State private var primaryMuscle: MuscleGroup
     @State private var secondaryMuscles: Set<MuscleGroup>
     @State private var isUnilateral: Bool
 
     @State private var isSaving = false
     @State private var alert: ManageAlert?
-    @State private var showsNewBrandAlert = false
-    @State private var newBrandName = ""
 
     init(exercise: Exercise) {
         self.exercise = exercise
         _name = State(initialValue: exercise.name)
         _equipment = State(initialValue: exercise.equipment)
-        _brandId = State(initialValue: exercise.brandId)
+        _requiresBrand = State(initialValue: exercise.requiresBrand)
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
         _secondaryMuscles = State(initialValue: Set(exercise.secondaryMuscles))
         _isUnilateral = State(initialValue: exercise.isUnilateral)
@@ -78,25 +76,13 @@ struct EditExerciseFormView: View {
     private var brandField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("BRAND")
-            ManageDropdownField(
-                text: selectedBrand?.name ?? "No brand",
-                isPlaceholder: false
-            ) {
-                Button("No brand") { brandId = nil }
-                ForEach(sortedBrands) { brand in
-                    Button(brand.name) { brandId = brand.id }
-                }
-                Divider()
-                Button("New brand…") {
-                    newBrandName = ""
-                    showsNewBrandAlert = true
-                }
-            }
-            .alert("New brand", isPresented: $showsNewBrandAlert) {
-                TextField("Brand name", text: $newBrandName)
-                Button("Cancel", role: .cancel) {}
-                Button("Create") { createBrand() }
-            }
+            SegmentedPicker(
+                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
+                selection: $requiresBrand
+            )
+            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
         }
     }
 
@@ -159,21 +145,10 @@ struct EditExerciseFormView: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var sortedBrands: [Brand] {
-        store.brands.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
-    private var selectedBrand: Brand? {
-        guard let brandId else { return nil }
-        return store.brands.first { $0.id == brandId }
-    }
-
     private var hasEdits: Bool {
         trimmedName != exercise.name
             || equipment != exercise.equipment
-            || brandId != exercise.brandId
+            || requiresBrand != exercise.requiresBrand
             || primaryMuscle != exercise.primaryMuscle
             || secondaryMuscles != Set(exercise.secondaryMuscles)
             || isUnilateral != exercise.isUnilateral
@@ -199,7 +174,7 @@ struct EditExerciseFormView: View {
                     primaryMuscle: primaryMuscle,
                     secondaryMuscles: Array(secondaryMuscles),
                     equipment: equipment,
-                    brandId: brandId,
+                    requiresBrand: requiresBrand,
                     isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: updated)
@@ -215,34 +190,6 @@ struct EditExerciseFormView: View {
                 isSaving = false
                 alert = ManageAlert(
                     title: "Couldn\u{2019}t save changes",
-                    message: ProfileSupport.message(for: error)
-                )
-            }
-        }
-    }
-
-    private func createBrand() {
-        let name = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let brand = try await API.createBrand(name: name)
-                store.insert(brand: brand)
-                brandId = brand.id
-            } catch let error as APIError where error.statusCode == 409 {
-                if let existing = store.brands.first(where: {
-                    $0.name.caseInsensitiveCompare(name) == .orderedSame
-                }) {
-                    brandId = existing.id
-                } else {
-                    alert = ManageAlert(
-                        title: "Couldn\u{2019}t create brand",
-                        message: ProfileSupport.message(for: error)
-                    )
-                }
-            } catch {
-                alert = ManageAlert(
-                    title: "Couldn\u{2019}t create brand",
                     message: ProfileSupport.message(for: error)
                 )
             }

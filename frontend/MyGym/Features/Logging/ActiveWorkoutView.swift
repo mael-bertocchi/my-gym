@@ -1,9 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
-
-private extension UTType {
-    static let workoutExerciseGrouping = UTType(exportedAs: "fr.mael-bertocchi.my-gym.exercise-grouping")
-}
 
 struct ActiveWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,16 +7,17 @@ struct ActiveWorkoutView: View {
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
     @Environment(HealthKitService.self) private var healthKit
 
-    @State private var expandedEntryId: String?
+    @State private var focusedEntryId: String?
     @State private var showPicker = false
     @State private var showFinishConfirm = false
     @State private var showDiscardConfirm = false
     @State private var showRepeatConfirm = false
+    @State private var showReorder = false
     @State private var settingsEntry: LocalWorkoutExercise?
     @State private var supersetSource: LocalWorkoutExercise?
     @State private var removeCandidate: LocalWorkoutExercise?
-    @State private var groupingOrder: [String] = []
-    @State private var draggingGroupingId: String?
+    @State private var scrollTarget: String?
+    @State private var personalRecordToast: ActiveWorkoutStore.PersonalRecordCelebration?
     @State private var detailRoute: ExerciseDetailRoute?
 
     var body: some View {
@@ -47,13 +43,15 @@ struct ActiveWorkoutView: View {
                 dismiss()
                 return
             }
-            if expandedEntryId == nil {
-                expandedEntryId = defaultExpandedId(in: workout)
+            if focusedEntryId == nil {
+                focusedEntryId = defaultFocusedId(in: workout)
             }
             #if DEBUG
             switch UserDefaults.standard.string(forKey: "open") {
             case "picker": showPicker = true
             case "settings": settingsEntry = workout.exercises.first
+            case "reorder": showReorder = true
+            case "finish": showFinishConfirm = true
             case "superset-picker":
                 for supersetId in Set(workout.exercises.compactMap(\.supersetId)) {
                     activeWorkout.unlinkSuperset(supersetId: supersetId)
@@ -69,10 +67,26 @@ struct ActiveWorkoutView: View {
         .onChange(of: activeWorkout.isActive) { _, isActive in
             if !isActive { dismiss() }
         }
+        .onChange(of: activeWorkout.personalRecordCelebration) { _, celebration in
+            guard let celebration else { return }
+            Haptics.success()
+            withAnimation(.snappy(duration: 0.25)) {
+                personalRecordToast = celebration
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(2.6))
+                if personalRecordToast == celebration {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        personalRecordToast = nil
+                    }
+                }
+            }
+        }
         .sheet(isPresented: $showPicker) {
-            AddExercisePicker { exercise in
-                if let entry = activeWorkout.addExercise(exercise) {
-                    expandedEntryId = entry.id
+            AddExercisePicker { exercise, brandId in
+                if let entry = activeWorkout.addExercise(exercise, brandId: brandId) {
+                    focusedEntryId = entry.id
+                    scrollTarget = entry.id
                 }
             }
         }
@@ -87,20 +101,20 @@ struct ActiveWorkoutView: View {
                     if let workout = activeWorkout.workout,
                        let supersetId = workout.exercises.first(where: { $0.id == source.id })?.supersetId,
                        let next = Superset.nextIncompleteSet(in: Superset.members(of: supersetId, in: workout)) {
-                        expandedEntryId = next.entryId
+                        focusedEntryId = next.entryId
                     }
                 }
             }
         }
-        .alert("Finish workout?", isPresented: $showFinishConfirm) {
-            Button("Cancel", role: .cancel) {}
-            Button("Finish") {
+        .sheet(isPresented: $showReorder) {
+            ReorderExercisesSheet()
+        }
+        .sheet(isPresented: $showFinishConfirm) {
+            FinishWorkoutSheet { difficulty, enjoyment in
                 Haptics.success()
-                activeWorkout.finish()
+                activeWorkout.finish(difficultyRating: difficulty, enjoymentRating: enjoyment)
                 dismiss()
             }
-        } message: {
-            Text("Saves this session to your history.")
         }
         .confirmationDialog(
             "Remove \(removeCandidateName)?",
@@ -162,13 +176,13 @@ struct ActiveWorkoutView: View {
             .animation(.snappy(duration: 0.25), value: activeWorkout.restTimer != nil)
             .animation(.snappy(duration: 0.25), value: activeWorkout.isPaused)
 
-            ScrollView {
-                VStack(spacing: 14) {
-                    ForEach(displayedGroupings(workout)) { grouping in
-                        Group {
-                            switch grouping {
-                            case .single(let entry):
-                                if entry.id == expandedEntryId {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 14) {
+                        ForEach(Superset.groupings(in: workout)) { grouping in
+                            Group {
+                                switch grouping {
+                                case .single(let entry):
                                     ActiveWorkoutExerciseCard(
                                         entry: entry,
                                         onOpenSettings: { settingsEntry = entry },
@@ -179,69 +193,57 @@ struct ActiveWorkoutView: View {
                                             : nil,
                                         onFocusEntry: focus
                                     )
-                                } else {
-                                    ActiveWorkoutCondensedCard(entry: entry) {
-                                        focus(entry.id)
-                                    }
+                                case .pair(let supersetId, let members):
+                                    SupersetUnifiedCard(
+                                        supersetId: supersetId,
+                                        members: members,
+                                        activeEntryId: focusedEntryId,
+                                        onSelectMember: focus,
+                                        onOpenSettings: { settingsEntry = $0 },
+                                        onOpenDetail: { openDetail($0) },
+                                        onRemove: { confirmRemove($0) },
+                                        onUnlink: {
+                                            withAnimation(.snappy(duration: 0.2)) {
+                                                activeWorkout.unlinkSuperset(supersetId: supersetId)
+                                            }
+                                        },
+                                        onFocusEntry: focus
+                                    )
                                 }
-                            case .pair(let supersetId, let members):
-                                SupersetUnifiedCard(
-                                    supersetId: supersetId,
-                                    members: members,
-                                    activeEntryId: expandedEntryId,
-                                    onSelectMember: focus,
-                                    onOpenSettings: { settingsEntry = $0 },
-                                    onOpenDetail: { openDetail($0) },
-                                    onRemove: { confirmRemove($0) },
-                                    onUnlink: {
-                                        withAnimation(.snappy(duration: 0.2)) {
-                                            activeWorkout.unlinkSuperset(supersetId: supersetId)
-                                        }
-                                    },
-                                    onFocusEntry: focus
-                                )
                             }
+                            .id(grouping.id)
                         }
-                        .opacity(draggingGroupingId == grouping.id ? 0.6 : 1)
-                        .onDrag {
-                            beginDrag(grouping.id, in: workout)
-                            return exerciseGroupingItemProvider(for: grouping.id)
+
+                        addExerciseTile
+
+                        if workout.exercises.isEmpty {
+                            Text("Add your first exercise to start logging sets.")
+                                .font(Theme.font(13))
+                                .foregroundStyle(Theme.muted2)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
                         }
-                        .onDrop(
-                            of: [.workoutExerciseGrouping],
-                            delegate: ExerciseReorderDropDelegate(
-                                itemId: grouping.id,
-                                order: $groupingOrder,
-                                draggingId: $draggingGroupingId,
-                                onCommit: commitReorder
-                            )
-                        )
                     }
-
-                    addExerciseTile
-
-                    if workout.exercises.isEmpty {
-                        Text("Add your first exercise to start logging sets.")
-                            .font(Theme.font(13))
-                            .foregroundStyle(Theme.muted2)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
+                    .padding(.horizontal, Theme.screenPadding)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: scrollTarget) { _, target in
+                    guard let target else { return }
+                    withAnimation(.snappy(duration: 0.3)) {
+                        proxy.scrollTo(target, anchor: .top)
+                    }
+                    scrollTarget = nil
+                }
+                .overlay(alignment: .top) {
+                    if let personalRecordToast {
+                        PersonalRecordToast(celebration: personalRecordToast)
+                            .padding(.top, 10)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
-                .padding(.horizontal, Theme.screenPadding)
-                .padding(.top, 16)
-                .padding(.bottom, 32)
-                .onDrop(
-                    of: [.workoutExerciseGrouping],
-                    delegate: ExerciseReorderDropDelegate(
-                        itemId: nil,
-                        order: $groupingOrder,
-                        draggingId: $draggingGroupingId,
-                        onCommit: commitReorder
-                    )
-                )
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .background(Theme.screenBackground.ignoresSafeArea())
     }
@@ -310,6 +312,17 @@ struct ActiveWorkoutView: View {
             HStack(spacing: 18) {
                 headerAction("Add exercise", systemImage: "plus") { showPicker = true }
                 headerAction("Repeat last", systemImage: "arrow.uturn.backward") { confirmRepeatLast(workout) }
+                if Superset.groupings(in: workout).count > 1 {
+                    Button {
+                        showReorder = true
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.muted)
+                            .expandedTapTarget(vertical: 12, horizontal: 6)
+                    }
+                    .accessibilityLabel("Reorder exercises")
+                }
                 Spacer()
                 headerAction("Discard", color: Theme.danger) { showDiscardConfirm = true }
             }
@@ -409,40 +422,6 @@ struct ActiveWorkoutView: View {
         workout.exercises.sorted { $0.position < $1.position }
     }
 
-    private func displayedGroupings(_ workout: LocalWorkout) -> [Superset.Grouping] {
-        let groupings = Superset.groupings(in: workout)
-        guard draggingGroupingId != nil, !groupingOrder.isEmpty else { return groupings }
-        let byId = Dictionary(uniqueKeysWithValues: groupings.map { ($0.id, $0) })
-        return groupingOrder.compactMap { byId[$0] }
-    }
-
-    private func beginDrag(_ groupingId: String, in workout: LocalWorkout) {
-        guard draggingGroupingId == nil else { return }
-        groupingOrder = Superset.groupings(in: workout).map(\.id)
-        draggingGroupingId = groupingId
-        Haptics.impact(.medium)
-    }
-
-    private func commitReorder() {
-        if !groupingOrder.isEmpty {
-            activeWorkout.reorderExercises(groupingIds: groupingOrder)
-        }
-        draggingGroupingId = nil
-        groupingOrder = []
-    }
-
-    private func exerciseGroupingItemProvider(for groupingId: String) -> NSItemProvider {
-        let provider = NSItemProvider()
-        provider.registerDataRepresentation(
-            forTypeIdentifier: UTType.workoutExerciseGrouping.identifier,
-            visibility: .ownProcess
-        ) { completion in
-            completion(Data(groupingId.utf8), nil)
-            return nil
-        }
-        return provider
-    }
-
     private var restEyebrow: String {
         guard let context = activeWorkout.restContext else { return "REST" }
         return "REST · ROUND \(context.round) DONE"
@@ -450,7 +429,7 @@ struct ActiveWorkoutView: View {
 
     private func focus(_ entryId: String) {
         withAnimation(.snappy(duration: 0.2)) {
-            expandedEntryId = entryId
+            focusedEntryId = entryId
         }
     }
 
@@ -462,7 +441,7 @@ struct ActiveWorkoutView: View {
         workout.exercises.contains { $0.id != entry.id && $0.supersetId == nil }
     }
 
-    private func defaultExpandedId(in workout: LocalWorkout) -> String? {
+    private func defaultFocusedId(in workout: LocalWorkout) -> String? {
         if let context = activeWorkout.restContext,
            let next = Superset.nextIncompleteSet(in: Superset.members(of: context.supersetId, in: workout)) {
             return next.entryId
@@ -484,8 +463,8 @@ struct ActiveWorkoutView: View {
 
     private func removeEntry(_ entry: LocalWorkoutExercise) {
         activeWorkout.removeExercise(entryId: entry.id)
-        if expandedEntryId == entry.id, let workout = activeWorkout.workout {
-            expandedEntryId = defaultExpandedId(in: workout)
+        if focusedEntryId == entry.id, let workout = activeWorkout.workout {
+            focusedEntryId = defaultFocusedId(in: workout)
         }
     }
 
@@ -500,7 +479,7 @@ struct ActiveWorkoutView: View {
     private func performRepeatLast() {
         activeWorkout.repeatLast()
         if let workout = activeWorkout.workout {
-            expandedEntryId = defaultExpandedId(in: workout)
+            focusedEntryId = defaultFocusedId(in: workout)
         }
     }
 }
@@ -510,31 +489,110 @@ private struct ExerciseDetailRoute: Identifiable, Hashable {
     var id: String { exerciseId }
 }
 
-private struct ExerciseReorderDropDelegate: DropDelegate {
-    let itemId: String?
-    @Binding var order: [String]
-    @Binding var draggingId: String?
-    let onCommit: () -> Void
+private struct PersonalRecordToast: View {
+    let celebration: ActiveWorkoutStore.PersonalRecordCelebration
 
-    func dropEntered(info: DropInfo) {
-        guard let itemId, let draggingId, draggingId != itemId,
-              let from = order.firstIndex(of: draggingId),
-              let to = order.firstIndex(of: itemId)
-        else { return }
-        if order[to] != draggingId {
-            withAnimation(.snappy(duration: 0.2)) {
-                order.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+    @Environment(ApplicationSession.self) private var session
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "star.fill")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Theme.onAccent)
+            Text(text)
+                .font(Theme.font(13, .bold))
+                .foregroundStyle(Theme.onAccent)
+                .lineLimit(1)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .background(Theme.accentBlue, in: Capsule())
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var text: String {
+        var text = "New Personal Record · \(Formatting.weight(celebration.weightKg, unit: session.weightUnit))"
+        if let reps = celebration.reps {
+            text += " × \(reps)"
+        }
+        return text
+    }
+}
+
+private struct ReorderExercisesSheet: View {
+    @Environment(LocalStore.self) private var store
+    @Environment(ActiveWorkoutStore.self) private var activeWorkout
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ModalHeader(title: "Reorder exercises")
+                .padding(.top, 24)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
+
+            List {
+                ForEach(groupings) { grouping in
+                    row(grouping)
+                        .listRowBackground(Theme.surface)
+                }
+                .onMove(perform: move)
             }
-            Haptics.impact(.light)
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(.active))
+        }
+        .background(Theme.surface.ignoresSafeArea())
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private var groupings: [Superset.Grouping] {
+        activeWorkout.workout.map { Superset.groupings(in: $0) } ?? []
+    }
+
+    @ViewBuilder
+    private func row(_ grouping: Superset.Grouping) -> some View {
+        switch grouping {
+        case .single(let entry):
+            rowContent(title: exerciseName(entry), subtitle: setsSummary(entry))
+        case .pair(_, let members):
+            rowContent(
+                title: members.map(exerciseName).joined(separator: " + "),
+                subtitle: "Superset"
+            )
         }
     }
 
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
+    private func rowContent(title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(Theme.font(15, .semibold))
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1)
+            Text(subtitle)
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
+        }
+        .padding(.vertical, 4)
     }
 
-    func performDrop(info: DropInfo) -> Bool {
-        onCommit()
-        return true
+    private func exerciseName(_ entry: LocalWorkoutExercise) -> String {
+        store.exercise(id: entry.exerciseId)?.name ?? "Exercise"
+    }
+
+    private func setsSummary(_ entry: LocalWorkoutExercise) -> String {
+        let isUnilateral = store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
+        let completed = entry.sets.filter(\.isCompleted)
+        let total = isUnilateral ? Set(entry.sets.map(\.setNumber)).count : entry.sets.count
+        let done = isUnilateral ? Set(completed.map(\.setNumber)).count : completed.count
+        return "\(done)/\(total) sets done"
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        var ids = groupings.map(\.id)
+        ids.move(fromOffsets: source, toOffset: destination)
+        activeWorkout.reorderExercises(groupingIds: ids)
+        Haptics.impact(.light)
     }
 }

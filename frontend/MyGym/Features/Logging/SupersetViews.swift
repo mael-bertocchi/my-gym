@@ -15,6 +15,8 @@ struct SupersetUnifiedCard: View {
     @Environment(LocalStore.self) private var store
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
+    @State private var brandEntry: LocalWorkoutExercise?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -23,7 +25,7 @@ struct SupersetUnifiedCard: View {
                 .padding(.bottom, 14)
             memberToggle
                 .padding(.bottom, 14)
-            ActiveWorkoutBrandLine(exerciseId: activeMember.exerciseId)
+            ActiveWorkoutBrandLine(entry: activeMember)
                 .padding(.bottom, 12)
             tableHeader
                 .padding(.bottom, 8)
@@ -32,6 +34,9 @@ struct SupersetUnifiedCard: View {
         }
         .padding(16)
         .card(radius: Theme.supersetCardRadius)
+        .sheet(item: $brandEntry) { entry in
+            EntryBrandSheet(entry: entry)
+        }
     }
 
     private var header: some View {
@@ -49,6 +54,9 @@ struct SupersetUnifiedCard: View {
             Menu {
                 Button("View exercise") { onOpenDetail(activeMember) }
                 Button("Machine settings") { onOpenSettings(activeMember) }
+                if store.exercise(id: activeMember.exerciseId)?.requiresBrand == true {
+                    Button("Select brand") { brandEntry = activeMember }
+                }
                 Button("Unlink superset", action: onUnlink)
                 Button("Remove \(exerciseName(activeMember))", role: .destructive) { onRemove(activeMember) }
             } label: {
@@ -342,9 +350,14 @@ struct TwinSideCell: View {
                 Text(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "—")
                     .font(Theme.font(14, .bold))
                     .foregroundStyle(Theme.positive)
-                Text("×\(set.reps.map(String.init) ?? "—")")
+                    .frame(maxWidth: .infinity)
+                Text("×")
                     .font(Theme.font(13))
                     .foregroundStyle(Theme.positive)
+                Text(set.reps.map(String.init) ?? "—")
+                    .font(Theme.font(14, .bold))
+                    .foregroundStyle(Theme.positive)
+                    .frame(maxWidth: .infinity)
             } else {
                 field($weightText, field: .weight, keyboard: .decimalPad)
                 Text("×")

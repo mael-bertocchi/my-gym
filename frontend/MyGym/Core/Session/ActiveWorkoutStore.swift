@@ -25,11 +25,19 @@ final class ActiveWorkoutStore {
         var round: Int
     }
 
+    struct PersonalRecordCelebration: Equatable {
+        var setId: String
+        var exerciseName: String
+        var weightKg: Double
+        var reps: Int?
+    }
+
     private(set) var workout: LocalWorkout?
     private(set) var restTimer: RestTimer?
     private(set) var restContext: RestContext?
     private(set) var pausedAt: Date?
     private(set) var pausedSeconds: TimeInterval = 0
+    private(set) var personalRecordCelebration: PersonalRecordCelebration?
 
     var isActive: Bool { workout != nil }
     var isPaused: Bool { pausedAt != nil }
@@ -99,6 +107,7 @@ final class ActiveWorkoutStore {
                     remappedSupersetIds[original] = fresh
                     return fresh
                 },
+                brandId: entry.brandId,
                 sets: entry.sets.map { set in
                     LocalSet(
                         setNumber: set.setNumber,
@@ -130,10 +139,12 @@ final class ActiveWorkoutStore {
         return max(0, reference.timeIntervalSince(workout.startedAt) - pausedSeconds)
     }
 
-    func finish() {
+    func finish(difficultyRating: Int? = nil, enjoymentRating: Int? = nil) {
         guard var finished = workout else { return }
         finished.endedAt = finished.startedAt.addingTimeInterval(elapsed())
         finished.averageHeartRate = healthKit.stopHeartRateStream()
+        finished.difficultyRating = difficultyRating
+        finished.enjoymentRating = enjoymentRating
         store.upsertWorkout(finished)
         let exerciseNames = finished.exercises.compactMap { store.exercise(id: $0.exerciseId)?.name }
         workout = nil
@@ -159,7 +170,7 @@ final class ActiveWorkoutStore {
     }
 
     @discardableResult
-    func addExercise(_ exercise: Exercise) -> LocalWorkoutExercise? {
+    func addExercise(_ exercise: Exercise, brandId: String? = nil) -> LocalWorkoutExercise? {
         guard var current = workout else { return nil }
         guard !current.exercises.contains(where: { $0.exerciseId == exercise.id }) else { return nil }
 
@@ -187,6 +198,7 @@ final class ActiveWorkoutStore {
             exerciseId: exercise.id,
             position: (current.exercises.map(\.position).max() ?? 0) + 1,
             settings: remembered?.settings,
+            brandId: brandId,
             sets: sets
         )
         current.exercises.append(entry)
@@ -271,6 +283,12 @@ final class ActiveWorkoutStore {
         persist()
     }
 
+    func updateEntryBrand(entryId: String, brandId: String?) {
+        guard let index = entryIndex(entryId) else { return }
+        workout?.exercises[index].brandId = brandId
+        persist()
+    }
+
     func addSet(entryId: String) {
         guard let index = entryIndex(entryId) else { return }
         let entry = workout!.exercises[index]
@@ -304,8 +322,8 @@ final class ActiveWorkoutStore {
 
     private func carryValueToFollowingSets(entryIndex: Int, from setIndex: Int, previous: LocalSet, updated: LocalSet) {
         guard let sets = workout?.exercises[entryIndex].sets else { return }
-        let carriesWeight = updated.weightKg != nil && updated.weightKg != previous.weightKg
-        let carriesReps = updated.reps != nil && updated.reps != previous.reps
+        let carriesWeight = updated.weightKg != previous.weightKg
+        let carriesReps = updated.reps != previous.reps
         guard carriesWeight || carriesReps else { return }
         for index in sets.indices where index > setIndex {
             guard sets[index].side == updated.side, !sets[index].isCompleted else { continue }
@@ -357,6 +375,7 @@ final class ActiveWorkoutStore {
         workout?.exercises[entryIndex].sets[setIndex].isCompleted = completed
         var focusEntryId: String?
         if completed {
+            celebratePersonalRecord(entryIndex: entryIndex, setIndex: setIndex)
             if let current = workout, let supersetId = current.exercises[entryIndex].supersetId {
                 let members = Superset.members(of: supersetId, in: current)
                 let completedSetId = current.exercises[entryIndex].sets[setIndex].id
@@ -429,6 +448,63 @@ final class ActiveWorkoutStore {
         persist()
     }
     #endif
+
+    func isPersonalRecord(entryId: String, set: LocalSet) -> Bool {
+        guard set.isCompleted,
+              let exerciseId = workout?.exercises.first(where: { $0.id == entryId })?.exerciseId
+        else { return false }
+        return currentPersonalRecordSetId(exerciseId: exerciseId) == set.id
+    }
+
+    private func celebratePersonalRecord(entryIndex: Int, setIndex: Int) {
+        guard let current = workout else { return }
+        let entry = current.exercises[entryIndex]
+        let set = entry.sets[setIndex]
+        guard let weight = set.weightKg,
+              currentPersonalRecordSetId(exerciseId: entry.exerciseId) == set.id
+        else { return }
+        personalRecordCelebration = PersonalRecordCelebration(
+            setId: set.id,
+            exerciseName: store.exercise(id: entry.exerciseId)?.name ?? "Exercise",
+            weightKg: weight,
+            reps: set.reps
+        )
+    }
+
+    private func currentPersonalRecordSetId(exerciseId: String) -> String? {
+        guard let current = workout else { return nil }
+        let historicalBest = historicalBest(exerciseId: exerciseId)
+        var winner: (id: String, weightKg: Double, reps: Int?)?
+        for entry in current.exercises.sorted(by: { $0.position < $1.position }) where entry.exerciseId == exerciseId {
+            for set in entry.sets where set.isCompleted {
+                guard let weight = set.weightKg else { continue }
+                if let best = historicalBest, !beats(weight: weight, reps: set.reps, best: best) { continue }
+                if let leader = winner, !beats(weight: weight, reps: set.reps, best: (leader.weightKg, leader.reps)) { continue }
+                winner = (set.id, weight, set.reps)
+            }
+        }
+        return winner?.id
+    }
+
+    private func historicalBest(exerciseId: String) -> (weightKg: Double, reps: Int?)? {
+        var best: (weightKg: Double, reps: Int?)?
+        let currentId = workout?.id
+        for workout in store.workouts where workout.endedAt != nil && workout.id != currentId {
+            for entry in workout.exercises where entry.exerciseId == exerciseId {
+                for set in entry.sets where set.isCompleted {
+                    guard let weight = set.weightKg else { continue }
+                    if best == nil || beats(weight: weight, reps: set.reps, best: best!) {
+                        best = (weight, set.reps)
+                    }
+                }
+            }
+        }
+        return best
+    }
+
+    private func beats(weight: Double, reps: Int?, best: (weightKg: Double, reps: Int?)) -> Bool {
+        weight > best.weightKg || (weight == best.weightKg && (reps ?? 0) > (best.reps ?? 0))
+    }
 
     private func latestHistoryEntry(exerciseId: String) -> LocalWorkoutExercise? {
         for workout in store.workouts.sorted(by: { $0.startedAt > $1.startedAt }) {

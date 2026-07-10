@@ -141,17 +141,16 @@ struct CatalogExercisesView: View {
     }
 
     private func row(_ exercise: Exercise) -> some View {
-        let brandLine = store.brandLine(for: exercise)
-        return HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise.name)
                     .font(Theme.font(15, .bold))
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
-                Text(brandLine.text)
+                Text(exercise.equipment.rawValue)
                     .font(Theme.mono(11, .semibold))
                     .kerning(0.5)
-                    .foregroundStyle(brandLine.isBranded ? Theme.accentBlue : Theme.muted2)
+                    .foregroundStyle(Theme.muted2)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
@@ -201,15 +200,13 @@ struct CatalogExerciseAddSheet: View {
 
     @State private var name = ""
     @State private var equipment: EquipmentType = .machine
-    @State private var brandId: String?
+    @State private var requiresBrand = false
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
 
     @State private var isCreating = false
     @State private var alert: ManageAlert?
-    @State private var showsNewBrandAlert = false
-    @State private var newBrandName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -260,25 +257,13 @@ struct CatalogExerciseAddSheet: View {
     private var brandField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("BRAND")
-            ManageDropdownField(
-                text: selectedBrand?.name ?? "No brand",
-                isPlaceholder: false
-            ) {
-                Button("No brand") { brandId = nil }
-                ForEach(sortedBrands) { brand in
-                    Button(brand.name) { brandId = brand.id }
-                }
-                Divider()
-                Button("New brand…") {
-                    newBrandName = ""
-                    showsNewBrandAlert = true
-                }
-            }
-            .alert("New brand", isPresented: $showsNewBrandAlert) {
-                TextField("Brand name", text: $newBrandName)
-                Button("Cancel", role: .cancel) {}
-                Button("Create") { createBrand() }
-            }
+            SegmentedPicker(
+                options: [(value: false, label: "No brand"), (value: true, label: "Branded")],
+                selection: $requiresBrand
+            )
+            Text("Branded asks which brand you used each time you add this exercise to a workout.")
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
         }
     }
 
@@ -344,17 +329,6 @@ struct CatalogExerciseAddSheet: View {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var sortedBrands: [Brand] {
-        store.brands.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
-    private var selectedBrand: Brand? {
-        guard let brandId else { return nil }
-        return store.brands.first { $0.id == brandId }
-    }
-
     private func create() {
         let name = trimmedName
         guard !name.isEmpty, let muscle = primaryMuscle, !isCreating else { return }
@@ -375,7 +349,7 @@ struct CatalogExerciseAddSheet: View {
                     primaryMuscle: muscle,
                     secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                     equipment: equipment,
-                    brandId: brandId,
+                    requiresBrand: requiresBrand,
                     isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: exercise)
@@ -391,34 +365,6 @@ struct CatalogExerciseAddSheet: View {
                 isCreating = false
                 alert = ManageAlert(
                     title: "Couldn\u{2019}t add exercise",
-                    message: ProfileSupport.message(for: error)
-                )
-            }
-        }
-    }
-
-    private func createBrand() {
-        let name = newBrandName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        Task {
-            do {
-                let brand = try await API.createBrand(name: name)
-                store.insert(brand: brand)
-                brandId = brand.id
-            } catch let error as APIError where error.statusCode == 409 {
-                if let existing = store.brands.first(where: {
-                    $0.name.caseInsensitiveCompare(name) == .orderedSame
-                }) {
-                    brandId = existing.id
-                } else {
-                    alert = ManageAlert(
-                        title: "Couldn\u{2019}t create brand",
-                        message: ProfileSupport.message(for: error)
-                    )
-                }
-            } catch {
-                alert = ManageAlert(
-                    title: "Couldn\u{2019}t create brand",
                     message: ProfileSupport.message(for: error)
                 )
             }

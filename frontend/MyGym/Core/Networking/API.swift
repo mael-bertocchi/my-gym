@@ -105,14 +105,12 @@ enum API {
 
     static func exercises(
         equipment: EquipmentType? = nil,
-        brandId: String? = nil,
         muscle: MuscleGroup? = nil,
         search: String? = nil,
         cursor: String? = nil
     ) async throws -> Page<Exercise> {
         try await client.page("exercises", query: [
             "equipment": equipment?.rawValue,
-            "brandId": brandId,
             "muscle": muscle?.rawValue,
             "q": search,
             "cursor": cursor,
@@ -125,7 +123,7 @@ enum API {
         var primaryMuscle: MuscleGroup
         var secondaryMuscles: [MuscleGroup]?
         var equipment: EquipmentType
-        var brandId: String?
+        var requiresBrand: Bool
         var isUnilateral: Bool
     }
 
@@ -151,11 +149,11 @@ enum API {
         var primaryMuscle: MuscleGroup
         var secondaryMuscles: [MuscleGroup]
         var equipment: EquipmentType
-        var brandId: String?
+        var requiresBrand: Bool
         var isUnilateral: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, secondaryMuscles, equipment, brandId, isUnilateral
+            case name, primaryMuscle, secondaryMuscles, equipment, requiresBrand, isUnilateral
         }
 
         func encode(to encoder: Encoder) throws {
@@ -164,7 +162,7 @@ enum API {
             try container.encode(primaryMuscle, forKey: .primaryMuscle)
             try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
             try container.encode(equipment, forKey: .equipment)
-            try container.encode(brandId, forKey: .brandId)
+            try container.encode(requiresBrand, forKey: .requiresBrand)
             try container.encode(isUnilateral, forKey: .isUnilateral)
         }
     }

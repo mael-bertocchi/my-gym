@@ -68,7 +68,7 @@ struct ExerciseDetailView: View {
     }
 
     private func subtitle(for exercise: Exercise) -> String {
-        "\(store.brandLine(for: exercise).text) · \(exercise.primaryMuscle.label.uppercased())"
+        "\(exercise.equipment.rawValue) · \(exercise.primaryMuscle.label.uppercased())"
     }
 
     private var favoriteButton: some View {

@@ -157,7 +157,7 @@ struct MainShell: View {
                 selection = target
             }
             switch UserDefaults.standard.string(forKey: "open") {
-            case "active", "picker", "settings", "superset-picker": showActiveWorkout = true
+            case "active", "picker", "settings", "superset-picker", "reorder", "finish": showActiveWorkout = true
             case "start": showStartWorkout = true
             case "admin-users": debugShowAdminUsers = true
             case "admin-account": debugShowManageAccount = true

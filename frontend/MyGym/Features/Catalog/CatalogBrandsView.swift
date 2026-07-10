@@ -69,7 +69,7 @@ struct CatalogBrandsView: View {
             Button("Cancel", role: .cancel) {}
             Button("Create") { createBrand() }
         } message: {
-            Text("Exercises reference a brand for cross-machine comparisons.")
+            Text("Logged exercises reference a brand for cross-machine comparisons.")
         }
         .confirmationDialog(
             "Delete \(deleteCandidate?.name ?? "brand")?",
@@ -87,7 +87,7 @@ struct CatalogBrandsView: View {
             }
             Button("Cancel", role: .cancel) { deleteCandidate = nil }
         } message: {
-            Text("Exercises using this brand keep working but lose the brand label.")
+            Text("Logged workouts using this brand keep their sets but lose the brand label.")
         }
         .manageInfoAlert($alert)
     }

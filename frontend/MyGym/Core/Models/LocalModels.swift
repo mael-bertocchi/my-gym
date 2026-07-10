@@ -8,6 +8,8 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
     var endedAt: Date?
     var notes: String?
     var averageHeartRate: Int?
+    var difficultyRating: Int?
+    var enjoymentRating: Int?
     var updatedAt: Date
     var exercises: [LocalWorkoutExercise]
 
@@ -19,6 +21,8 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         endedAt: Date? = nil,
         notes: String? = nil,
         averageHeartRate: Int? = nil,
+        difficultyRating: Int? = nil,
+        enjoymentRating: Int? = nil,
         updatedAt: Date = .now,
         exercises: [LocalWorkoutExercise] = []
     ) {
@@ -29,6 +33,8 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         self.endedAt = endedAt
         self.notes = notes
         self.averageHeartRate = averageHeartRate
+        self.difficultyRating = difficultyRating
+        self.enjoymentRating = enjoymentRating
         self.updatedAt = updatedAt
         self.exercises = exercises
     }
@@ -41,6 +47,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
     var notes: String?
     var settings: [String: JSONValue]?
     var supersetId: String?
+    var brandId: String?
     var sets: [LocalSet]
 
     init(
@@ -50,6 +57,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
         notes: String? = nil,
         settings: [String: JSONValue]? = nil,
         supersetId: String? = nil,
+        brandId: String? = nil,
         sets: [LocalSet] = []
     ) {
         self.id = id
@@ -58,6 +66,7 @@ struct LocalWorkoutExercise: Codable, Identifiable, Equatable {
         self.notes = notes
         self.settings = settings
         self.supersetId = supersetId
+        self.brandId = brandId
         self.sets = sets
     }
 }
@@ -232,6 +241,8 @@ extension WorkoutDetail {
             endedAt: endedAt,
             notes: notes,
             averageHeartRate: averageHeartRate,
+            difficultyRating: difficultyRating,
+            enjoymentRating: enjoymentRating,
             updatedAt: updatedAt,
             exercises: entries
                 .sorted { $0.position < $1.position }
@@ -243,6 +254,7 @@ extension WorkoutDetail {
                         notes: entry.notes,
                         settings: entry.settings,
                         supersetId: entry.supersetId,
+                        brandId: entry.brandId,
                         sets: entry.sets
                             .sorted { $0.setNumber < $1.setNumber }
                             .map { set in

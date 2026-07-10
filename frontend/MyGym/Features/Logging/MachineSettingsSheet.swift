@@ -92,7 +92,7 @@ struct MachineSettingsSheet: View {
 
     private var contextLine: String {
         guard let exercise = store.exercise(id: entry.exerciseId) else { return "" }
-        return store.brandLine(for: exercise).text
+        return store.brandLine(brandId: entry.brandId, exercise: exercise).text
     }
 
     private var settingsRows: some View {

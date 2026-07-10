@@ -36,11 +36,13 @@ enum DebugSeed {
               let incline = store.exercises.first(where: { $0.name == "Incline DB Press" }),
               let cableFly = store.exercises.first(where: { $0.name == "Cable Fly" })
         else { return }
+        let hammerStrength = store.brands.first { $0.name == "Hammer Strength" }
+        let technogym = store.brands.first { $0.name == "Technogym" }
 
         activeWorkout.discard()
         activeWorkout.start(gymId: gym.id, name: "Push day")
 
-        if let chestEntry = activeWorkout.addExercise(chest) {
+        if let chestEntry = activeWorkout.addExercise(chest, brandId: hammerStrength?.id) {
             for set in chestEntry.sets {
                 activeWorkout.setCompleted(entryId: chestEntry.id, setId: set.id, completed: true, restSeconds: 90)
             }
@@ -52,7 +54,7 @@ enum DebugSeed {
         }
 
         let inclineEntry = activeWorkout.addExercise(incline)
-        let cableFlyEntry = activeWorkout.addExercise(cableFly)
+        let cableFlyEntry = activeWorkout.addExercise(cableFly, brandId: technogym?.id)
         activeWorkout.debugBackdateStart(minutes: 42)
 
         guard let inclineEntry, let cableFlyEntry else {
@@ -130,51 +132,51 @@ enum DebugSeed {
 
         let chestPress = mkExercise(
             "Chest Press", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, brandId: hammerStrength.id, favorite: true
+            equipment: .machine, requiresBrand: true, favorite: true
         )
         let chestPressTechnogym = mkExercise(
             "Chest Press (Technogym)", .chest, secondary: [.triceps, .frontDelts],
-            equipment: .machine, brandId: technogym.id
+            equipment: .machine, requiresBrand: true
         )
         let benchPress = mkExercise(
             "Barbell Bench Press", .chest, secondary: [.triceps],
-            equipment: .barbell, brandId: nil
+            equipment: .barbell
         )
         let inclineDumbbellPress = mkExercise(
             "Incline DB Press", .chest, secondary: [.frontDelts],
-            equipment: .dumbbell, brandId: nil
+            equipment: .dumbbell
         )
         let cableFly = mkExercise(
             "Cable Fly", .chest,
-            equipment: .cable, brandId: technogym.id
+            equipment: .cable, requiresBrand: true
         )
         let legPress = mkExercise(
             "Leg Press", .quadriceps, secondary: [.glutes],
-            equipment: .machine, brandId: technogym.id
+            equipment: .machine, requiresBrand: true
         )
         let legCurl = mkExercise(
             "Leg Curl", .hamstrings,
-            equipment: .machine, brandId: cybex.id
+            equipment: .machine, requiresBrand: true
         )
         let latPulldown = mkExercise(
             "Lat Pulldown", .lats, secondary: [.biceps],
-            equipment: .machine, brandId: hammerStrength.id
+            equipment: .machine, requiresBrand: true
         )
         let seatedRow = mkExercise(
             "Seated Row", .upperBack, secondary: [.biceps],
-            equipment: .cable, brandId: technogym.id
+            equipment: .cable, requiresBrand: true
         )
         let oneArmRow = mkExercise(
             "Single-Arm Row", .upperBack, secondary: [.biceps],
-            equipment: .dumbbell, brandId: nil, unilateral: true
+            equipment: .dumbbell, unilateral: true
         )
         let squat = mkExercise(
             "Squat", .quadriceps, secondary: [.glutes],
-            equipment: .barbell, brandId: nil
+            equipment: .barbell
         )
         let shoulderPress = mkExercise(
             "Shoulder Press", .frontDelts, secondary: [.sideDelts, .triceps],
-            equipment: .machine, brandId: cybex.id
+            equipment: .machine, requiresBrand: true
         )
 
         store.applyCatalog(SyncPull.Catalog(
@@ -200,10 +202,16 @@ enum DebugSeed {
             shoulderPress: shoulderPress.id
         )
 
+        let br = BrandRefs(
+            hammerStrength: hammerStrength.id,
+            technogym: technogym.id,
+            cybex: cybex.id
+        )
+
         var log: [LocalWorkout] = [
-            showcasePushDay(gymId: ironTemple.id, ex: ex),
-            showcaseLegDay(gymId: downtown.id, ex: ex),
-            showcasePullDay(gymId: ironTemple.id, ex: ex),
+            showcasePushDay(gymId: ironTemple.id, ex: ex, br: br),
+            showcaseLegDay(gymId: downtown.id, ex: ex, br: br),
+            showcasePullDay(gymId: ironTemple.id, ex: ex, br: br),
         ]
 
         let rotation: [(offset: Int, split: Split)] = [
@@ -220,12 +228,12 @@ enum DebugSeed {
         for (offset, split) in rotation {
             switch split {
             case .push:
-                log.append(pushDay(daysAgo: offset, gymId: ironTemple.id, ex: ex))
+                log.append(pushDay(daysAgo: offset, gymId: ironTemple.id, ex: ex, br: br))
             case .pull:
-                log.append(pullDay(daysAgo: offset, gymId: ironTemple.id, ex: ex))
+                log.append(pullDay(daysAgo: offset, gymId: ironTemple.id, ex: ex, br: br))
             case .legs:
                 let gymId = downtownLegDays.contains(offset) ? downtown.id : ironTemple.id
-                log.append(legDay(daysAgo: offset, gymId: gymId, ex: ex))
+                log.append(legDay(daysAgo: offset, gymId: gymId, ex: ex, br: br))
             case .travel:
                 log.append(travelPushDay(daysAgo: offset, gymId: hotelLisbon.id, ex: ex))
             }
@@ -291,29 +299,35 @@ enum DebugSeed {
         var shoulderPress: String
     }
 
-    private static func showcasePushDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private struct BrandRefs {
+        var hammerStrength: String
+        var technogym: String
+        var cybex: String
+    }
+
+    private static func showcasePushDay(gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         let superset = newId()
         return workout("Push day", daysAgo: 1, gymId: gymId, minutes: 58, heartRate: 132, entries: [
-            entry(ex.chestPress, 1, sets: [
+            entry(ex.chestPress, 1, brand: br.hammerStrength, sets: [
                 mkSet(1, type: .warmup, 40, 12),
                 mkSet(2, 60, 10),
                 mkSet(3, 62.5, 10),
                 mkSet(4, 62.5, 8),
                 mkSet(5, 60, 8),
             ]),
-            entry(ex.chestPressTechnogym, 2, sets: straightSets(3, weight: 55, reps: 10)),
+            entry(ex.chestPressTechnogym, 2, brand: br.technogym, sets: straightSets(3, weight: 55, reps: 10)),
             entry(ex.inclineDumbbellPress, 3, superset: superset, sets: [
                 mkSet(1, 26, 10),
                 mkSet(2, 26, 10),
                 mkSet(3, 24, 12),
             ]),
-            entry(ex.cableFly, 4, superset: superset, sets: straightSets(3, weight: 22, reps: 12)),
-            entry(ex.shoulderPress, 5, sets: straightSets(3, weight: 40, reps: 10)),
+            entry(ex.cableFly, 4, superset: superset, brand: br.technogym, sets: straightSets(3, weight: 22, reps: 12)),
+            entry(ex.shoulderPress, 5, brand: br.cybex, sets: straightSets(3, weight: 40, reps: 10)),
             entry(ex.benchPress, 6, sets: straightSets(3, weight: 80, reps: 8)),
         ])
     }
 
-    private static func showcaseLegDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private static func showcaseLegDay(gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         workout("Leg day", daysAgo: 3, gymId: gymId, minutes: 64, heartRate: 141, entries: [
             entry(ex.squat, 1, sets: [
                 mkSet(1, type: .warmup, 70, 10),
@@ -321,29 +335,29 @@ enum DebugSeed {
                 mkSet(3, 110, 6),
                 mkSet(4, 110, 5),
             ]),
-            entry(ex.legPress, 2, sets: [
+            entry(ex.legPress, 2, brand: br.technogym, sets: [
                 mkSet(1, 150, 12),
                 mkSet(2, 170, 10),
                 mkSet(3, 170, 10),
             ]),
-            entry(ex.legCurl, 3, sets: straightSets(3, weight: 47.5, reps: 12)),
+            entry(ex.legCurl, 3, brand: br.cybex, sets: straightSets(3, weight: 47.5, reps: 12)),
         ])
     }
 
-    private static func showcasePullDay(gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private static func showcasePullDay(gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         workout("Pull day", daysAgo: 5, gymId: gymId, minutes: 51, heartRate: 126, entries: [
-            entry(ex.latPulldown, 1, sets: [
+            entry(ex.latPulldown, 1, brand: br.hammerStrength, sets: [
                 mkSet(1, 60, 12),
                 mkSet(2, 65, 10),
                 mkSet(3, 65, 10),
                 mkSet(4, 60, 12),
             ]),
-            entry(ex.seatedRow, 2, sets: straightSets(3, weight: 57.5, reps: 10)),
-            entry(ex.seatedRow, 3, notes: "Close grip", sets: straightSets(3, weight: 45, reps: 12)),
+            entry(ex.seatedRow, 2, brand: br.technogym, sets: straightSets(3, weight: 57.5, reps: 10)),
+            entry(ex.seatedRow, 3, notes: "Close grip", brand: br.technogym, sets: straightSets(3, weight: 45, reps: 12)),
         ])
     }
 
-    private static func pushDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private static func pushDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         let top = ramp(52.5, 60, daysAgo: offset)
         let secondary = ramp(47.5, 55, daysAgo: offset)
         let dumbbell = ramp(22, 26, daysAgo: offset, step: 2)
@@ -351,42 +365,42 @@ enum DebugSeed {
         let press = ramp(32.5, 40, daysAgo: offset)
         let bench = ramp(70, 80, daysAgo: offset)
         return workout("Push day", daysAgo: offset, gymId: gymId, minutes: 54 + (offset % 3) * 2, heartRate: 124 + (offset % 5) * 2, entries: [
-            entry(ex.chestPress, 1, sets: [
+            entry(ex.chestPress, 1, brand: br.hammerStrength, sets: [
                 mkSet(1, type: .warmup, top - 20, 12),
                 mkSet(2, top - 2.5, 10),
                 mkSet(3, top, 10),
                 mkSet(4, top, 8),
                 mkSet(5, top - 2.5, 8),
             ]),
-            entry(ex.chestPressTechnogym, 2, sets: straightSets(3, weight: secondary, reps: 10)),
+            entry(ex.chestPressTechnogym, 2, brand: br.technogym, sets: straightSets(3, weight: secondary, reps: 10)),
             entry(ex.inclineDumbbellPress, 3, sets: [
                 mkSet(1, dumbbell, 10),
                 mkSet(2, dumbbell, 10),
                 mkSet(3, dumbbell - 2, 12),
             ]),
-            entry(ex.cableFly, 4, sets: straightSets(3, weight: fly, reps: 12)),
-            entry(ex.shoulderPress, 5, sets: straightSets(3, weight: press, reps: 10)),
+            entry(ex.cableFly, 4, brand: br.technogym, sets: straightSets(3, weight: fly, reps: 12)),
+            entry(ex.shoulderPress, 5, brand: br.cybex, sets: straightSets(3, weight: press, reps: 10)),
             entry(ex.benchPress, 6, sets: straightSets(3, weight: bench, reps: 8)),
         ])
     }
 
-    private static func pullDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private static func pullDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         let top = ramp(55, 65, daysAgo: offset)
         let row = ramp(50, 57.5, daysAgo: offset)
         let closeGrip = ramp(40, 45, daysAgo: offset)
         return workout("Pull day", daysAgo: offset, gymId: gymId, minutes: 50 + (offset % 3) * 2, heartRate: 119 + (offset % 4) * 2, entries: [
-            entry(ex.latPulldown, 1, sets: [
+            entry(ex.latPulldown, 1, brand: br.hammerStrength, sets: [
                 mkSet(1, top - 5, 12),
                 mkSet(2, top, 10),
                 mkSet(3, top, 10),
                 mkSet(4, top - 5, 12),
             ]),
-            entry(ex.seatedRow, 2, sets: straightSets(3, weight: row, reps: 10)),
-            entry(ex.seatedRow, 3, notes: "Close grip", sets: straightSets(3, weight: closeGrip, reps: 12)),
+            entry(ex.seatedRow, 2, brand: br.technogym, sets: straightSets(3, weight: row, reps: 10)),
+            entry(ex.seatedRow, 3, notes: "Close grip", brand: br.technogym, sets: straightSets(3, weight: closeGrip, reps: 12)),
         ])
     }
 
-    private static func legDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs) -> LocalWorkout {
+    private static func legDay(daysAgo offset: Int, gymId: String, ex: ExerciseRefs, br: BrandRefs) -> LocalWorkout {
         let squat = ramp(90, 110, daysAgo: offset)
         let legPress = ramp(140, 170, daysAgo: offset)
         let curl = ramp(40, 47.5, daysAgo: offset)
@@ -397,12 +411,12 @@ enum DebugSeed {
                 mkSet(3, squat, 6),
                 mkSet(4, squat, 5),
             ]),
-            entry(ex.legPress, 2, sets: [
+            entry(ex.legPress, 2, brand: br.technogym, sets: [
                 mkSet(1, legPress - 20, 12),
                 mkSet(2, legPress, 10),
                 mkSet(3, legPress, 10),
             ]),
-            entry(ex.legCurl, 3, sets: straightSets(3, weight: curl, reps: 12)),
+            entry(ex.legCurl, 3, brand: br.cybex, sets: straightSets(3, weight: curl, reps: 12)),
         ])
     }
 
@@ -454,9 +468,10 @@ enum DebugSeed {
         _ position: Int,
         notes: String? = nil,
         superset: String? = nil,
+        brand: String? = nil,
         sets: [LocalSet]
     ) -> LocalWorkoutExercise {
-        LocalWorkoutExercise(exerciseId: exerciseId, position: position, notes: notes, supersetId: superset, sets: sets)
+        LocalWorkoutExercise(exerciseId: exerciseId, position: position, notes: notes, supersetId: superset, brandId: brand, sets: sets)
     }
 
     private static func mkSet(
@@ -511,7 +526,7 @@ enum DebugSeed {
         _ primary: MuscleGroup,
         secondary: [MuscleGroup] = [],
         equipment: EquipmentType,
-        brandId: String?,
+        requiresBrand: Bool = false,
         favorite: Bool = false,
         unilateral: Bool = false
     ) -> Exercise {
@@ -521,7 +536,7 @@ enum DebugSeed {
             primaryMuscle: primary,
             secondaryMuscles: secondary,
             equipment: equipment,
-            brandId: brandId,
+            requiresBrand: requiresBrand,
             isFavorite: favorite,
             isArchived: false,
             isUnilateral: unilateral,

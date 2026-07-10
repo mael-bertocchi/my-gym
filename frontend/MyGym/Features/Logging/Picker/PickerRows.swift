@@ -14,7 +14,7 @@ struct PickerSearchField: View {
 
 struct PickerExerciseRow: View {
     let exercise: Exercise
-    let brandLine: (text: String, isBranded: Bool)
+    let subtitle: String
     let prText: String?
     let action: () -> Void
 
@@ -27,9 +27,9 @@ struct PickerExerciseRow: View {
                         .font(Theme.font(15, .bold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
-                    Text(brandLine.text)
+                    Text(subtitle)
                         .font(Theme.mono(11))
-                        .foregroundStyle(brandLine.isBranded ? Theme.accentBlue : Theme.muted2)
+                        .foregroundStyle(Theme.muted2)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
@@ -52,7 +52,7 @@ struct PickerExerciseRow: View {
 
 struct PickerCreateRow: View {
     let title: String
-    var subtitle = "Add a brand you don't see"
+    var subtitle = "Add a machine you don't see"
     let action: () -> Void
 
     var body: some View {

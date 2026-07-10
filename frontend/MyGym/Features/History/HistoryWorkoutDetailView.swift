@@ -57,6 +57,7 @@ struct HistoryWorkoutDetailView: View {
                     .padding(.top, 4)
                     .padding(.bottom, 18)
 
+                let hasRatings = workout.difficultyRating != nil || workout.enjoymentRating != nil
                 HStack(spacing: 10) {
                     WorkoutDetailStatTile(
                         value: workout.duration.map(Formatting.duration) ?? "—",
@@ -71,7 +72,12 @@ struct HistoryWorkoutDetailView: View {
                         caption: "sets"
                     )
                 }
-                .padding(.bottom, personalRecordHits.isEmpty ? 20 : 18)
+                .padding(.bottom, hasRatings ? 12 : (personalRecordHits.isEmpty ? 20 : 18))
+
+                if hasRatings {
+                    ratingsLine(for: workout)
+                        .padding(.bottom, personalRecordHits.isEmpty ? 20 : 18)
+                }
 
                 if !personalRecordHits.isEmpty {
                     personalRecordCallout(hits: personalRecordHits)
@@ -91,6 +97,33 @@ struct HistoryWorkoutDetailView: View {
             let completed = entry.sets.filter(\.isCompleted)
             let unilateral = store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
             return total + (unilateral ? Set(completed.map(\.setNumber)).count : completed.count)
+        }
+    }
+
+    private func ratingsLine(for workout: LocalWorkout) -> some View {
+        HStack(spacing: 16) {
+            if let difficulty = workout.difficultyRating {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Theme.warning)
+                    Text("Difficulty \(difficulty)/10")
+                        .font(Theme.font(12, .semibold))
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+                .accessibilityElement(children: .combine)
+            }
+            if let enjoyment = workout.enjoymentRating {
+                HStack(spacing: 3) {
+                    ForEach(1...5, id: \.self) { value in
+                        Image(systemName: value <= enjoyment ? "star.fill" : "star")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(value <= enjoyment ? Theme.accentBlue : Theme.muted2)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Enjoyment \(enjoyment) of 5")
+            }
         }
     }
 
@@ -194,7 +227,7 @@ private struct PersonalRecordCardView: View {
 
     var body: some View {
         let exercise = store.exercise(id: hit.exerciseId)
-        let brand = exercise.flatMap { store.brand(id: $0.brandId) }?.name
+        let brand = store.brand(id: hit.brandId)?.name
 
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 5) {
@@ -299,7 +332,7 @@ private struct WorkoutDetailExerciseRow: View {
                     .foregroundStyle(Theme.muted2)
             }
             if let exercise {
-                let brand = store.brandLine(for: exercise)
+                let brand = store.brandLine(brandId: entry.brandId, exercise: exercise)
                 Text(brand.text)
                     .font(Theme.mono(11))
                     .foregroundStyle(brand.isBranded ? Theme.accentBlue : Theme.muted2)

@@ -73,7 +73,7 @@ enum ProfileDataExporter {
             for entry in workout.exercises.sorted(by: { $0.position < $1.position }) {
                 let exercise = store.exercise(id: entry.exerciseId)
                 let exerciseName = csvField(exercise?.name ?? entry.exerciseId)
-                let brand = csvField(exercise.map { store.brandLine(for: $0).text } ?? "")
+                let brand = csvField(store.brand(id: entry.brandId)?.name ?? "")
                 for set in entry.sets.sorted(by: { $0.setNumber < $1.setNumber }) {
                     lines.append([
                         date,
