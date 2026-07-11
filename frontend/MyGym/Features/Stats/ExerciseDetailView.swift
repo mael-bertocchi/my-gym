@@ -35,9 +35,10 @@ struct ExerciseDetailView: View {
     private var unit: WeightUnit { session.weightUnit }
 
     private func content(for exercise: Exercise) -> some View {
+        let retained = StatsMath.retained(store.workouts)
         let windowWorkouts = StatsMath.workouts(
-            store.workouts,
-            inLastWeeks: range.weekCount(workouts: store.workouts)
+            retained,
+            inLastWeeks: range.weekCount(workouts: retained)
         )
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -58,7 +59,7 @@ struct ExerciseDetailView: View {
                 StatsRangeChips(selection: $range)
                     .padding(.bottom, 18)
 
-                thisMachineSection(exercise: exercise, windowWorkouts: windowWorkouts)
+                thisMachineSection(exercise: exercise, retained: retained, windowWorkouts: windowWorkouts)
             }
             .padding(.top, 8)
             .padding(.horizontal, Theme.screenPadding)
@@ -117,8 +118,8 @@ struct ExerciseDetailView: View {
     }
 
     @ViewBuilder
-    private func thisMachineSection(exercise: Exercise, windowWorkouts: [LocalWorkout]) -> some View {
-        let allSessions = StatsMath.sessions(for: exercise.id, workouts: store.workouts)
+    private func thisMachineSection(exercise: Exercise, retained: [LocalWorkout], windowWorkouts: [LocalWorkout]) -> some View {
+        let allSessions = StatsMath.sessions(for: exercise.id, workouts: retained)
         let windowSessions = StatsMath.sessions(for: exercise.id, workouts: windowWorkouts)
         let heaviest = allSessions.compactMap(\.heaviestKg).max()
         let bestOneRM = allSessions.compactMap(\.bestOneRepMaxKg).max()
@@ -150,7 +151,7 @@ struct ExerciseDetailView: View {
         progressionCard(sessionPoints: windowSessions)
             .padding(.bottom, 18)
 
-        prTimeline(exerciseId: exercise.id)
+        prTimeline(exerciseId: exercise.id, retained: retained)
             .padding(.bottom, 18)
 
         recentSection(sessionPoints: windowSessions)
@@ -247,8 +248,8 @@ struct ExerciseDetailView: View {
         }
     }
 
-    private func prTimeline(exerciseId: String) -> some View {
-        let events = Array(StatsMath.personalRecordEvents(for: exerciseId, workouts: store.workouts).prefix(4))
+    private func prTimeline(exerciseId: String, retained: [LocalWorkout]) -> some View {
+        let events = Array(StatsMath.personalRecordEvents(for: exerciseId, workouts: retained).prefix(4))
         return VStack(alignment: .leading, spacing: 10) {
             EyebrowText("RECORD TIMELINE", size: 10)
             if events.isEmpty {

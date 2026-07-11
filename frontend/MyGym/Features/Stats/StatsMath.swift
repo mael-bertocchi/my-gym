@@ -1,10 +1,21 @@
 import Foundation
 
 enum StatsMath {
+    static let retentionWeeks = 52
+
     static var weekCalendar: Calendar {
         var calendar = Calendar.current
         calendar.firstWeekday = 2
         return calendar
+    }
+
+    static func retentionStart(now: Date = .now) -> Date? {
+        windowStart(weekCount: retentionWeeks, now: now)
+    }
+
+    static func retained(_ workouts: [LocalWorkout], now: Date = .now) -> [LocalWorkout] {
+        guard let start = retentionStart(now: now) else { return workouts }
+        return workouts.filter { $0.startedAt >= start }
     }
 
     enum Range: String, CaseIterable, Identifiable {
@@ -32,7 +43,7 @@ enum StatsMath {
                       ).weekOfYear else {
                     return 4
                 }
-                return min(max(weeks + 1, 4), 104)
+                return min(max(weeks + 1, 4), retentionWeeks)
             }
         }
     }
@@ -153,7 +164,7 @@ enum StatsMath {
 
     static func workoutsPerWeek(
         workouts allWorkouts: [LocalWorkout],
-        weekCount: Int = 4,
+        weekCount: Int,
         now: Date = .now
     ) -> Double {
         guard weekCount > 0 else { return 0 }

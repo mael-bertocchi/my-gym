@@ -8,39 +8,40 @@ struct StatsStatisticsBody: View {
     @Environment(ApplicationSession.self) private var session
 
     var body: some View {
-        let weekCount = range.weekCount(workouts: store.workouts)
-        let windowed = StatsMath.workouts(store.workouts, inLastWeeks: weekCount)
+        let retained = StatsMath.retained(store.workouts)
+        let weekCount = range.weekCount(workouts: retained)
+        let windowed = StatsMath.workouts(retained, inLastWeeks: weekCount)
         VStack(alignment: .leading, spacing: 14) {
             StatsRangeChips(selection: $range)
                 .padding(.bottom, 2)
 
             StatsVolumeCard(
                 rangeLabel: range.rawValue,
-                weeks: StatsMath.weeklyVolumes(workouts: store.workouts, weekCount: weekCount),
+                weeks: StatsMath.weeklyVolumes(workouts: retained, weekCount: weekCount),
                 unit: session.weightUnit
             )
 
-            splitRow(windowed: windowed)
+            splitRow(retained: retained, windowed: windowed, weekCount: weekCount)
 
             StatsPeriodCompareCard(
-                comparison: StatsMath.periodComparison(workouts: store.workouts, weekCount: weekCount),
+                comparison: StatsMath.periodComparison(workouts: retained, weekCount: weekCount),
                 rangeLabel: range == .all ? nil : range.rawValue,
                 unit: session.weightUnit
             )
 
             StatsBodyweightCard(
                 unit: session.weightUnit,
-                windowStart: range == .all ? nil : StatsMath.windowStart(weekCount: weekCount)
+                windowStart: range == .all ? StatsMath.retentionStart() : StatsMath.windowStart(weekCount: weekCount)
             )
 
             StatsHeartRateCard(
-                workouts: store.workouts,
+                workouts: retained,
                 windowStart: range == .all ? nil : StatsMath.windowStart(weekCount: weekCount)
             )
         }
     }
 
-    private func splitRow(windowed: [LocalWorkout]) -> some View {
+    private func splitRow(retained: [LocalWorkout], windowed: [LocalWorkout], weekCount: Int) -> some View {
         HStack(spacing: 14) {
             StatsMuscleSplitCard(
                 shares: StatsMath.muscleShares(workouts: windowed, exercises: store.exercises)
@@ -49,7 +50,7 @@ struct StatsStatisticsBody: View {
 
             StatsValueCard(
                 eyebrow: "FREQUENCY",
-                value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: store.workouts)),
+                value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: retained, weekCount: weekCount)),
                 caption: "Workouts per week"
             )
             .frame(maxWidth: .infinity)
