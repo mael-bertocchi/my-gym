@@ -57,6 +57,7 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            isWeighted: true,
             brandMode: true,
             brandId: true,
             createdAt: true,
@@ -89,6 +90,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            isWeighted: true,
             brandMode: true,
             brandId: true,
             createdAt: true,
@@ -132,6 +134,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
             isUnilateral: request.body.isUnilateral,
+            isWeighted: request.body.isWeighted,
             brandMode: request.body.brandMode,
             brandId: request.body.brandId ?? null
         },
@@ -144,6 +147,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            isWeighted: true,
             brandMode: true,
             brandId: true,
             createdAt: true,
@@ -200,6 +204,9 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.isUnilateral !== undefined) {
         data.isUnilateral = request.body.isUnilateral;
     }
+    if (request.body.isWeighted !== undefined) {
+        data.isWeighted = request.body.isWeighted;
+    }
 
     const brandMode = request.body.brandMode ?? existing.brandMode;
     const effectiveBrandId = request.body.brandId !== undefined ? request.body.brandId : existing.brandId;
@@ -241,6 +248,7 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
+            isWeighted: true,
             brandMode: true,
             brandId: true,
             createdAt: true,

@@ -33,6 +33,19 @@ describe('CreateExerciseSchema', () => {
         }
     });
 
+    it('defaults isWeighted to true and accepts an override', () => {
+        const omitted = CreateExerciseSchema.safeParse({ name: 'Crunch', primaryMuscle: 'ABS', equipment: 'BODYWEIGHT' });
+        expect(omitted.success).toBe(true);
+        if (omitted.success) {
+            expect(omitted.data.isWeighted).toBe(true);
+        }
+        const set = CreateExerciseSchema.safeParse({ name: 'Crunch', primaryMuscle: 'ABS', equipment: 'BODYWEIGHT', isWeighted: false });
+        expect(set.success).toBe(true);
+        if (set.success) {
+            expect(set.data.isWeighted).toBe(false);
+        }
+    });
+
     it('defaults brandMode to NONE', () => {
         const omitted = CreateExerciseSchema.safeParse({ name: 'Squat', primaryMuscle: 'QUADRICEPS', equipment: 'BARBELL' });
         expect(omitted.success).toBe(true);
@@ -76,6 +89,10 @@ describe('UpdateExerciseSchema', () => {
 
     it('accepts toggling isUnilateral', () => {
         expect(UpdateExerciseSchema.safeParse({ isUnilateral: true }).success).toBe(true);
+    });
+
+    it('accepts toggling isWeighted', () => {
+        expect(UpdateExerciseSchema.safeParse({ isWeighted: false }).success).toBe(true);
     });
 
     it('accepts brand mode changes', () => {

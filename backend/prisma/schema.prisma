@@ -150,6 +150,7 @@ model Exercise {
   isFavorite       Boolean           @default(false) @map("is_favorite")
   isArchived       Boolean           @default(false) @map("is_archived")
   isUnilateral     Boolean           @default(false) @map("is_unilateral")
+  isWeighted       Boolean           @default(true) @map("is_weighted")
   brandMode        ExerciseBrandMode @default(NONE) @map("brand_mode")
   brandId          String?           @map("brand_id")
   brand            Brand?            @relation(fields: [brandId], references: [id], onDelete: Restrict)

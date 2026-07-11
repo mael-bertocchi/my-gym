@@ -41,6 +41,7 @@ export const CreateExerciseSchema = z.object({
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
     isUnilateral: z.boolean().optional().default(false),
+    isWeighted: z.boolean().optional().default(true),
     brandMode: ExerciseBrandModeSchema.optional().default('NONE'),
     brandId: z.uuid().nullable().optional()
 }).refine((value) => (value.brandMode === 'SINGLE') === (value.brandId !== undefined && value.brandId !== null), {
@@ -65,6 +66,7 @@ export const UpdateExerciseSchema = z.object({
     isFavorite: z.boolean().optional(),
     isArchived: z.boolean().optional(),
     isUnilateral: z.boolean().optional(),
+    isWeighted: z.boolean().optional(),
     brandMode: ExerciseBrandModeSchema.optional(),
     brandId: z.uuid().nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, {
