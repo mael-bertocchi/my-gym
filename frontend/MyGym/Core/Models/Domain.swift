@@ -150,6 +150,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var isFavorite: Bool
     var isArchived: Bool
     var isUnilateral: Bool
+    var isWeighted: Bool
     var createdAt: Date
     var updatedAt: Date
 }
@@ -157,7 +158,7 @@ struct Exercise: Codable, Identifiable, Equatable, Hashable {
 extension Exercise {
     private enum CodingKeys: String, CodingKey {
         case id, name, primaryMuscle, secondaryMuscles, equipment
-        case brandMode, brandId, isFavorite, isArchived, isUnilateral, createdAt, updatedAt
+        case brandMode, brandId, isFavorite, isArchived, isUnilateral, isWeighted, createdAt, updatedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -172,6 +173,7 @@ extension Exercise {
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false
+        isWeighted = try container.decodeIfPresent(Bool.self, forKey: .isWeighted) ?? true
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }

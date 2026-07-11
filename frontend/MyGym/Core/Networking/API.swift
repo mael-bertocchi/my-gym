@@ -126,6 +126,7 @@ enum API {
         var brandMode: ExerciseBrandMode
         var brandId: String?
         var isUnilateral: Bool
+        var isWeighted: Bool
     }
 
     static func createExercise(_ request: CreateExerciseRequest) async throws -> Exercise {
@@ -139,6 +140,7 @@ enum API {
         var isFavorite: Bool?
         var isArchived: Bool?
         var isUnilateral: Bool?
+        var isWeighted: Bool?
     }
 
     static func updateExercise(id: String, _ request: UpdateExerciseRequest) async throws -> Exercise {
@@ -153,9 +155,10 @@ enum API {
         var brandMode: ExerciseBrandMode
         var brandId: String?
         var isUnilateral: Bool
+        var isWeighted: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, secondaryMuscles, equipment, brandMode, brandId, isUnilateral
+            case name, primaryMuscle, secondaryMuscles, equipment, brandMode, brandId, isUnilateral, isWeighted
         }
 
         func encode(to encoder: Encoder) throws {
@@ -167,6 +170,7 @@ enum API {
             try container.encode(brandMode, forKey: .brandMode)
             try container.encode(brandId, forKey: .brandId)
             try container.encode(isUnilateral, forKey: .isUnilateral)
+            try container.encode(isWeighted, forKey: .isWeighted)
         }
     }
 

@@ -15,6 +15,7 @@ struct NewExerciseFormView: View {
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
+    @State private var isWeighted = true
 
     @State private var isCreating = false
     @State private var errorMessage: String?
@@ -43,7 +44,7 @@ struct NewExerciseFormView: View {
                     brandField
                     muscleField
                     secondaryMuscleField
-                    unilateralField
+                    setLoggingField
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -95,6 +96,7 @@ struct NewExerciseFormView: View {
             || primaryMuscle != nil
             || !secondaryMuscles.isEmpty
             || isUnilateral
+            || !isWeighted
     }
 
     private var footer: some View {
@@ -219,11 +221,16 @@ struct NewExerciseFormView: View {
         }
     }
 
-    private var unilateralField: some View {
+    private var setLoggingField: some View {
         VStack(alignment: .leading, spacing: 8) {
             NewExerciseFieldLabel("SET LOGGING")
             ManageToggleRow(
-                title: "Single-arm",
+                title: "Weighted",
+                subtitle: "Log a weight for each set. Turn off for bodyweight-only exercises.",
+                isOn: $isWeighted
+            )
+            ManageToggleRow(
+                title: "Iso-Lateral",
                 subtitle: "Log each set for the left and right side.",
                 isOn: $isUnilateral
             )
@@ -253,7 +260,8 @@ struct NewExerciseFormView: View {
                         equipment: equipmentType,
                         brandMode: brandMode,
                         brandId: brandMode == .single ? brandId : nil,
-                        isUnilateral: isUnilateral
+                        isUnilateral: isUnilateral,
+                        isWeighted: isWeighted
                     )
                 )
                 store.insert(exercise: exercise)

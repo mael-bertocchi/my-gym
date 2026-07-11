@@ -106,6 +106,13 @@ struct CatalogExercisesView: View {
         .sheet(item: $editingExercise) { exercise in
             EditExerciseFormView(exercise: exercise)
         }
+        .onAppear {
+            #if DEBUG
+            if UserDefaults.standard.string(forKey: "open")?.hasPrefix("catalog-new-exercise") == true {
+                showsAddSheet = true
+            }
+            #endif
+        }
     }
 
     private var countLine: String {
@@ -173,7 +180,7 @@ struct CatalogExercisesView: View {
             }
             return (brand.name.uppercased(), true)
         case .multiple:
-            return ("\(exercise.equipment.rawValue) · multiple brands", false)
+            return ("\(exercise.equipment.rawValue) · Multiple brands", false)
         }
     }
 
@@ -222,6 +229,7 @@ struct CatalogExerciseAddSheet: View {
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
+    @State private var isWeighted = true
 
     @State private var isCreating = false
     @State private var alert: ManageAlert?
@@ -236,11 +244,12 @@ struct CatalogExerciseAddSheet: View {
                     brandField
                     muscleField
                     secondaryMuscleField
-                    unilateralField
+                    setLoggingField
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
             }
+            .defaultScrollAnchor(debugScrollToBottom ? .bottom : .top)
             .scrollDismissesKeyboard(.interactively)
             footer
         }
@@ -253,6 +262,14 @@ struct CatalogExerciseAddSheet: View {
             Button("Cancel", role: .cancel) { newBrandName = "" }
             Button("Add") { Task { await createBrand() } }
         }
+    }
+
+    private var debugScrollToBottom: Bool {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "open") == "catalog-new-exercise-bottom"
+        #else
+        return false
+        #endif
     }
 
     private var nameField: some View {
@@ -355,11 +372,16 @@ struct CatalogExerciseAddSheet: View {
         }
     }
 
-    private var unilateralField: some View {
+    private var setLoggingField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("SET LOGGING")
             ManageToggleRow(
-                title: "Single-arm",
+                title: "Weighted",
+                subtitle: "Log a weight for each set. Turn off for bodyweight-only exercises.",
+                isOn: $isWeighted
+            )
+            ManageToggleRow(
+                title: "Iso-Lateral",
                 subtitle: "Log each set for the left and right side.",
                 isOn: $isUnilateral
             )
@@ -405,7 +427,8 @@ struct CatalogExerciseAddSheet: View {
                     equipment: equipment,
                     brandMode: brandMode,
                     brandId: brandMode == .single ? brandId : nil,
-                    isUnilateral: isUnilateral
+                    isUnilateral: isUnilateral,
+                    isWeighted: isWeighted
                 ))
                 store.insert(exercise: exercise)
                 isCreating = false

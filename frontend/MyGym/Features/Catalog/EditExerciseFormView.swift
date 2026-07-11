@@ -16,6 +16,7 @@ struct EditExerciseFormView: View {
     @State private var primaryMuscle: MuscleGroup
     @State private var secondaryMuscles: Set<MuscleGroup>
     @State private var isUnilateral: Bool
+    @State private var isWeighted: Bool
 
     @State private var isSaving = false
     @State private var alert: ManageAlert?
@@ -29,6 +30,7 @@ struct EditExerciseFormView: View {
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
         _secondaryMuscles = State(initialValue: Set(exercise.secondaryMuscles))
         _isUnilateral = State(initialValue: exercise.isUnilateral)
+        _isWeighted = State(initialValue: exercise.isWeighted)
     }
 
     var body: some View {
@@ -41,7 +43,7 @@ struct EditExerciseFormView: View {
                     brandField
                     muscleField
                     secondaryMuscleField
-                    unilateralField
+                    setLoggingField
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -157,11 +159,16 @@ struct EditExerciseFormView: View {
         }
     }
 
-    private var unilateralField: some View {
+    private var setLoggingField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("SET LOGGING")
             ManageToggleRow(
-                title: "Single-arm",
+                title: "Weighted",
+                subtitle: "Log a weight for each set. Turn off for bodyweight-only exercises.",
+                isOn: $isWeighted
+            )
+            ManageToggleRow(
+                title: "Iso-Lateral",
                 subtitle: "Log each set for the left and right side.",
                 isOn: $isUnilateral
             )
@@ -193,6 +200,7 @@ struct EditExerciseFormView: View {
             || primaryMuscle != exercise.primaryMuscle
             || secondaryMuscles != Set(exercise.secondaryMuscles)
             || isUnilateral != exercise.isUnilateral
+            || isWeighted != exercise.isWeighted
     }
 
     private func save() {
@@ -217,7 +225,8 @@ struct EditExerciseFormView: View {
                     equipment: equipment,
                     brandMode: brandMode,
                     brandId: brandMode == .single ? brandId : nil,
-                    isUnilateral: isUnilateral
+                    isUnilateral: isUnilateral,
+                    isWeighted: isWeighted
                 ))
                 store.insert(exercise: updated)
                 isSaving = false

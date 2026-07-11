@@ -325,7 +325,9 @@ struct ExerciseDetailView: View {
     }
 
     private func bestSetLabel(for point: StatsMath.SessionPoint) -> String {
-        guard let weight = point.heaviestKg else { return "—" }
+        guard let weight = point.heaviestKg else {
+            return point.bestReps.map { "× \($0)" } ?? "—"
+        }
         let number = Formatting.weightNumber(weight, unit: unit)
         guard let reps = point.heaviestReps else { return number }
         return "\(number) × \(reps)"

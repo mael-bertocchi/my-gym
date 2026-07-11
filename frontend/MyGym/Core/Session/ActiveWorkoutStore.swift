@@ -113,7 +113,7 @@ final class ActiveWorkoutStore {
                         setNumber: set.setNumber,
                         setType: set.setType,
                         side: set.side,
-                        weightKg: set.weightKg,
+                        weightKg: isWeighted(exerciseId: entry.exerciseId) ? set.weightKg : nil,
                         reps: set.reps,
                         isCompleted: false
                     )
@@ -181,7 +181,7 @@ final class ActiveWorkoutStore {
                     setNumber: set.setNumber,
                     setType: set.setType,
                     side: exercise.isUnilateral ? set.side : nil,
-                    weightKg: set.weightKg,
+                    weightKg: exercise.isWeighted ? set.weightKg : nil,
                     reps: set.reps,
                     isCompleted: false
                 )
@@ -294,17 +294,18 @@ final class ActiveWorkoutStore {
         let entry = workout!.exercises[index]
         let sets = entry.sets
         let nextNumber = (sets.map(\.setNumber).max() ?? 0) + 1
+        let carriesWeight = isWeighted(exerciseId: entry.exerciseId)
         if isUnilateral(exerciseId: entry.exerciseId) {
             let lastLeft = sets.last { $0.side == .left }
             let lastRight = sets.last { $0.side == .right }
             workout?.exercises[index].sets.append(contentsOf: [
-                LocalSet(setNumber: nextNumber, setType: .normal, side: .left, weightKg: lastLeft?.weightKg, reps: lastLeft?.reps),
-                LocalSet(setNumber: nextNumber, setType: .normal, side: .right, weightKg: lastRight?.weightKg, reps: lastRight?.reps),
+                LocalSet(setNumber: nextNumber, setType: .normal, side: .left, weightKg: carriesWeight ? lastLeft?.weightKg : nil, reps: lastLeft?.reps),
+                LocalSet(setNumber: nextNumber, setType: .normal, side: .right, weightKg: carriesWeight ? lastRight?.weightKg : nil, reps: lastRight?.reps),
             ])
         } else {
             let last = sets.last
             workout?.exercises[index].sets.append(
-                LocalSet(setNumber: nextNumber, setType: .normal, weightKg: last?.weightKg, reps: last?.reps)
+                LocalSet(setNumber: nextNumber, setType: .normal, weightKg: carriesWeight ? last?.weightKg : nil, reps: last?.reps)
             )
         }
         persist()
@@ -519,10 +520,11 @@ final class ActiveWorkoutStore {
     func lastSessionSummary(exerciseId: String) -> String? {
         guard let entry = latestHistoryEntry(exerciseId: exerciseId) else { return nil }
         let completed = entry.sets.filter(\.isCompleted)
-        guard let last = completed.last, let weight = last.weightKg, let reps = last.reps else { return nil }
+        guard let last = completed.last, let reps = last.reps else { return nil }
         let count = isUnilateral(exerciseId: exerciseId) ? Set(completed.map(\.setNumber)).count : completed.count
         let side = last.side.map { "\($0.short) " } ?? ""
-        return "\(count) sets logged · last: \(side)\(Formatting.weight(weight)) × \(reps)"
+        let value = last.weightKg.map { "\(Formatting.weight($0)) × \(reps)" } ?? "\(reps) reps"
+        return "\(count) sets logged · last: \(side)\(value)"
     }
 
     private func entryIndex(_ entryId: String) -> Int? {
@@ -531,6 +533,10 @@ final class ActiveWorkoutStore {
 
     private func isUnilateral(exerciseId: String) -> Bool {
         store.exercise(id: exerciseId)?.isUnilateral ?? false
+    }
+
+    private func isWeighted(exerciseId: String) -> Bool {
+        store.exercise(id: exerciseId)?.isWeighted ?? true
     }
 
     private static func defaultName(for date: Date) -> String {

@@ -33,7 +33,8 @@ struct RootView: View {
                         store: store,
                         activeWorkout: activeWorkout,
                         supersetGo: CommandLine.arguments.contains("-demo-superset-go"),
-                        singleArm: CommandLine.arguments.contains("-demo-single-arm")
+                        singleArm: CommandLine.arguments.contains("-demo-single-arm"),
+                        bodyweight: CommandLine.arguments.contains("-demo-bodyweight")
                     )
                     if CommandLine.arguments.contains("-demo-paused") {
                         activeWorkout.pause()
@@ -140,7 +141,7 @@ struct MainShell: View {
             NavigationStack {
                 switch UserDefaults.standard.string(forKey: "open") {
                 case "catalog-gyms": CatalogGymsView()
-                case "catalog-exercises": CatalogExercisesView()
+                case "catalog-exercises", "catalog-new-exercise", "catalog-new-exercise-bottom": CatalogExercisesView()
                 default: CatalogView()
                 }
             }
@@ -161,7 +162,7 @@ struct MainShell: View {
             case "start": showStartWorkout = true
             case "admin-users": debugShowAdminUsers = true
             case "admin-account": debugShowManageAccount = true
-            case "catalog", "catalog-gyms", "catalog-exercises": debugShowCatalog = true
+            case "catalog", "catalog-gyms", "catalog-exercises", "catalog-new-exercise", "catalog-new-exercise-bottom": debugShowCatalog = true
             default: break
             }
             #endif

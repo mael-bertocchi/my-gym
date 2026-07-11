@@ -50,7 +50,7 @@ struct StatsStatisticsBody: View {
             StatsValueCard(
                 eyebrow: "FREQUENCY",
                 value: String(format: "%.1f", StatsMath.workoutsPerWeek(workouts: store.workouts)),
-                caption: "workouts per week"
+                caption: "Workouts per week"
             )
             .frame(maxWidth: .infinity)
         }

@@ -358,8 +358,12 @@ private struct WorkoutDetailExerciseRow: View {
     }
 
     private func setLog(_ sets: [LocalSet]) -> String {
-        sets.map { set in
+        let weighted = store.exercise(id: entry.exerciseId)?.isWeighted ?? true
+        return sets.map { set in
             let side = set.side.map { "\($0.short) " } ?? ""
+            guard weighted else {
+                return "\(side)×\(set.reps ?? 0)"
+            }
             let weight = Formatting.weightNumber(set.weightKg ?? 0, unit: unit)
             return "\(side)\(weight)×\(set.reps ?? 0)"
         }

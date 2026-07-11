@@ -363,6 +363,7 @@ enum StatsMath {
         let bestOneRepMaxKg: Double?
         let heaviestKg: Double?
         let heaviestReps: Int?
+        let bestReps: Int?
         let volumeKg: Double
 
         var id: String { workoutId }
@@ -394,6 +395,7 @@ enum StatsMath {
                 bestOneRepMaxKg: sets.compactMap(\.estimated1RM).max(),
                 heaviestKg: heaviest?.weightKg,
                 heaviestReps: heaviest?.reps,
+                bestReps: sets.compactMap(\.reps).max(),
                 volumeKg: volume
             )
         }

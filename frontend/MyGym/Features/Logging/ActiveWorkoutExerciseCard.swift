@@ -22,15 +22,15 @@ struct ActiveWorkoutExerciseCard: View {
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Menu {
-                    Button("View exercise", action: onOpenDetail)
-                    Button("Machine settings", action: onOpenSettings)
+                    Button("View exercise", systemImage: "info.circle", action: onOpenDetail)
+                    Button("Machine settings", systemImage: "slider.horizontal.3", action: onOpenSettings)
                     if canSelectBrand {
-                        Button("Select brand") { brandEntry = entry }
+                        Button("Select brand", systemImage: "tag") { brandEntry = entry }
                     }
                     if let onAddToSuperset {
-                        Button("Add to superset", action: onAddToSuperset)
+                        Button("Add to superset", systemImage: "link", action: onAddToSuperset)
                     }
-                    Button("Remove exercise", role: .destructive, action: onRemove)
+                    Button("Remove exercise", systemImage: "trash", action: onRemove)
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .semibold))
@@ -48,8 +48,10 @@ struct ActiveWorkoutExerciseCard: View {
             HStack(spacing: 8) {
                 tableHeaderCell("SET")
                     .frame(width: 28)
-                tableHeaderCell(session.weightUnit.label)
-                    .frame(maxWidth: .infinity)
+                if isWeighted {
+                    tableHeaderCell(session.weightUnit.label)
+                        .frame(maxWidth: .infinity)
+                }
                 tableHeaderCell("REPS")
                     .frame(maxWidth: .infinity)
                 Color.clear
@@ -66,6 +68,7 @@ struct ActiveWorkoutExerciseCard: View {
                                     entryId: entry.id,
                                     set: set,
                                     unit: session.weightUnit,
+                                    showsWeight: isWeighted,
                                     onFocus: onFocusEntry
                                 )
                             }
@@ -79,6 +82,7 @@ struct ActiveWorkoutExerciseCard: View {
                             entryId: entry.id,
                             set: set,
                             unit: session.weightUnit,
+                            showsWeight: isWeighted,
                             onFocus: onFocusEntry
                         )
                     }
@@ -106,6 +110,10 @@ struct ActiveWorkoutExerciseCard: View {
         store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
     }
 
+    private var isWeighted: Bool {
+        store.exercise(id: entry.exerciseId)?.isWeighted ?? true
+    }
+
     private var canSelectBrand: Bool {
         store.exercise(id: entry.exerciseId)?.brandMode == .multiple
     }
@@ -120,6 +128,7 @@ struct ActiveWorkoutSetRow: View {
     let entryId: String
     let set: LocalSet
     let unit: WeightUnit
+    let showsWeight: Bool
     var onFocus: (String) -> Void
 
     @Environment(ApplicationSession.self) private var session
@@ -134,10 +143,11 @@ struct ActiveWorkoutSetRow: View {
     @State private var touched: Set<SetField> = []
     @FocusState private var focusedField: SetField?
 
-    init(entryId: String, set: LocalSet, unit: WeightUnit, onFocus: @escaping (String) -> Void = { _ in }) {
+    init(entryId: String, set: LocalSet, unit: WeightUnit, showsWeight: Bool = true, onFocus: @escaping (String) -> Void = { _ in }) {
         self.entryId = entryId
         self.set = set
         self.unit = unit
+        self.showsWeight = showsWeight
         self.onFocus = onFocus
         _weightText = State(initialValue: set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "")
         _repsText = State(initialValue: set.reps.map(String.init) ?? "")
@@ -191,10 +201,14 @@ struct ActiveWorkoutSetRow: View {
             }
 
             if set.isCompleted {
-                completedCell(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "", isBold: true)
+                if showsWeight {
+                    completedCell(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "", isBold: true)
+                }
                 completedCell(set.reps.map(String.init) ?? "", isBold: true)
             } else {
-                editableCell($weightText, field: .weight, keyboard: .decimalPad, isBold: true)
+                if showsWeight {
+                    editableCell($weightText, field: .weight, keyboard: .decimalPad, isBold: true)
+                }
                 editableCell($repsText, field: .reps, keyboard: .numberPad, isBold: true)
             }
 
@@ -222,7 +236,7 @@ struct ActiveWorkoutSetRow: View {
             .accessibilityLabel(set.isCompleted ? "Mark \(positionLabel) incomplete" : "Complete \(positionLabel)")
         }
         .contextMenu {
-            Button("Remove set", role: .destructive, action: remove)
+            Button("Remove set", systemImage: "trash", action: remove)
         }
     }
 

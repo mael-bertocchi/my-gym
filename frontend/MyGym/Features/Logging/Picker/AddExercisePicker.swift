@@ -143,7 +143,7 @@ struct AddExercisePicker: View {
         case .single:
             store.brand(id: exercise.brandId)?.name.uppercased() ?? exercise.equipment.rawValue
         case .multiple:
-            "\(exercise.equipment.rawValue) · multiple brands"
+            "\(exercise.equipment.rawValue) · Multiple brands"
         }
     }
 

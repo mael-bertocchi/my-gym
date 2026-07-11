@@ -52,13 +52,13 @@ struct SupersetUnifiedCard: View {
                 .kerning(1)
                 .foregroundStyle(Theme.muted)
             Menu {
-                Button("View exercise") { onOpenDetail(activeMember) }
-                Button("Machine settings") { onOpenSettings(activeMember) }
+                Button("View exercise", systemImage: "info.circle") { onOpenDetail(activeMember) }
+                Button("Machine settings", systemImage: "slider.horizontal.3") { onOpenSettings(activeMember) }
                 if store.exercise(id: activeMember.exerciseId)?.brandMode == .multiple {
-                    Button("Select brand") { brandEntry = activeMember }
+                    Button("Select brand", systemImage: "tag") { brandEntry = activeMember }
                 }
-                Button("Unlink superset", action: onUnlink)
-                Button("Remove \(exerciseName(activeMember))", role: .destructive) { onRemove(activeMember) }
+                Button("Unlink superset", systemImage: "scissors", action: onUnlink)
+                Button("Remove \(exerciseName(activeMember))", systemImage: "trash") { onRemove(activeMember) }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 15, weight: .semibold))
@@ -157,18 +157,24 @@ struct SupersetUnifiedCard: View {
             headerCell("SET", color: Theme.muted2)
                 .frame(width: 28)
             if isUnilateral(activeMember) {
-                headerCell("LEFT · \(session.weightUnit.label)", color: Theme.muted)
+                headerCell("LEFT · \(twinColumnLabel)", color: Theme.muted)
                     .frame(maxWidth: .infinity)
-                headerCell("RIGHT · \(session.weightUnit.label)", color: Theme.muted)
+                headerCell("RIGHT · \(twinColumnLabel)", color: Theme.muted)
                     .frame(maxWidth: .infinity)
             } else {
-                headerCell(session.weightUnit.label, color: Theme.muted2)
-                    .frame(maxWidth: .infinity)
+                if isWeighted(activeMember) {
+                    headerCell(session.weightUnit.label, color: Theme.muted2)
+                        .frame(maxWidth: .infinity)
+                }
                 headerCell("REPS", color: Theme.muted2)
                     .frame(maxWidth: .infinity)
                 Color.clear.frame(width: 30, height: 1)
             }
         }
+    }
+
+    private var twinColumnLabel: String {
+        isWeighted(activeMember) ? session.weightUnit.label : "REPS"
     }
 
     @ViewBuilder
@@ -186,6 +192,7 @@ struct SupersetUnifiedCard: View {
                         entryId: activeMember.id,
                         set: set,
                         unit: session.weightUnit,
+                        showsWeight: isWeighted(activeMember),
                         onFocus: onFocusEntry
                     )
                 }
@@ -215,10 +222,11 @@ struct SupersetUnifiedCard: View {
                 set: set,
                 isNext: nextIncomplete?.setId == set.id,
                 unit: session.weightUnit,
+                showsWeight: isWeighted(activeMember),
                 onFocus: onFocusEntry
             )
         } else {
-            Text("— × —")
+            Text(isWeighted(activeMember) ? "— × —" : "—")
                 .font(Theme.font(13, .semibold))
                 .foregroundStyle(Theme.muted2)
                 .frame(maxWidth: .infinity)
@@ -276,7 +284,7 @@ struct SupersetUnifiedCard: View {
     }
 
     private var headerEyebrow: String {
-        members.contains(where: isUnilateral) ? "SUPERSET · SINGLE-ARM" : "SUPERSET"
+        members.contains(where: isUnilateral) ? "SUPERSET · ISO-LATERAL" : "SUPERSET"
     }
 
     private var roundLabel: String {
@@ -286,7 +294,7 @@ struct SupersetUnifiedCard: View {
 
     private var footerHint: String {
         if isUnilateral(activeMember) {
-            return "BOTH ARMS → NEXT ROUND"
+            return "BOTH SIDES → NEXT ROUND"
         }
         let lastLetter = members.count >= 2 ? "B" : "A"
         return "AFTER \(lastLetter) → REST \(Formatting.countdown(session.restTimerSeconds))"
@@ -313,6 +321,10 @@ struct SupersetUnifiedCard: View {
     private func isUnilateral(_ member: LocalWorkoutExercise) -> Bool {
         store.exercise(id: member.exerciseId)?.isUnilateral ?? false
     }
+
+    private func isWeighted(_ member: LocalWorkoutExercise) -> Bool {
+        store.exercise(id: member.exerciseId)?.isWeighted ?? true
+    }
 }
 
 struct TwinSideCell: View {
@@ -320,6 +332,7 @@ struct TwinSideCell: View {
     let set: LocalSet
     let isNext: Bool
     let unit: WeightUnit
+    let showsWeight: Bool
     var onFocus: (String) -> Void
 
     @Environment(ApplicationSession.self) private var session
@@ -334,11 +347,12 @@ struct TwinSideCell: View {
     @State private var touched: Set<SetField> = []
     @FocusState private var focusedField: SetField?
 
-    init(entryId: String, set: LocalSet, isNext: Bool, unit: WeightUnit, onFocus: @escaping (String) -> Void) {
+    init(entryId: String, set: LocalSet, isNext: Bool, unit: WeightUnit, showsWeight: Bool = true, onFocus: @escaping (String) -> Void) {
         self.entryId = entryId
         self.set = set
         self.isNext = isNext
         self.unit = unit
+        self.showsWeight = showsWeight
         self.onFocus = onFocus
         _weightText = State(initialValue: set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "")
         _repsText = State(initialValue: set.reps.map(String.init) ?? "")
@@ -347,32 +361,37 @@ struct TwinSideCell: View {
     var body: some View {
         HStack(spacing: 4) {
             if set.isCompleted {
-                Text(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "—")
-                    .font(Theme.font(14, .bold))
-                    .foregroundStyle(Theme.positive)
-                    .frame(maxWidth: .infinity)
-                Text("×")
-                    .font(Theme.font(13))
-                    .foregroundStyle(Theme.positive)
+                if showsWeight {
+                    Text(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "—")
+                        .font(Theme.font(14, .bold))
+                        .foregroundStyle(Theme.positive)
+                        .frame(maxWidth: .infinity)
+                    Text("×")
+                        .font(Theme.font(13))
+                        .foregroundStyle(Theme.positive)
+                }
                 Text(set.reps.map(String.init) ?? "—")
                     .font(Theme.font(14, .bold))
                     .foregroundStyle(Theme.positive)
                     .frame(maxWidth: .infinity)
             } else {
-                field($weightText, field: .weight, keyboard: .decimalPad)
-                Text("×")
-                    .font(Theme.font(13))
-                    .foregroundStyle(Theme.muted2)
+                if showsWeight {
+                    field($weightText, field: .weight, keyboard: .decimalPad)
+                    Text("×")
+                        .font(Theme.font(13))
+                        .foregroundStyle(Theme.muted2)
+                }
                 field($repsText, field: .reps, keyboard: .numberPad)
             }
             completeButton
         }
+        .padding(.trailing, 6)
         .frame(maxWidth: .infinity)
         .frame(height: 40)
         .background(cellFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
         .overlay(cellBorder)
         .contextMenu {
-            Button("Remove set", role: .destructive, action: remove)
+            Button("Remove set", systemImage: "trash", action: remove)
         }
         .onChange(of: weightText) { _, newValue in
             guard focusedField == .weight else { return }
