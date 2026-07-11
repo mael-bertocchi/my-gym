@@ -2,6 +2,7 @@ import type { PrismaClient } from 'prisma/generated/prisma/client';
 import type { AssistantContext, ContextWorkout } from 'src/assets/prompts/assistant';
 import { computeMuscleBreakdown } from 'src/modules/stats/stats-muscles';
 import { computePersonalRecords } from 'src/modules/stats/stats-records';
+import { retentionStart } from 'src/modules/stats/stats-retention';
 
 /**
  * @constant RECENT_WORKOUT_LIMIT
@@ -74,13 +75,14 @@ export async function loadAssistantContext(prisma: PrismaClient, userId: string)
         })
     }));
 
+    const recordWorkoutFilter = { userId, startedAt: { gte: retentionStart() } };
     const exercises = await prisma.exercise.findMany({
-        where: { userId, workoutEntries: { some: { workout: { userId } } } },
+        where: { userId, workoutEntries: { some: { workout: recordWorkoutFilter } } },
         select: {
             id: true,
             name: true,
             workoutEntries: {
-                where: { workout: { userId } },
+                where: { workout: recordWorkoutFilter },
                 select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } }
             }
         }

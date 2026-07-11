@@ -22,6 +22,7 @@ import authenticationPlugin from 'src/plugins/authentication';
 import databasePlugin from 'src/plugins/database';
 import environmentPlugin from 'src/plugins/environment';
 import googleAIPlugin from 'src/plugins/google-ai';
+import retentionPlugin from 'src/plugins/retention';
 import securityPlugin from 'src/plugins/security';
 import type { RequestErrorResponse } from 'src/shared/models';
 import { RequestError } from 'src/shared/models';
@@ -122,6 +123,7 @@ async function startServer(): Promise<void> {
     await fastify.register(authenticationPlugin);
     await fastify.register(administratorPlugin);
     await fastify.register(googleAIPlugin);
+    await fastify.register(retentionPlugin);
 
     fastify.setErrorHandler(handleGlobalError);
 

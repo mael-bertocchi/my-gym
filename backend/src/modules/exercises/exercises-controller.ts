@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import type { Prisma } from 'prisma/generated/prisma/client';
 import type { CreateExerciseRequest, ExerciseLastRequest, ExerciseParamsRequest, ExerciseRangeRequest, ListExercisesRequest, UpdateExerciseRequest } from 'src/modules/exercises/exercises-models';
 import { computeExerciseStats } from 'src/modules/stats/stats-compute';
+import { clampToRetention } from 'src/modules/stats/stats-retention';
 import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
 
@@ -353,9 +354,7 @@ async function getExerciseStats(request: FastifyRequest<ExerciseRangeRequest>, r
     if (request.query.gymId !== undefined) {
         where.gymId = request.query.gymId;
     }
-    if (request.query.from !== undefined || request.query.to !== undefined) {
-        where.startedAt = { gte: request.query.from, lte: request.query.to };
-    }
+    where.startedAt = { gte: clampToRetention(request.query.from), lte: request.query.to };
 
     const workouts = await request.server.prisma.workout.findMany({
         where,

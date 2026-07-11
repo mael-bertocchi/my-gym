@@ -7,21 +7,18 @@ import type { CalendarRequest, MuscleDistributionRequest, OverviewRequest, Volum
 import { computeMuscleBreakdown } from 'src/modules/stats/stats-muscles';
 import { computeOverview } from 'src/modules/stats/stats-overview';
 import { computePersonalRecords } from 'src/modules/stats/stats-records';
+import { clampToRetention, retentionStart } from 'src/modules/stats/stats-retention';
 
 /**
  * @function dateRange
- * @description Builds an optional startedAt range filter from from/to query params.
+ * @description Builds a startedAt range filter from from/to query params, flooring the lower bound at the one-year retention start.
  *
- * @param {Date | undefined} from The inclusive lower bound.
+ * @param {Date | undefined} from The requested inclusive lower bound.
  * @param {Date | undefined} to The upper bound.
- * @returns {Prisma.DateTimeFilter | undefined} The range filter, or undefined when neither bound is set.
+ * @returns {Prisma.DateTimeFilter} The range filter, never reaching further back than one year.
  */
-function dateRange(from: Date | undefined, to: Date | undefined): Prisma.DateTimeFilter | undefined {
-    if (from === undefined && to === undefined) {
-        return undefined;
-    }
-
-    return { gte: from, lte: to };
+function dateRange(from: Date | undefined, to: Date | undefined): Prisma.DateTimeFilter {
+    return { gte: clampToRetention(from), lte: to };
 }
 
 /**
@@ -115,18 +112,19 @@ async function getMuscleDistribution(request: FastifyRequest<MuscleDistributionR
 
 /**
  * @function getPersonalRecords
- * @description Returns the caller's all-time bests (heaviest set, estimated 1RM, set volume) per exercise.
+ * @description Returns the caller's bests over the last year (heaviest set, estimated 1RM, set volume) per exercise.
  *
  * @returns {Promise<void>} Resolves when the records are sent.
  */
 async function getPersonalRecords(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const workoutFilter = { userId: request.user.id, startedAt: { gte: retentionStart() } };
     const exercises = await request.server.prisma.exercise.findMany({
-        where: { userId: request.user.id, workoutEntries: { some: { workout: { userId: request.user.id } } } },
+        where: { userId: request.user.id, workoutEntries: { some: { workout: workoutFilter } } },
         select: {
             id: true,
             name: true,
             workoutEntries: {
-                where: { workout: { userId: request.user.id } },
+                where: { workout: workoutFilter },
                 select: { sets: { where: { setType: 'NORMAL' }, select: { weightKg: true, reps: true } } }
             }
         }
