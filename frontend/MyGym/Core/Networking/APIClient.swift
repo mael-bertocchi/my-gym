@@ -6,9 +6,9 @@ enum AppConfig {
             return url
         }
         #if targetEnvironment(simulator)
-        return URL(string: "http://localhost:8080/api/v1")!
+        return URL(string: "http://localhost:8080/v1")!
         #else
-        return URL(string: "https://my-gym.mael-bertocchi.fr/api/v1")!
+        return URL(string: "https://my-gym.mael-bertocchi.fr/v1")!
         #endif
     }
 }
