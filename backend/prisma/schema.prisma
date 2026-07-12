@@ -198,6 +198,7 @@ model Workout {
   endedAt          DateTime? @map("ended_at")
   notes            String?
   averageHeartRate Int?      @map("average_heart_rate")
+  caloriesBurned   Int?      @map("calories_burned")
   difficultyRating Int?      @map("difficulty_rating")
   enjoymentRating  Int?      @map("enjoyment_rating")
 

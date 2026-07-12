@@ -33,6 +33,7 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
             createdAt: true,
@@ -64,6 +65,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
             createdAt: true,
@@ -142,6 +144,7 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
             createdAt: true,
@@ -184,6 +187,10 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
     if (request.body.averageHeartRate !== undefined) {
         data.averageHeartRate = request.body.averageHeartRate;
     }
+
+    if (request.body.caloriesBurned !== undefined) {
+        data.caloriesBurned = request.body.caloriesBurned;
+    }
     if (request.body.difficultyRating !== undefined) {
         data.difficultyRating = request.body.difficultyRating;
     }
@@ -212,6 +219,7 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
             endedAt: true,
             notes: true,
             averageHeartRate: true,
+            caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
             createdAt: true,

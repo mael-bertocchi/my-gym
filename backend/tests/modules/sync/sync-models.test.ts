@@ -128,6 +128,25 @@ describe('SyncWorkoutSchema', () => {
         expect(SyncWorkoutSchema.safeParse(excessive).success).toBe(false);
     });
 
+    it('accepts a workout with caloriesBurned and keeps it', () => {
+        const burned = aggregate() as { caloriesBurned?: number };
+        burned.caloriesBurned = 464;
+        const result = SyncWorkoutSchema.safeParse(burned);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.caloriesBurned).toBe(464);
+        }
+    });
+
+    it('rejects a non-integer or out-of-range caloriesBurned', () => {
+        const fractional = aggregate() as { caloriesBurned?: number };
+        fractional.caloriesBurned = 320.6;
+        expect(SyncWorkoutSchema.safeParse(fractional).success).toBe(false);
+        const excessive = aggregate() as { caloriesBurned?: number };
+        excessive.caloriesBurned = 40000;
+        expect(SyncWorkoutSchema.safeParse(excessive).success).toBe(false);
+    });
+
     it('accepts a workout with ratings and keeps them', () => {
         const rated = aggregate() as { difficultyRating?: number | null; enjoymentRating?: number | null };
         rated.difficultyRating = 8;

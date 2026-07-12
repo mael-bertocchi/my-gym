@@ -50,6 +50,7 @@ export const UpdateWorkoutSchema = z.object({
     endedAt: z.coerce.date().nullable().optional(),
     notes: z.string().max(2000).optional(),
     averageHeartRate: z.number().int().min(1).max(300).nullable().optional(),
+    caloriesBurned: z.number().int().min(1).max(30000).nullable().optional(),
     difficultyRating: z.number().int().min(1).max(10).nullable().optional(),
     enjoymentRating: z.number().int().min(1).max(5).nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, {
