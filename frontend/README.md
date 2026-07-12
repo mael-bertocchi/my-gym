@@ -1,12 +1,25 @@
-# My Gym - Frontend
+# 🏋️ My Gym — iOS App
 
-The frontend is the iOS app built with SwiftUI. It handles sign-in, shows the main workout tabs, and syncs workout data with the backend.
+The native **iOS + Apple Watch** app, built entirely in SwiftUI. Log workouts, track your progress, and chat with your coach — online or off.
 
-## How it works
+## Highlights
 
-- Starts with authentication and local bootstrap, then opens the main app shell.
-- Covers home, history, stats, and coach flows.
-- Supports active workouts and a resume flow.
+- **Fast logging** — sets, warmups, drop & failure sets, supersets, and a built-in rest timer.
+- **Smart exercises** — per-machine settings that remember themselves, single-arm (iso-lateral) supersets, and bodyweight-only movements.
+- **Live Activity** — follow your workout from the lock screen and Dynamic Island.
+- **Apple Watch** — start, log, rest, and celebrate PRs straight from your wrist.
+- **Stats that land** — calendar heatmap, streaks, volume, muscle balance, personal records & estimated 1RM.
+- **AI coach** — a chat plus proactive insights, grounded in your own training data.
+- **Apple Health** — average heart rate captured on every session.
+- **Offline-first** — everything works with no connection and syncs when you're back.
+
+## Screens
+
+**Home · History · Stats · Coach** — plus a **Catalog** (exercises, gyms, brands) and a **Profile** with data export.
+
+## Tech
+
+Swift · SwiftUI · WidgetKit · WatchKit · HealthKit — three targets (`MyGym`, `Watch`, `Widgets`) with common code in `Shared/`.
 
 ## Local Development
 
