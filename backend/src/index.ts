@@ -127,20 +127,20 @@ async function startServer(): Promise<void> {
 
     fastify.setErrorHandler(handleGlobalError);
 
-    await fastify.register(accountRoutes, { prefix: '/api/v1/me' });
-    await fastify.register(assistantRoutes, { prefix: '/api/v1/assistant' });
-    await fastify.register(brandsRoutes, { prefix: '/api/v1/brands' });
-    await fastify.register(exerciseSettingsRoutes, { prefix: '/api/v1/exercise-settings' });
-    await fastify.register(exercisesRoutes, { prefix: '/api/v1/exercises' });
-    await fastify.register(gymsRoutes, { prefix: '/api/v1/gyms' });
-    await fastify.register(healthRoutes, { prefix: '/api/v1/health' });
-    await fastify.register(identityRoutes, { prefix: '/api/v1/identity' });
-    await fastify.register(statsRoutes, { prefix: '/api/v1/stats' });
-    await fastify.register(syncRoutes, { prefix: '/api/v1/sync' });
-    await fastify.register(usersRoutes, { prefix: '/api/v1/users' });
-    await fastify.register(workoutsRoutes, { prefix: '/api/v1/workouts' });
-    await fastify.register(workoutExercisesRoutes, { prefix: '/api/v1/workouts' });
-    await fastify.register(setsRoutes, { prefix: '/api/v1/workouts' });
+    await fastify.register(accountRoutes, { prefix: '/v1/me' });
+    await fastify.register(assistantRoutes, { prefix: '/v1/assistant' });
+    await fastify.register(brandsRoutes, { prefix: '/v1/brands' });
+    await fastify.register(exerciseSettingsRoutes, { prefix: '/v1/exercise-settings' });
+    await fastify.register(exercisesRoutes, { prefix: '/v1/exercises' });
+    await fastify.register(gymsRoutes, { prefix: '/v1/gyms' });
+    await fastify.register(healthRoutes, { prefix: '/v1/health' });
+    await fastify.register(identityRoutes, { prefix: '/v1/identity' });
+    await fastify.register(statsRoutes, { prefix: '/v1/stats' });
+    await fastify.register(syncRoutes, { prefix: '/v1/sync' });
+    await fastify.register(usersRoutes, { prefix: '/v1/users' });
+    await fastify.register(workoutsRoutes, { prefix: '/v1/workouts' });
+    await fastify.register(workoutExercisesRoutes, { prefix: '/v1/workouts' });
+    await fastify.register(setsRoutes, { prefix: '/v1/workouts' });
 
     fastify.setNotFoundHandler(handleNotFound);
 
