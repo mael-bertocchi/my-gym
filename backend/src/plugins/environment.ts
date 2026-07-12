@@ -11,7 +11,6 @@ import fp from 'fastify-plugin';
 export const variables = Type.Object({
     NODE_ENV: Type.Union([Type.Literal('development'), Type.Literal('production'), Type.Literal('test')]),
     PORT: Type.Number(),
-    CORS_ORIGINS: Type.String(),
     DATABASE_URL: Type.String({ minLength: 1 }),
     GOOGLE_AI_STUDIO_API_KEY: Type.String({ minLength: 1 }),
     GOOGLE_AI_MODEL: Type.String({ default: 'gemini-2.5-flash' }),
