@@ -7,6 +7,7 @@ struct MyGymApplication: App {
     @State private var session: ApplicationSession
     @State private var healthKit: HealthKitService
     @State private var activeWorkout: ActiveWorkoutStore
+    @State private var sessionCoordinator: WorkoutSessionCoordinator
     @State private var tabChrome = TabChromeState()
 
     init() {
@@ -20,14 +21,21 @@ struct MyGymApplication: App {
             healthKit: healthKit,
             restNotifications: restNotifications
         )
+        let session = ApplicationSession(
+            store: store,
+            syncEngine: syncEngine,
+            activeWorkout: activeWorkout
+        )
         _store = State(initialValue: store)
         _syncEngine = State(initialValue: syncEngine)
         _healthKit = State(initialValue: healthKit)
         _activeWorkout = State(initialValue: activeWorkout)
-        _session = State(initialValue: ApplicationSession(
+        _session = State(initialValue: session)
+        _sessionCoordinator = State(initialValue: WorkoutSessionCoordinator(
             store: store,
-            syncEngine: syncEngine,
-            activeWorkout: activeWorkout
+            activeWorkout: activeWorkout,
+            healthKit: healthKit,
+            session: session
         ))
     }
 

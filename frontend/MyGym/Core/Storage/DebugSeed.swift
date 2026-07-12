@@ -488,6 +488,7 @@ enum DebugSeed {
             endedAt: end,
             notes: notes,
             averageHeartRate: heartRate,
+            caloriesBurned: heartRate.map { _ in minutes * 8 },
             updatedAt: end,
             exercises: entries
         )

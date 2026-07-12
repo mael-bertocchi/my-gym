@@ -20,40 +20,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>UIApplicationSupportsAlternateIcons</key>
-	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>fr.mael-bertocchi.my-gym</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>mygym</string>
-			</array>
-		</dict>
-	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>My Gym can read the relevant data from Apple Health, such as your bodyweight.</string>
+	<string>My Gym reads your heart rate during workouts to show it live on your watch and iPhone.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>My Gym can save your finished workouts to Apple Health so they show up alongside your other activity.</string>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>LaunchBackground</string>
-	</dict>
-	<key>UISupportedInterfaceOrientations</key>
+	<string>My Gym runs a workout session on your watch so heart rate stays live while you train.</string>
+	<key>WKApplication</key>
+	<true/>
+	<key>WKBackgroundModes</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
+		<string>workout-processing</string>
 	</array>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>fr.mael-bertocchi.my-gym</string>
 </dict>
 </plist>

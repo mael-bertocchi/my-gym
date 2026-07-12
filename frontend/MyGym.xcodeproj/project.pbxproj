@@ -6,16 +6,82 @@
 	objectVersion = 70;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A300000000000000000000CC /* Widgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A300000000000000000000C2 /* Widgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A400000000000000000000DC /* Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A400000000000000000000D2 /* Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A300000000000000000000CA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A100000000000000000000AA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A300000000000000000000C3;
+			remoteInfo = Widgets;
+		};
+		A400000000000000000000DA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A100000000000000000000AA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A400000000000000000000D3;
+			remoteInfo = Watch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A500000000000000000000E1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A300000000000000000000CC /* Widgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A500000000000000000000E2 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				A400000000000000000000DC /* Watch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		A100000000000000000000A5 /* MyGym.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyGym.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A300000000000000000000C2 /* Widgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Widgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A400000000000000000000D2 /* Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Watch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A100000000000000000000A1 /* MyGym */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MyGym; sourceTree = "<group>"; };
+		A200000000000000000000B1 /* Shared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Shared; sourceTree = "<group>"; };
+		A300000000000000000000C1 /* Widgets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Widgets; sourceTree = "<group>"; };
+		A400000000000000000000D1 /* Watch */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Watch; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A100000000000000000000A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A300000000000000000000C5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A400000000000000000000D5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -29,6 +95,9 @@
 			isa = PBXGroup;
 			children = (
 				A100000000000000000000A1 /* MyGym */,
+				A200000000000000000000B1 /* Shared */,
+				A300000000000000000000C1 /* Widgets */,
+				A400000000000000000000D1 /* Watch */,
 				A100000000000000000000A4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,6 +106,8 @@
 			isa = PBXGroup;
 			children = (
 				A100000000000000000000A5 /* MyGym.app */,
+				A300000000000000000000C2 /* Widgets.appex */,
+				A400000000000000000000D2 /* Watch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -51,19 +122,70 @@
 				A100000000000000000000A8 /* Sources */,
 				A100000000000000000000A2 /* Frameworks */,
 				A100000000000000000000A9 /* Resources */,
+				A500000000000000000000E1 /* Embed Foundation Extensions */,
+				A500000000000000000000E2 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A300000000000000000000CB /* PBXTargetDependency */,
+				A400000000000000000000DB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A100000000000000000000A1 /* MyGym */,
+				A200000000000000000000B1 /* Shared */,
 			);
 			name = MyGym;
 			packageProductDependencies = (
 			);
 			productName = MyGym;
 			productReference = A100000000000000000000A5 /* MyGym.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A300000000000000000000C3 /* Widgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A300000000000000000000C7 /* Build configuration list for PBXNativeTarget "Widgets" */;
+			buildPhases = (
+				A300000000000000000000C4 /* Sources */,
+				A300000000000000000000C5 /* Frameworks */,
+				A300000000000000000000C6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A200000000000000000000B1 /* Shared */,
+				A300000000000000000000C1 /* Widgets */,
+			);
+			name = Widgets;
+			packageProductDependencies = (
+			);
+			productName = Widgets;
+			productReference = A300000000000000000000C2 /* Widgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A400000000000000000000D3 /* Watch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A400000000000000000000D7 /* Build configuration list for PBXNativeTarget "Watch" */;
+			buildPhases = (
+				A400000000000000000000D4 /* Sources */,
+				A400000000000000000000D5 /* Frameworks */,
+				A400000000000000000000D6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A200000000000000000000B1 /* Shared */,
+				A400000000000000000000D1 /* Watch */,
+			);
+			name = Watch;
+			packageProductDependencies = (
+			);
+			productName = Watch;
+			productReference = A400000000000000000000D2 /* Watch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -78,6 +200,12 @@
 				TargetAttributes = {
 					A100000000000000000000A6 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					A300000000000000000000C3 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					A400000000000000000000D3 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -96,12 +224,28 @@
 			projectRoot = "";
 			targets = (
 				A100000000000000000000A6 /* MyGym */,
+				A300000000000000000000C3 /* Widgets */,
+				A400000000000000000000D3 /* Watch */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A100000000000000000000A9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A300000000000000000000C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A400000000000000000000D6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -118,7 +262,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A300000000000000000000C4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A400000000000000000000D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A300000000000000000000CB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A300000000000000000000C3 /* Widgets */;
+			targetProxy = A300000000000000000000CA /* PBXContainerItemProxy */;
+		};
+		A400000000000000000000DB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A400000000000000000000D3 /* Watch */;
+			targetProxy = A400000000000000000000DA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A100000000000000000000AC /* Debug */ = {
@@ -261,7 +432,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -290,12 +461,118 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A300000000000000000000C8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/Widgets-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A300000000000000000000C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/Widgets-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A400000000000000000000D8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = Support/Watch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/Watch-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "My Gym";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		A400000000000000000000D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = Support/Watch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YLR3U54AUC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Support/Watch-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "My Gym";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.6;
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.mael-bertocchi.my-gym.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Release;
 		};
@@ -316,6 +593,24 @@
 			buildConfigurations = (
 				A100000000000000000000AC /* Debug */,
 				A100000000000000000000AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A300000000000000000000C7 /* Build configuration list for PBXNativeTarget "Widgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A300000000000000000000C8 /* Debug */,
+				A300000000000000000000C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A400000000000000000000D7 /* Build configuration list for PBXNativeTarget "Watch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A400000000000000000000D8 /* Debug */,
+				A400000000000000000000D9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

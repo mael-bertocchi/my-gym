@@ -22,6 +22,7 @@ final class HealthKitService {
     private static let heartRateType = HKQuantityType(.heartRate)
     private static let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
     private static let heartRateFreshness: TimeInterval = 300
+    private static let activeEnergyType = HKQuantityType(.activeEnergyBurned)
 
     private var uuidMap: [String: String] = [:]
 
@@ -30,6 +31,9 @@ final class HealthKitService {
     private var heartRateTotal: Double = 0
     private var heartRateCount = 0
     private var heartRateStreamTask: Task<Void, Never>?
+    private var caloriesTotal: Double = 0
+    private var watchCaloriesTotal: Double = 0
+    private var caloriesStreamTask: Task<Void, Never>?
 
     #if DEBUG
     var demoBodyweight: [BodyweightSample]?
@@ -46,7 +50,7 @@ final class HealthKitService {
         do {
             try await healthStore.requestAuthorization(
                 toShare: [Self.workoutType, Self.bodyMassType],
-                read: [Self.bodyMassType, Self.heartRateType]
+                read: [Self.bodyMassType, Self.heartRateType, Self.activeEnergyType]
             )
         } catch {
             logger.error("HealthKit authorization request failed: \(error.localizedDescription)")
@@ -166,6 +170,70 @@ final class HealthKitService {
         if let demoLiveHeartRate { return demoLiveHeartRate }
         #endif
         return average
+    }
+
+    func launchWatchApp() {
+        guard Self.isHealthDataAvailable else { return }
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType = .traditionalStrengthTraining
+        configuration.locationType = .indoor
+        healthStore.startWatchApp(with: configuration) { [logger] _, error in
+            if let error {
+                logger.error("HealthKit watch app launch failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func ingestExternalHeartRate(_ bpm: Int, at date: Date = .now) {
+        heartRateTotal += Double(bpm)
+        heartRateCount += 1
+        if latestHeartRateAt.map({ date > $0 }) ?? true {
+            latestHeartRate = bpm
+            latestHeartRateAt = date
+        }
+    }
+
+    func startCaloriesStream(from start: Date) {
+        #if DEBUG
+        guard !Self.isDemoLaunch else { return }
+        #endif
+        guard Self.isHealthDataAvailable, caloriesStreamTask == nil else { return }
+        caloriesTotal = 0
+        watchCaloriesTotal = 0
+        caloriesStreamTask = Task {
+            await requestAuthorization()
+            let descriptor = HKAnchoredObjectQueryDescriptor(
+                predicates: [.quantitySample(
+                    type: Self.activeEnergyType,
+                    predicate: HKQuery.predicateForSamples(withStart: start, end: nil)
+                )],
+                anchor: nil
+            )
+            do {
+                for try await update in descriptor.results(for: healthStore) {
+                    guard !Task.isCancelled else { break }
+                    for sample in update.addedSamples {
+                        caloriesTotal += sample.quantity.doubleValue(for: .kilocalorie())
+                    }
+                }
+            } catch {
+                logger.error("HealthKit active energy stream failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func ingestExternalCalories(_ kilocalories: Int) {
+        watchCaloriesTotal = max(watchCaloriesTotal, Double(kilocalories))
+    }
+
+    @discardableResult
+    func stopCaloriesStream() -> Int? {
+        caloriesStreamTask?.cancel()
+        caloriesStreamTask = nil
+        let total = max(caloriesTotal, watchCaloriesTotal)
+        caloriesTotal = 0
+        watchCaloriesTotal = 0
+        return total >= 1 ? Int(total.rounded()) : nil
     }
 
     private func resetHeartRateState() {

@@ -66,6 +66,7 @@ struct MainShell: View {
     @State private var debugShowAdminUsers = false
     @State private var debugShowManageAccount = false
     @State private var debugShowCatalog = false
+    @State private var debugShowLiveActivityPreview = false
     #endif
 
     var body: some View {
@@ -146,10 +147,26 @@ struct MainShell: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $debugShowLiveActivityPreview) {
+            LiveActivityPreviewScreen()
+        }
         #endif
         .onScenePhaseActive {
             activeWorkout.expireRestIfNeeded()
             Task { await syncEngine.sync() }
+        }
+        .onOpenURL { url in
+            guard url.scheme == "mygym", url.host() == "active" else { return }
+            if activeWorkout.isActive {
+                showActiveWorkout = true
+            }
+        }
+        .task {
+            for await _ in NotificationCenter.default.notifications(named: WorkoutSessionCoordinator.openActiveWorkoutNotification) {
+                if activeWorkout.isActive {
+                    showActiveWorkout = true
+                }
+            }
         }
         .onAppear {
             #if DEBUG
@@ -163,6 +180,12 @@ struct MainShell: View {
             case "admin-users": debugShowAdminUsers = true
             case "admin-account": debugShowManageAccount = true
             case "catalog", "catalog-gyms", "catalog-exercises", "catalog-new-exercise", "catalog-new-exercise-bottom": debugShowCatalog = true
+            case "la-preview", "la-preview-island": debugShowLiveActivityPreview = true
+            case "history-workout":
+                selection = .history
+                if let workoutId = store.workouts.first(where: { $0.endedAt != nil })?.id {
+                    historyWorkoutRoute = HistoryWorkoutRoute(workoutId: workoutId)
+                }
             default: break
             }
             #endif

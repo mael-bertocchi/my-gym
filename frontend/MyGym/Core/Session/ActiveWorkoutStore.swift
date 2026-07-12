@@ -32,6 +32,13 @@ final class ActiveWorkoutStore {
         var reps: Int?
     }
 
+    enum SessionMutation {
+        case changed
+        case finished(LocalWorkout, records: Int)
+    }
+
+    var onMutation: ((SessionMutation) -> Void)?
+
     private(set) var workout: LocalWorkout?
     private(set) var restTimer: RestTimer?
     private(set) var restContext: RestContext?
@@ -68,6 +75,7 @@ final class ActiveWorkoutStore {
         pausedSeconds = 0
         restNotifications.cancel()
         healthKit.startHeartRateStream(from: started.startedAt)
+        healthKit.startCaloriesStream(from: started.startedAt)
         persist()
     }
 
@@ -141,8 +149,10 @@ final class ActiveWorkoutStore {
 
     func finish(difficultyRating: Int? = nil, enjoymentRating: Int? = nil) {
         guard var finished = workout else { return }
+        let records = personalRecordExerciseCount()
         finished.endedAt = finished.startedAt.addingTimeInterval(elapsed())
         finished.averageHeartRate = healthKit.stopHeartRateStream()
+        finished.caloriesBurned = healthKit.stopCaloriesStream()
         finished.difficultyRating = difficultyRating
         finished.enjoymentRating = enjoymentRating
         store.upsertWorkout(finished)
@@ -154,6 +164,7 @@ final class ActiveWorkoutStore {
         pausedSeconds = 0
         restNotifications.cancel()
         persist()
+        onMutation?(.finished(finished, records: records))
         Task { await syncEngine.sync() }
         Task { await healthKit.logWorkout(finished, exerciseNames: exerciseNames) }
     }
@@ -166,6 +177,7 @@ final class ActiveWorkoutStore {
         pausedSeconds = 0
         restNotifications.cancel()
         healthKit.stopHeartRateStream()
+        healthKit.stopCaloriesStream()
         persist()
     }
 
@@ -472,6 +484,13 @@ final class ActiveWorkoutStore {
         )
     }
 
+    private func personalRecordExerciseCount() -> Int {
+        guard let workout else { return 0 }
+        return Set(workout.exercises.map(\.exerciseId))
+            .filter { currentPersonalRecordSetId(exerciseId: $0) != nil }
+            .count
+    }
+
     private func currentPersonalRecordSetId(exerciseId: String) -> String? {
         guard let current = workout else { return nil }
         let historicalBest = historicalBest(exerciseId: exerciseId)
@@ -572,6 +591,7 @@ final class ActiveWorkoutStore {
         if let data = try? APIClient.encoder.encode(snapshot) {
             try? data.write(to: Self.fileURL, options: .atomic)
         }
+        onMutation?(.changed)
     }
 
     private func restore() {
@@ -580,6 +600,7 @@ final class ActiveWorkoutStore {
         workout = snapshot.workout
         if let restored = snapshot.workout {
             healthKit.startHeartRateStream(from: restored.startedAt)
+            healthKit.startCaloriesStream(from: restored.startedAt)
         }
         pausedAt = snapshot.workout == nil ? nil : snapshot.pausedAt
         pausedSeconds = snapshot.workout == nil ? 0 : (snapshot.pausedSeconds ?? 0)

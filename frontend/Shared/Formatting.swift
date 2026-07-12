@@ -76,6 +76,10 @@ enum Formatting {
         weightNumber(kilograms, unit: unit) + unit.suffix
     }
 
+    static func spacedWeight(_ kilograms: Double, unit: WeightUnit = .kilograms) -> String {
+        weightNumber(kilograms, unit: unit) + " " + unit.suffix
+    }
+
     static func compactVolume(_ kilograms: Double, unit: WeightUnit = .kilograms) -> String {
         let value = displayWeight(kilograms, unit: unit)
         if value >= 1000 {

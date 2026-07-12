@@ -8,6 +8,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
     var endedAt: Date?
     var notes: String?
     var averageHeartRate: Int?
+    var caloriesBurned: Int?
     var difficultyRating: Int?
     var enjoymentRating: Int?
     var updatedAt: Date
@@ -21,6 +22,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         endedAt: Date? = nil,
         notes: String? = nil,
         averageHeartRate: Int? = nil,
+        caloriesBurned: Int? = nil,
         difficultyRating: Int? = nil,
         enjoymentRating: Int? = nil,
         updatedAt: Date = .now,
@@ -33,6 +35,7 @@ struct LocalWorkout: Codable, Identifiable, Equatable {
         self.endedAt = endedAt
         self.notes = notes
         self.averageHeartRate = averageHeartRate
+        self.caloriesBurned = caloriesBurned
         self.difficultyRating = difficultyRating
         self.enjoymentRating = enjoymentRating
         self.updatedAt = updatedAt
@@ -241,6 +244,7 @@ extension WorkoutDetail {
             endedAt: endedAt,
             notes: notes,
             averageHeartRate: averageHeartRate,
+            caloriesBurned: caloriesBurned,
             difficultyRating: difficultyRating,
             enjoymentRating: enjoymentRating,
             updatedAt: updatedAt,

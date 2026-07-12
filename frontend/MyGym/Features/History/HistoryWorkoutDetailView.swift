@@ -71,6 +71,12 @@ struct HistoryWorkoutDetailView: View {
                         value: "\(completedSetCount(for: workout))",
                         caption: "sets"
                     )
+                    if let calories = workout.caloriesBurned {
+                        WorkoutDetailStatTile(
+                            value: "\(calories)",
+                            caption: "kcal"
+                        )
+                    }
                 }
                 .padding(.bottom, hasRatings ? 12 : (personalRecordHits.isEmpty ? 20 : 18))
 
