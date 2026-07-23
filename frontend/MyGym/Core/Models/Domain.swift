@@ -286,6 +286,7 @@ struct WorkoutSummary: Codable, Identifiable, Equatable {
     var caloriesBurned: Int?
     var difficultyRating: Int?
     var enjoymentRating: Int?
+    var aiSummary: String?
     var createdAt: Date
     var updatedAt: Date
 }
@@ -334,6 +335,7 @@ struct WorkoutDetail: Codable, Identifiable, Equatable {
     var caloriesBurned: Int?
     var difficultyRating: Int?
     var enjoymentRating: Int?
+    var aiSummary: String?
     var createdAt: Date
     var updatedAt: Date
     var entries: [WorkoutEntry]

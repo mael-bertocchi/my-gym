@@ -202,7 +202,6 @@ struct MainShell: View {
         switch selection {
         case .home:
             HomeView(
-                onOpenCoach: { selection = .coach },
                 onOpenStats: { selection = .stats },
                 onOpenHistory: { selection = .history },
                 onStartWorkout: { showStartWorkout = true }

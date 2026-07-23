@@ -9,6 +9,7 @@ struct HistoryWorkoutDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var isEditPresented = false
+    @State private var isGeneratingSummary = false
 
     var body: some View {
         Group {
@@ -31,10 +32,25 @@ struct HistoryWorkoutDetailView: View {
                 }
             }
         }
+        .task { await generateSummaryIfNeeded() }
+    }
+
+    @MainActor
+    private func generateSummaryIfNeeded() async {
+        guard let workout = store.workout(id: workoutId),
+              workout.endedAt != nil,
+              workout.aiSummary == nil else { return }
+        isGeneratingSummary = true
+        defer { isGeneratingSummary = false }
+        guard let updated = try? await API.generateWorkoutSummary(id: workoutId) else { return }
+        guard var current = store.workout(id: workoutId) else { return }
+        current.aiSummary = updated.aiSummary
+        store.upsertWorkout(current, markDirty: false)
     }
 
     private func detail(for workout: LocalWorkout) -> some View {
         let personalRecordHits = HistoryPersonalRecordIndex(workouts: store.workouts).hits(for: workout.id)
+        let hasCalloutAfterRatings = workout.aiSummary != nil || isGeneratingSummary || !personalRecordHits.isEmpty
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center, spacing: 12) {
@@ -78,10 +94,18 @@ struct HistoryWorkoutDetailView: View {
                         )
                     }
                 }
-                .padding(.bottom, hasRatings ? 12 : (personalRecordHits.isEmpty ? 20 : 18))
+                .padding(.bottom, hasRatings ? 12 : (hasCalloutAfterRatings ? 18 : 20))
 
                 if hasRatings {
                     ratingsLine(for: workout)
+                        .padding(.bottom, hasCalloutAfterRatings ? 18 : 20)
+                }
+
+                if let aiSummary = workout.aiSummary {
+                    aiSummaryCard(text: aiSummary)
+                        .padding(.bottom, personalRecordHits.isEmpty ? 20 : 18)
+                } else if isGeneratingSummary {
+                    aiSummaryLoadingCard
                         .padding(.bottom, personalRecordHits.isEmpty ? 20 : 18)
                 }
 
@@ -138,6 +162,35 @@ struct HistoryWorkoutDetailView: View {
         return [Formatting.monoDate(workout.startedAt), gym]
             .compactMap { $0 }
             .joined(separator: " · ")
+    }
+
+    private func aiSummaryCard(text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "bubble.left")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.accentBlue)
+                EyebrowText("COACH'S TAKE", color: Theme.accentBlue)
+            }
+            Text(text)
+                .font(Theme.font(13))
+                .foregroundStyle(Theme.inkSecondary)
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .card()
+    }
+
+    private var aiSummaryLoadingCard: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .tint(Theme.muted2)
+            Spacer()
+        }
+        .padding(.vertical, 20)
+        .card()
     }
 
     private func personalRecordCallout(hits: [HistoryPersonalRecordIndex.Hit]) -> some View {

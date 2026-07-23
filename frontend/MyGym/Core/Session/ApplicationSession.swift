@@ -94,7 +94,6 @@ final class ApplicationSession {
 
     private func clearLocalState() {
         activeWorkout.discard()
-        InsightCache.clear()
         store.clearAll()
     }
 

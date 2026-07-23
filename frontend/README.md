@@ -9,7 +9,7 @@ The native **iOS + Apple Watch** app, built entirely in SwiftUI. Log workouts, t
 - **Live Activity** — follow your workout from the lock screen and Dynamic Island.
 - **Apple Watch** — start, log, rest, and celebrate PRs straight from your wrist.
 - **Stats that land** — calendar heatmap, streaks, volume, muscle balance, personal records & estimated 1RM.
-- **AI coach** — a chat plus proactive insights, grounded in your own training data.
+- **AI coach** — chat with your coach and get an AI-written summary on every workout, grounded in your own training data.
 - **Apple Health** — average heart rate captured on every session.
 - **Offline-first** — everything works with no connection and syncs when you're back.
 

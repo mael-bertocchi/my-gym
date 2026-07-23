@@ -235,6 +235,10 @@ enum API {
         let _: Message = try await client.delete("workouts/\(id)")
     }
 
+    static func generateWorkoutSummary(id: String) async throws -> WorkoutDetail {
+        try await client.post("workouts/\(id)/summary", body: EmptyBody())
+    }
+
     static func exerciseSettings(exerciseId: String? = nil) async throws -> Page<ExerciseSetting> {
         try await client.page("exercise-settings", query: [
             "exerciseId": exerciseId,
@@ -314,14 +318,6 @@ enum API {
 
     static func deleteConversation(id: String) async throws {
         let _: Message = try await client.delete("assistant/conversations/\(id)")
-    }
-
-    static func insights() async throws -> [String] {
-        struct Insights: Decodable {
-            var insights: [String]
-        }
-        let result: Insights = try await client.get("assistant/insights")
-        return result.insights
     }
 
     static func syncPull(since: Date?) async throws -> SyncPull {

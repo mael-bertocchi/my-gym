@@ -6,7 +6,6 @@ enum DebugSeed {
     @MainActor
     static func enterDemoEmpty(store: LocalStore, session: ApplicationSession, healthKit: HealthKitService, activeWorkout: ActiveWorkoutStore) {
         store.clearAll()
-        InsightCache.clear()
         healthKit.demoBodyweight = []
         let now = Date.now
         session.enterDemo(profile: UserProfile(
@@ -286,10 +285,11 @@ enum DebugSeed {
             cybex: cybex.id
         )
 
+        let showcasePull = showcasePullDay(gymId: ironTemple.id, ex: ex, br: br)
         var log: [LocalWorkout] = [
             showcasePushDay(gymId: ironTemple.id, ex: ex, br: br),
             showcaseLegDay(gymId: downtown.id, ex: ex, br: br),
-            showcasePullDay(gymId: ironTemple.id, ex: ex, br: br),
+            showcasePull,
         ]
 
         let rotation: [(offset: Int, split: Split)] = [
@@ -316,6 +316,9 @@ enum DebugSeed {
                 log.append(travelPushDay(daysAgo: offset, gymId: hotelLisbon.id, ex: ex))
             }
         }
+        for index in log.indices where log[index].id != showcasePull.id {
+            log[index].aiSummary = "Solid session — your top set matched last week's best and volume held steady across every lift. Push for one more rep on the incline press before adding load next time."
+        }
         for workout in log {
             store.upsertWorkout(workout, markDirty: false)
         }
@@ -338,12 +341,6 @@ enum DebugSeed {
         ])
         store.upsertSetting(exerciseId: legPress.id, settings: [
             "Seat": .number(3),
-        ])
-
-        InsightCache.write([
-            "Plateau — Chest Press · Hammer Strength: stuck at 62.5kg for 3 sessions. Try a back-off drop set or +1 rep before adding load.",
-            "Imbalance — Pull volume is low: back sets are 40% below push over 4 weeks. Add a row variation next session.",
-            "Suggestion — Ready to progress: Leg Press · Technogym hit all reps with room to spare. Add 5kg next time.",
         ])
 
         session.enterDemo(profile: UserProfile(

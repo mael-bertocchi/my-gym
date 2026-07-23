@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct HomeView: View {
-    var onOpenCoach: () -> Void = {}
     var onOpenStats: () -> Void = {}
     var onOpenHistory: () -> Void = {}
     var onStartWorkout: () -> Void = {}
@@ -20,8 +19,6 @@ struct HomeView: View {
 
                     thisWeekCard
                         .padding(.bottom, 16)
-
-                    coachInsightCard
 
                     SectionLabel("RECENT WORKOUTS")
                         .padding(.top, 22)
@@ -118,35 +115,6 @@ struct HomeView: View {
 
     private var weekVolume: Double {
         weekWorkouts.reduce(0) { $0 + $1.totalVolume }
-    }
-
-    private var coachInsightCard: some View {
-        Button(action: onOpenCoach) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "bubble.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Theme.accentBlue)
-                    EyebrowText("COACH INSIGHT", color: Theme.accentBlue)
-                }
-                Text(coachInsight)
-                    .font(Theme.font(14))
-                    .foregroundStyle(Theme.inkSecondary)
-                    .lineSpacing(4)
-                    .multilineTextAlignment(.leading)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .tintedCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var coachInsight: String {
-        if let first = InsightCache.read()?.first, !first.isEmpty {
-            return first
-        }
-        return "Log a few workouts and your coach will start spotting trends."
     }
 
     private var recentWorkouts: [LocalWorkout] {
