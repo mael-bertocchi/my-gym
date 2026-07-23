@@ -1,9 +1,98 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import { Prisma, SyncEntityType } from 'prisma/generated/prisma/client';
+import type { TargetWorkout, TargetWorkoutExercise } from 'src/assets/prompts/assistant';
+import { generateWorkoutSummary as buildWorkoutSummaryText } from 'src/modules/assistant/assistant-advice';
+import { loadAssistantContext } from 'src/modules/assistant/assistant-context';
 import type { CreateWorkoutRequest, ListWorkoutsRequest, UpdateWorkoutRequest, WorkoutParamsRequest } from 'src/modules/workouts/workouts-models';
 import { RequestError } from 'src/shared/models';
 import { buildCursorPage, parseCursor } from 'src/shared/pagination';
+
+/**
+ * @constant WORKOUT_DETAIL_SELECT
+ * @description The full single-workout shape (entries and sets included) shared by getWorkout and generateWorkoutSummary.
+ */
+const WORKOUT_DETAIL_SELECT = {
+    id: true,
+    gymId: true,
+    name: true,
+    startedAt: true,
+    endedAt: true,
+    notes: true,
+    averageHeartRate: true,
+    caloriesBurned: true,
+    difficultyRating: true,
+    enjoymentRating: true,
+    aiSummary: true,
+    createdAt: true,
+    updatedAt: true,
+    gym: { select: { name: true } },
+    entries: {
+        orderBy: { position: Prisma.SortOrder.asc },
+        select: {
+            id: true,
+            exerciseId: true,
+            brandId: true,
+            position: true,
+            notes: true,
+            settings: true,
+            supersetId: true,
+            createdAt: true,
+            exercise: {
+                select: { id: true, name: true, primaryMuscle: true, equipment: true }
+            },
+            sets: {
+                orderBy: { setNumber: Prisma.SortOrder.asc },
+                select: {
+                    id: true,
+                    setNumber: true,
+                    setType: true,
+                    side: true,
+                    weightKg: true,
+                    reps: true,
+                    distanceM: true,
+                    durationSeconds: true,
+                    isCompleted: true,
+                    createdAt: true
+                }
+            }
+        }
+    }
+} as const;
+
+/**
+ * @function toTargetWorkout
+ * @description Maps a workout loaded with WORKOUT_DETAIL_SELECT into the shape the workout-summary prompt expects, keeping only completed sets.
+ *
+ * @param {object} workout The loaded workout row.
+ * @returns {TargetWorkout} The workout being reviewed, ready for the prompt.
+ */
+function toTargetWorkout(workout: Prisma.WorkoutGetPayload<{ select: typeof WORKOUT_DETAIL_SELECT }>): TargetWorkout {
+    const durationMinutes = workout.endedAt !== null
+        ? Math.round((workout.endedAt.getTime() - workout.startedAt.getTime()) / 60000)
+        : null;
+
+    const exercises: TargetWorkoutExercise[] = workout.entries.map((entry) => ({
+        name: entry.exercise.name,
+        sets: entry.sets
+            .filter((set) => set.isCompleted)
+            .map((set) => ({
+                setType: set.setType,
+                weightKg: set.weightKg !== null ? set.weightKg.toNumber() : null,
+                reps: set.reps
+            }))
+    }));
+
+    return {
+        name: workout.name,
+        date: workout.startedAt.toISOString(),
+        gym: workout.gym?.name ?? null,
+        durationMinutes,
+        difficultyRating: workout.difficultyRating,
+        enjoymentRating: workout.enjoymentRating,
+        exercises
+    };
+}
 
 /**
  * @function listWorkouts
@@ -36,6 +125,7 @@ async function listWorkouts(request: FastifyRequest<ListWorkoutsRequest>, reply:
             caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
+            aiSummary: true,
             createdAt: true,
             updatedAt: true
         },
@@ -68,6 +158,7 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
             caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
+            aiSummary: true,
             createdAt: true,
             updatedAt: true,
             entries: {
@@ -112,6 +203,41 @@ async function getWorkout(request: FastifyRequest<WorkoutParamsRequest>, reply: 
 }
 
 /**
+ * @function generateWorkoutSummary
+ * @description Generates (or returns the cached) AI recap and advice for one of the caller's finished workouts.
+ *
+ * @returns {Promise<void>} Resolves when the workout is sent.
+ */
+async function generateWorkoutSummary(request: FastifyRequest<WorkoutParamsRequest>, reply: FastifyReply): Promise<void> {
+    const workout = await request.server.prisma.workout.findFirst({
+        where: { id: request.params.workoutId, userId: request.user.id },
+        select: WORKOUT_DETAIL_SELECT
+    });
+
+    if (workout === null) {
+        throw new RequestError(StatusCodes.NOT_FOUND, 'Workout not found');
+    }
+    if (workout.endedAt === null) {
+        throw new RequestError(StatusCodes.BAD_REQUEST, 'Workout has not been finished yet');
+    }
+    if (workout.aiSummary !== null) {
+        reply.status(StatusCodes.OK).send({ data: workout });
+        return;
+    }
+
+    const context = await loadAssistantContext(request.server.prisma, request.user.id);
+    const aiSummary = await buildWorkoutSummaryText(request.server.ai, context, toTargetWorkout(workout));
+
+    const updated = await request.server.prisma.workout.update({
+        where: { id: workout.id },
+        data: { aiSummary },
+        select: WORKOUT_DETAIL_SELECT
+    });
+
+    reply.status(StatusCodes.OK).send({ data: updated });
+}
+
+/**
  * @function createWorkout
  * @description Starts a workout for the caller (startedAt defaults to now).
  *
@@ -147,6 +273,7 @@ async function createWorkout(request: FastifyRequest<CreateWorkoutRequest>, repl
             caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
+            aiSummary: true,
             createdAt: true,
             updatedAt: true
         }
@@ -222,6 +349,7 @@ async function updateWorkout(request: FastifyRequest<UpdateWorkoutRequest>, repl
             caloriesBurned: true,
             difficultyRating: true,
             enjoymentRating: true,
+            aiSummary: true,
             createdAt: true,
             updatedAt: true
         }
@@ -258,6 +386,7 @@ async function deleteWorkout(request: FastifyRequest<WorkoutParamsRequest>, repl
 export default {
     listWorkouts,
     getWorkout,
+    generateWorkoutSummary,
     createWorkout,
     updateWorkout,
     deleteWorkout

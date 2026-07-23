@@ -6,7 +6,7 @@ import { UuidParamsSchema } from 'src/shared/schemas';
 
 /**
  * @function assistantRoutes
- * @description Defines the coaching-assistant routes (conversations, messages, and proactive insights).
+ * @description Defines the coaching-assistant routes (conversations and messages).
  */
 export default function (fastify: FastifyInstance): void {
     fastify.get<ListConversationsRequest>('/conversations', {
@@ -44,8 +44,4 @@ export default function (fastify: FastifyInstance): void {
             params: UuidParamsSchema
         }
     }, assistantController.deleteConversation);
-
-    fastify.get('/insights', {
-        preHandler: [fastify.authentication.authenticate]
-    }, assistantController.getInsights);
 }

@@ -1,15 +1,6 @@
-import type { AssistantContext, AssistantPromptMessage } from 'src/assets/prompts/assistant';
-import { buildChatSystem, buildInsightsPrompt } from 'src/assets/prompts/assistant';
+import type { AssistantContext, AssistantPromptMessage, TargetWorkout } from 'src/assets/prompts/assistant';
+import { buildChatSystem, buildWorkoutSummaryPrompt } from 'src/assets/prompts/assistant';
 import type { GoogleAI } from 'src/plugins/google-ai';
-import { z } from 'zod';
-
-/**
- * @constant InsightsResultSchema
- * @description Runtime parser for the proactive-insights JSON the model must return.
- */
-const InsightsResultSchema = z.object({
-    insights: z.array(z.string())
-});
 
 /**
  * @function generateReply
@@ -32,16 +23,21 @@ export async function generateReply(ai: GoogleAI, context: AssistantContext, his
 }
 
 /**
- * @function generateInsights
- * @description Asks the model for proactive insights from the caller's training context and validates the JSON reply.
+ * @function generateWorkoutSummary
+ * @description Streams the assistant's recap and advice for one completed workout, grounded in that workout plus the caller's recent training, and collects it into a single string.
  *
  * @param {GoogleAI} ai The Gemini client decorated on the Fastify instance.
- * @param {AssistantContext} context The caller's training context.
- * @returns {Promise<string[]>} The validated list of insight strings.
+ * @param {AssistantContext} context The caller's training context, for comparison.
+ * @param {TargetWorkout} target The workout being reviewed.
+ * @returns {Promise<string>} The full summary text.
  */
-export async function generateInsights(ai: GoogleAI, context: AssistantContext): Promise<string[]> {
-    const prompt = buildInsightsPrompt(context);
-    const raw = await ai.chat<unknown>({ system: prompt.system, messages: prompt.messages, temperature: 0.4 });
+export async function generateWorkoutSummary(ai: GoogleAI, context: AssistantContext, target: TargetWorkout): Promise<string> {
+    const prompt = buildWorkoutSummaryPrompt(context, target);
 
-    return InsightsResultSchema.parse(raw).insights;
+    let summary = '';
+    for await (const delta of ai.stream({ system: prompt.system, messages: prompt.messages, temperature: 0.5 })) {
+        summary += delta;
+    }
+
+    return summary;
 }

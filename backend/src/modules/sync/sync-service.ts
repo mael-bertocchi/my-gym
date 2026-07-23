@@ -30,6 +30,7 @@ export async function pullChanges(prisma: PrismaClient, userId: string, since: D
                 caloriesBurned: true,
                 difficultyRating: true,
                 enjoymentRating: true,
+                aiSummary: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {
@@ -144,6 +145,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                 caloriesBurned: true,
                     difficultyRating: true,
                     enjoymentRating: true,
+                    aiSummary: true,
                     createdAt: true,
                     updatedAt: true,
                     entries: {
@@ -234,6 +236,7 @@ async function applyWorkout(prisma: PrismaClient, userId: string, workout: SyncW
                 caloriesBurned: true,
                 difficultyRating: true,
                 enjoymentRating: true,
+                aiSummary: true,
                 createdAt: true,
                 updatedAt: true,
                 entries: {

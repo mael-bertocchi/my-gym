@@ -1,5 +1,5 @@
-import type { AssistantContext } from 'src/assets/prompts/assistant';
-import { buildChatSystem, buildInsightsPrompt, formatContext } from 'src/assets/prompts/assistant';
+import type { AssistantContext, TargetWorkout } from 'src/assets/prompts/assistant';
+import { buildChatSystem, buildWorkoutSummaryPrompt, formatContext } from 'src/assets/prompts/assistant';
 import { describe, expect, it } from 'vitest';
 
 const context: AssistantContext = {
@@ -9,6 +9,18 @@ const context: AssistantContext = {
     ],
     personalRecords: [{ name: 'Chest Press', heaviestKg: 100, bestEstimated1RM: 116.7 }],
     muscleBalance: [{ muscle: 'CHEST', sets: 6, volume: 3000 }]
+};
+
+const target: TargetWorkout = {
+    name: 'Push day',
+    date: '2026-07-18T18:00:00.000Z',
+    gym: 'Iron Temple',
+    durationMinutes: 58,
+    difficultyRating: 7,
+    enjoymentRating: 4,
+    exercises: [
+        { name: 'Chest Press', sets: [{ setType: 'WARMUP', weightKg: 40, reps: 12 }, { setType: 'NORMAL', weightKg: 62.5, reps: 10 }] }
+    ]
 };
 
 describe('formatContext', () => {
@@ -34,11 +46,18 @@ describe('buildChatSystem', () => {
     });
 });
 
-describe('buildInsightsPrompt', () => {
-    it('asks for JSON insights as a single user turn', () => {
-        const prompt = buildInsightsPrompt(context);
+describe('buildWorkoutSummaryPrompt', () => {
+    it('grounds the prompt in the target workout and the recent-training context', () => {
+        const prompt = buildWorkoutSummaryPrompt(context, target);
         expect(prompt.messages).toHaveLength(1);
         expect(prompt.messages[0].role).toBe('user');
-        expect(prompt.system).toContain('JSON');
+        expect(prompt.system).toContain('Push day');
+        expect(prompt.system).toContain('Chest Press');
+        expect(prompt.system).toContain('Maël Bertocchi');
+    });
+
+    it('notes when the workout has no logged exercises', () => {
+        const prompt = buildWorkoutSummaryPrompt(context, { ...target, exercises: [] });
+        expect(prompt.system.toLowerCase()).toContain('no exercises logged');
     });
 });

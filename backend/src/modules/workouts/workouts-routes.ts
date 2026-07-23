@@ -29,6 +29,13 @@ export default function (fastify: FastifyInstance): void {
         }
     }, workoutsController.getWorkout);
 
+    fastify.post<WorkoutParamsRequest>('/:workoutId/summary', {
+        preHandler: [fastify.authentication.authenticate],
+        schema: {
+            params: WorkoutParamsSchema
+        }
+    }, workoutsController.generateWorkoutSummary);
+
     fastify.patch<UpdateWorkoutRequest>('/:workoutId', {
         preHandler: [fastify.authentication.authenticate],
         schema: {

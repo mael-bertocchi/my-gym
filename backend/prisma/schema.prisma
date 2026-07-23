@@ -210,6 +210,7 @@ model Workout {
   caloriesBurned   Int?      @map("calories_burned")
   difficultyRating Int?      @map("difficulty_rating")
   enjoymentRating  Int?      @map("enjoyment_rating")
+  aiSummary        String?   @map("ai_summary")
 
   entries WorkoutExercise[]
 

@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { StatusCodes } from 'http-status-codes';
 import { MessageRole } from 'prisma/generated/prisma/client';
-import { generateInsights, generateReply } from 'src/modules/assistant/assistant-advice';
+import { generateReply } from 'src/modules/assistant/assistant-advice';
 import { loadAssistantContext } from 'src/modules/assistant/assistant-context';
 import type { ConversationParamsRequest, CreateConversationRequest, ListConversationsRequest, SendMessageRequest } from 'src/modules/assistant/assistant-models';
 import { RequestError } from 'src/shared/models';
@@ -153,24 +153,10 @@ async function deleteConversation(request: FastifyRequest<ConversationParamsRequ
     reply.status(StatusCodes.OK).send({ data: { message: 'Conversation deleted' } });
 }
 
-/**
- * @function getInsights
- * @description Returns proactive insights generated from the caller's recent training data.
- *
- * @returns {Promise<void>} Resolves when the insights are sent.
- */
-async function getInsights(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const context = await loadAssistantContext(request.server.prisma, request.user.id);
-    const insights = await generateInsights(request.server.ai, context);
-
-    reply.status(StatusCodes.OK).send({ data: { insights } });
-}
-
 export default {
     listConversations,
     createConversation,
     getConversation,
     sendMessage,
-    deleteConversation,
-    getInsights
+    deleteConversation
 };

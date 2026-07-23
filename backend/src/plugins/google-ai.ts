@@ -18,16 +18,6 @@ interface ChatMessage {
 }
 
 /**
- * @interface ChatOptions
- * @description Options for a JSON-mode generation request.
- */
-interface ChatOptions {
-    system: string; /*!< System instruction that sets the context of the conversation */
-    messages: ChatMessage[]; /*!< An array of messages representing the conversation history */
-    temperature: number; /*!< Temperature setting for response variability (0..2) */
-}
-
-/**
  * @interface StreamChatOptions
  * @description Options for a streaming, freeform generation request.
  */
@@ -43,7 +33,6 @@ export interface StreamChatOptions {
  * @description Public interface exposed on the Fastify instance.
  */
 export interface GoogleAI {
-    chat: <T>(options: ChatOptions) => Promise<T>; /*!< Single-shot JSON-mode completion used by proactive insights */
     stream: (options: StreamChatOptions) => AsyncIterable<string>; /*!< Incremental text stream for the freeform assistant */
 }
 
@@ -67,31 +56,6 @@ export default fp(function (fastify: FastifyInstance): void {
     const model = fastify.variables.GOOGLE_AI_MODEL;
 
     fastify.decorate('ai', {
-        async chat<T>(options: ChatOptions): Promise<T> {
-            if (options.temperature < 0 || options.temperature > 2) {
-                throw new Error('Temperature must be between 0 and 2');
-            }
-
-            const response = await client.models.generateContent({
-                model,
-                contents: toContents(options.messages),
-                config: {
-                    systemInstruction: `${options.system}\nAlways respond with a single valid JSON object.`,
-                    temperature: options.temperature,
-                    responseMimeType: 'application/json'
-                }
-            });
-
-            const text = response.text;
-            if (text === undefined || text.length < 1) {
-                throw new Error('Google AI returned an empty response');
-            }
-
-            const parsed: unknown = JSON.parse(text);
-
-            return parsed as T;
-        },
-
         async *stream(options: StreamChatOptions): AsyncGenerator<string, void, void> {
             if (options.temperature < 0 || options.temperature > 2) {
                 throw new Error('Temperature must be between 0 and 2');

@@ -8,7 +8,7 @@ The modular **Fastify + TypeScript** server that powers My Gym: authentication, 
 - **Auth** — JWT access + refresh sessions, Argon2 password hashing, per-route rate limiting.
 - **Offline sync** — pull/push endpoints with conflict resolution and deletion tombstones.
 - **Statistics** — dashboards, streaks, calendar heatmaps, muscle balance, and personal records, all computed server-side.
-- **AI coaching** — a conversational coach plus proactive insights via Google Gemini, grounded strictly in the athlete's own data.
+- **AI coaching** — a conversational coach and per-workout AI summaries via Google Gemini, grounded strictly in the athlete's own data.
 - **Retention** — workouts and records auto-purge after one year.
 - **Hardened** — Helmet, rate limiting, Zod request validation, and a non-root Docker image.
 
