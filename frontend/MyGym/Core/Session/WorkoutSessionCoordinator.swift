@@ -214,7 +214,9 @@ final class WorkoutSessionCoordinator {
             weightStep: weightStep(for: exercise),
             supersetLetter: memberIndex.map { $0 == 0 ? "A" : "B" },
             partnerLetter: memberIndex.map { $0 == 0 ? "B" : "A" },
-            partnerName: partner.flatMap { store.exercise(id: $0.exerciseId)?.name }
+            partnerName: partner.flatMap { store.exercise(id: $0.exerciseId)?.name },
+            distanceM: set.distanceM,
+            durationSeconds: (exercise?.loggingType.isCardio == true || exercise?.loggingType == .duration) ? set.durationSeconds : nil
         )
     }
 

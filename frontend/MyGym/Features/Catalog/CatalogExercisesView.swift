@@ -35,7 +35,7 @@ struct CatalogExercisesView: View {
     }
 
     private var occurringMuscles: [MuscleGroup] {
-        let present = Set(store.exercises.map(\.primaryMuscle))
+        let present = Set(store.exercises.compactMap(\.primaryMuscle))
         return MuscleGroup.allCases.filter { present.contains($0) }
     }
 
@@ -229,7 +229,7 @@ struct CatalogExerciseAddSheet: View {
     @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup> = []
     @State private var isUnilateral = false
-    @State private var isWeighted = true
+    @State private var loggingType: ExerciseLoggingType = .weightReps
 
     @State private var isCreating = false
     @State private var alert: ManageAlert?
@@ -241,10 +241,12 @@ struct CatalogExerciseAddSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     nameField
                     equipmentField
-                    brandField
-                    muscleField
-                    secondaryMuscleField
                     setLoggingField
+                    brandField
+                    if loggingType.showsMuscle {
+                        muscleField
+                        secondaryMuscleField
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -375,16 +377,33 @@ struct CatalogExerciseAddSheet: View {
     private var setLoggingField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("SET LOGGING")
-            ManageToggleRow(
-                title: "Weighted",
-                subtitle: "Log a weight for each set. Turn off for bodyweight-only exercises.",
-                isOn: $isWeighted
-            )
-            ManageToggleRow(
-                title: "Iso-Lateral",
-                subtitle: "Log each set for the left and right side.",
-                isOn: $isUnilateral
-            )
+            ManageDropdownField(text: loggingType.label, isPlaceholder: false) {
+                ForEach(ExerciseLoggingType.allCases) { type in
+                    Button(type.label) { selectLoggingType(type) }
+                }
+            }
+            Text(loggingType.caption)
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
+            if loggingType.supportsUnilateral {
+                ManageToggleRow(
+                    title: "Iso-Lateral",
+                    subtitle: "Log each set for the left and right side.",
+                    isOn: $isUnilateral
+                )
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    private func selectLoggingType(_ type: ExerciseLoggingType) {
+        loggingType = type
+        if !type.showsMuscle {
+            primaryMuscle = nil
+            secondaryMuscles = []
+        }
+        if !type.supportsUnilateral {
+            isUnilateral = false
         }
     }
 
@@ -392,7 +411,7 @@ struct CatalogExerciseAddSheet: View {
         PrimaryButton(
             title: "Add exercise",
             isLoading: isCreating,
-            isDisabled: trimmedName.isEmpty || primaryMuscle == nil || (brandMode == .single && brandId == nil)
+            isDisabled: trimmedName.isEmpty || (loggingType.requiresMuscle && primaryMuscle == nil) || (brandMode == .single && brandId == nil)
         ) {
             create()
         }
@@ -407,7 +426,8 @@ struct CatalogExerciseAddSheet: View {
 
     private func create() {
         let name = trimmedName
-        guard !name.isEmpty, let muscle = primaryMuscle, !isCreating else { return }
+        guard !name.isEmpty, !isCreating else { return }
+        guard !loggingType.requiresMuscle || primaryMuscle != nil else { return }
         guard !store.exercises.contains(where: {
             $0.name.caseInsensitiveCompare(name) == .orderedSame
         }) else {
@@ -422,13 +442,13 @@ struct CatalogExerciseAddSheet: View {
             do {
                 let exercise = try await API.createExercise(.init(
                     name: name,
-                    primaryMuscle: muscle,
+                    primaryMuscle: loggingType.showsMuscle ? primaryMuscle : nil,
                     secondaryMuscles: secondaryMuscles.isEmpty ? nil : Array(secondaryMuscles),
                     equipment: equipment,
+                    loggingType: loggingType,
                     brandMode: brandMode,
                     brandId: brandMode == .single ? brandId : nil,
-                    isUnilateral: isUnilateral,
-                    isWeighted: isWeighted
+                    isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: exercise)
                 isCreating = false

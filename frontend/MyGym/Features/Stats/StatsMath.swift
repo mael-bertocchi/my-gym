@@ -129,7 +129,9 @@ enum StatsMath {
                 guard let exercise = byId[entry.exerciseId] else { continue }
                 let workingSets = entry.sets.filter { $0.isCompleted && $0.setType == .normal }.count
                 guard workingSets > 0 else { continue }
-                credits[exercise.primaryMuscle, default: 0] += Double(workingSets)
+                if let primaryMuscle = exercise.primaryMuscle {
+                    credits[primaryMuscle, default: 0] += Double(workingSets)
+                }
                 for secondary in exercise.secondaryMuscles {
                     credits[secondary, default: 0] += 0.5 * Double(workingSets)
                 }
@@ -198,14 +200,14 @@ enum StatsMath {
     ) -> (percent: Int, category: ExerciseCategory)? {
         let byId = Dictionary(exercises.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         guard let exercise = byId[exerciseId],
-              let category = ExerciseCategory(muscle: exercise.primaryMuscle) else { return nil }
+              let category = exercise.primaryMuscle.flatMap(ExerciseCategory.init(muscle:)) else { return nil }
 
         var categoryTotal = 0.0
         var exerciseTotal = 0.0
         for workout in workouts {
             for entry in workout.exercises {
                 guard let other = byId[entry.exerciseId],
-                      ExerciseCategory(muscle: other.primaryMuscle) == category else { continue }
+                      other.primaryMuscle.flatMap(ExerciseCategory.init(muscle:)) == category else { continue }
                 let volume = entry.sets
                     .filter { $0.isCompleted && $0.setType == .normal }
                     .reduce(0) { $0 + $1.volume }

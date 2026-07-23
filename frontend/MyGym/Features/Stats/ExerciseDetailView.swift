@@ -69,7 +69,10 @@ struct ExerciseDetailView: View {
     }
 
     private func subtitle(for exercise: Exercise) -> String {
-        "\(exercise.equipment.rawValue) · \(exercise.primaryMuscle.label.uppercased())"
+        if let muscle = exercise.primaryMuscle {
+            return "\(exercise.equipment.rawValue) · \(muscle.label.uppercased())"
+        }
+        return exercise.equipment.rawValue
     }
 
     private var favoriteButton: some View {

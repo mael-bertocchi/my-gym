@@ -120,13 +120,13 @@ enum API {
 
     struct CreateExerciseRequest: Encodable {
         var name: String
-        var primaryMuscle: MuscleGroup
+        var primaryMuscle: MuscleGroup?
         var secondaryMuscles: [MuscleGroup]?
         var equipment: EquipmentType
+        var loggingType: ExerciseLoggingType
         var brandMode: ExerciseBrandMode
         var brandId: String?
         var isUnilateral: Bool
-        var isWeighted: Bool
     }
 
     static func createExercise(_ request: CreateExerciseRequest) async throws -> Exercise {
@@ -149,16 +149,16 @@ enum API {
 
     struct EditExerciseRequest: Encodable {
         var name: String
-        var primaryMuscle: MuscleGroup
+        var primaryMuscle: MuscleGroup?
         var secondaryMuscles: [MuscleGroup]
         var equipment: EquipmentType
+        var loggingType: ExerciseLoggingType
         var brandMode: ExerciseBrandMode
         var brandId: String?
         var isUnilateral: Bool
-        var isWeighted: Bool
 
         private enum CodingKeys: String, CodingKey {
-            case name, primaryMuscle, secondaryMuscles, equipment, brandMode, brandId, isUnilateral, isWeighted
+            case name, primaryMuscle, secondaryMuscles, equipment, loggingType, brandMode, brandId, isUnilateral
         }
 
         func encode(to encoder: Encoder) throws {
@@ -167,10 +167,10 @@ enum API {
             try container.encode(primaryMuscle, forKey: .primaryMuscle)
             try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
             try container.encode(equipment, forKey: .equipment)
+            try container.encode(loggingType, forKey: .loggingType)
             try container.encode(brandMode, forKey: .brandMode)
             try container.encode(brandId, forKey: .brandId)
             try container.encode(isUnilateral, forKey: .isUnilateral)
-            try container.encode(isWeighted, forKey: .isWeighted)
         }
     }
 

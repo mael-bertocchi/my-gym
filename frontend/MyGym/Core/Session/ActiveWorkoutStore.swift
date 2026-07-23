@@ -123,6 +123,8 @@ final class ActiveWorkoutStore {
                         side: set.side,
                         weightKg: isWeighted(exerciseId: entry.exerciseId) ? set.weightKg : nil,
                         reps: set.reps,
+                        distanceM: set.distanceM,
+                        durationSeconds: set.durationSeconds,
                         isCompleted: false
                     )
                 }
@@ -195,6 +197,8 @@ final class ActiveWorkoutStore {
                     side: exercise.isUnilateral ? set.side : nil,
                     weightKg: exercise.isWeighted ? set.weightKg : nil,
                     reps: set.reps,
+                    distanceM: set.distanceM,
+                    durationSeconds: set.durationSeconds,
                     isCompleted: false
                 )
             }
@@ -317,7 +321,14 @@ final class ActiveWorkoutStore {
         } else {
             let last = sets.last
             workout?.exercises[index].sets.append(
-                LocalSet(setNumber: nextNumber, setType: .normal, weightKg: carriesWeight ? last?.weightKg : nil, reps: last?.reps)
+                LocalSet(
+                    setNumber: nextNumber,
+                    setType: .normal,
+                    weightKg: carriesWeight ? last?.weightKg : nil,
+                    reps: last?.reps,
+                    distanceM: last?.distanceM,
+                    durationSeconds: last?.durationSeconds
+                )
             )
         }
         persist()
@@ -337,7 +348,9 @@ final class ActiveWorkoutStore {
         guard let sets = workout?.exercises[entryIndex].sets else { return }
         let carriesWeight = updated.weightKg != previous.weightKg
         let carriesReps = updated.reps != previous.reps
-        guard carriesWeight || carriesReps else { return }
+        let carriesDistance = updated.distanceM != previous.distanceM
+        let carriesDuration = updated.durationSeconds != previous.durationSeconds
+        guard carriesWeight || carriesReps || carriesDistance || carriesDuration else { return }
         for index in sets.indices where index > setIndex {
             guard sets[index].side == updated.side, !sets[index].isCompleted else { continue }
             if carriesWeight, sets[index].weightKg == previous.weightKg {
@@ -345,6 +358,12 @@ final class ActiveWorkoutStore {
             }
             if carriesReps, sets[index].reps == previous.reps {
                 workout?.exercises[entryIndex].sets[index].reps = updated.reps
+            }
+            if carriesDistance, sets[index].distanceM == previous.distanceM {
+                workout?.exercises[entryIndex].sets[index].distanceM = updated.distanceM
+            }
+            if carriesDuration, sets[index].durationSeconds == previous.durationSeconds {
+                workout?.exercises[entryIndex].sets[index].durationSeconds = updated.durationSeconds
             }
         }
     }

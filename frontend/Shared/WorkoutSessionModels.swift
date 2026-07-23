@@ -38,8 +38,18 @@ struct WorkoutSessionState: Codable, Hashable {
         var supersetLetter: String?
         var partnerLetter: String?
         var partnerName: String?
+        var distanceM: Double?
+        var durationSeconds: Int?
 
         var valueLine: String {
+            if distanceM != nil || durationSeconds != nil {
+                let time = durationSeconds.map { Formatting.elapsed(TimeInterval($0)) }
+                if let distanceM {
+                    let distance = Formatting.distance(distanceM)
+                    return time.map { "\(distance) · \($0)" } ?? distance
+                }
+                return time ?? "—"
+            }
             let repsPart = "\(reps ?? 0)"
             guard isWeighted, let weightKg else { return "\(repsPart) reps" }
             return "\(Formatting.spacedWeight(weightKg)) × \(repsPart)"

@@ -60,8 +60,56 @@ enum Formatting {
         return "\(minutes)m"
     }
 
+    static let metersPerKilometer = 1000.0
+    static let metersPerMile = 1609.344
+
     static func displayWeight(_ kilograms: Double, unit: WeightUnit) -> Double {
         unit == .kilograms ? kilograms : kilograms / kilogramsPerPound
+    }
+
+    static func distanceUnitLabel(_ unit: WeightUnit) -> String {
+        unit == .kilograms ? "KM" : "MI"
+    }
+
+    static func displayDistance(_ meters: Double, unit: WeightUnit) -> Double {
+        meters / (unit == .kilograms ? metersPerKilometer : metersPerMile)
+    }
+
+    static func distanceNumber(_ meters: Double, unit: WeightUnit = .kilograms) -> String {
+        let value = displayDistance(meters, unit: unit)
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%.2f", value)
+    }
+
+    static func distance(_ meters: Double, unit: WeightUnit = .kilograms) -> String {
+        distanceNumber(meters, unit: unit) + " " + (unit == .kilograms ? "km" : "mi")
+    }
+
+    static func parseDistanceMeters(_ text: String, unit: WeightUnit) -> Double? {
+        let normalized = text
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: ",", with: ".")
+        guard !normalized.isEmpty, let value = Double(normalized) else { return nil }
+        return value * (unit == .kilograms ? metersPerKilometer : metersPerMile)
+    }
+
+    static func parseDurationSeconds(_ text: String) -> Int? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        if trimmed.contains(":") {
+            let parts = trimmed.split(separator: ":", omittingEmptySubsequences: false).map { Int($0) }
+            guard parts.allSatisfy({ $0 != nil }) else { return nil }
+            let numbers = parts.compactMap { $0 }
+            switch numbers.count {
+            case 2: return numbers[0] * 60 + numbers[1]
+            case 3: return numbers[0] * 3600 + numbers[1] * 60 + numbers[2]
+            default: return nil
+            }
+        }
+        guard let minutes = Int(trimmed) else { return nil }
+        return minutes * 60
     }
 
     static func weightNumber(_ kilograms: Double, unit: WeightUnit = .kilograms) -> String {

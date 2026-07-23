@@ -310,7 +310,6 @@ struct ActiveWorkoutView: View {
             }
 
             HStack(spacing: 18) {
-                headerAction("Add exercise", systemImage: "plus") { showPicker = true }
                 headerAction("Repeat last", systemImage: "arrow.uturn.backward") { confirmRepeatLast(workout) }
                 if Superset.groupings(in: workout).count > 1 {
                     Button {

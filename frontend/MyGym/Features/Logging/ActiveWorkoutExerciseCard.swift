@@ -48,12 +48,10 @@ struct ActiveWorkoutExerciseCard: View {
             HStack(spacing: 8) {
                 tableHeaderCell("SET")
                     .frame(width: 28)
-                if isWeighted {
-                    tableHeaderCell(session.weightUnit.label)
+                ForEach(loggingType.metrics, id: \.self) { metric in
+                    tableHeaderCell(metric.header(unit: session.weightUnit))
                         .frame(maxWidth: .infinity)
                 }
-                tableHeaderCell("REPS")
-                    .frame(maxWidth: .infinity)
                 Color.clear
                     .frame(width: 30, height: 1)
             }
@@ -68,7 +66,7 @@ struct ActiveWorkoutExerciseCard: View {
                                     entryId: entry.id,
                                     set: set,
                                     unit: session.weightUnit,
-                                    showsWeight: isWeighted,
+                                    loggingType: loggingType,
                                     onFocus: onFocusEntry
                                 )
                             }
@@ -82,7 +80,7 @@ struct ActiveWorkoutExerciseCard: View {
                             entryId: entry.id,
                             set: set,
                             unit: session.weightUnit,
-                            showsWeight: isWeighted,
+                            loggingType: loggingType,
                             onFocus: onFocusEntry
                         )
                     }
@@ -110,8 +108,8 @@ struct ActiveWorkoutExerciseCard: View {
         store.exercise(id: entry.exerciseId)?.isUnilateral ?? false
     }
 
-    private var isWeighted: Bool {
-        store.exercise(id: entry.exerciseId)?.isWeighted ?? true
+    private var loggingType: ExerciseLoggingType {
+        store.exercise(id: entry.exerciseId)?.loggingType ?? .weightReps
     }
 
     private var canSelectBrand: Bool {
@@ -128,60 +126,38 @@ struct ActiveWorkoutSetRow: View {
     let entryId: String
     let set: LocalSet
     let unit: WeightUnit
-    let showsWeight: Bool
+    let loggingType: ExerciseLoggingType
     var onFocus: (String) -> Void
 
     @Environment(ApplicationSession.self) private var session
     @Environment(ActiveWorkoutStore.self) private var activeWorkout
 
-    private enum SetField: Hashable {
-        case weight, reps
-    }
+    @State private var texts: [SetMetric: String]
+    @State private var touched: Set<SetMetric> = []
+    @FocusState private var focusedField: SetMetric?
 
-    @State private var weightText: String
-    @State private var repsText: String
-    @State private var touched: Set<SetField> = []
-    @FocusState private var focusedField: SetField?
-
-    init(entryId: String, set: LocalSet, unit: WeightUnit, showsWeight: Bool = true, onFocus: @escaping (String) -> Void = { _ in }) {
+    init(entryId: String, set: LocalSet, unit: WeightUnit, loggingType: ExerciseLoggingType, onFocus: @escaping (String) -> Void = { _ in }) {
         self.entryId = entryId
         self.set = set
         self.unit = unit
-        self.showsWeight = showsWeight
+        self.loggingType = loggingType
         self.onFocus = onFocus
-        _weightText = State(initialValue: set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "")
-        _repsText = State(initialValue: set.reps.map(String.init) ?? "")
+        var initial: [SetMetric: String] = [:]
+        for metric in loggingType.metrics {
+            initial[metric] = metric.text(for: set, unit: unit)
+        }
+        _texts = State(initialValue: initial)
     }
 
     var body: some View {
         RevealActionsRow(actions: [RevealAction(title: "Remove", action: remove)]) {
             row
         }
-        .onChange(of: weightText) { _, newValue in
-            guard focusedField == .weight else { return }
-            touched.insert(.weight)
-            var updated = set
-            updated.weightKg = parseNumber(newValue).map { value in
-                unit == .pounds ? value * Formatting.kilogramsPerPound : value
+        .onChange(of: set) { _, newValue in
+            for metric in loggingType.metrics where focusedField != metric {
+                let formatted = metric.text(for: newValue, unit: unit)
+                if texts[metric] != formatted { texts[metric] = formatted }
             }
-            activeWorkout.updateSet(entryId: entryId, set: updated)
-        }
-        .onChange(of: repsText) { _, newValue in
-            guard focusedField == .reps else { return }
-            touched.insert(.reps)
-            var updated = set
-            updated.reps = Int(newValue.trimmingCharacters(in: .whitespaces))
-            activeWorkout.updateSet(entryId: entryId, set: updated)
-        }
-        .onChange(of: set.weightKg) { _, newValue in
-            guard focusedField != .weight else { return }
-            let formatted = newValue.map { Formatting.weightNumber($0, unit: unit) } ?? ""
-            if formatted != weightText { weightText = formatted }
-        }
-        .onChange(of: set.reps) { _, newValue in
-            guard focusedField != .reps else { return }
-            let formatted = newValue.map(String.init) ?? ""
-            if formatted != repsText { repsText = formatted }
         }
     }
 
@@ -200,16 +176,12 @@ struct ActiveWorkoutSetRow: View {
                     .frame(width: 28)
             }
 
-            if set.isCompleted {
-                if showsWeight {
-                    completedCell(set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? "", isBold: true)
+            ForEach(loggingType.metrics, id: \.self) { metric in
+                if set.isCompleted {
+                    completedCell(metric.text(for: set, unit: unit), isBold: true)
+                } else {
+                    editableCell(metric)
                 }
-                completedCell(set.reps.map(String.init) ?? "", isBold: true)
-            } else {
-                if showsWeight {
-                    editableCell($weightText, field: .weight, keyboard: .decimalPad, isBold: true)
-                }
-                editableCell($repsText, field: .reps, keyboard: .numberPad, isBold: true)
             }
 
             Button {
@@ -253,20 +225,29 @@ struct ActiveWorkoutSetRow: View {
         }
     }
 
-    private func editableCell(
-        _ text: Binding<String>,
-        field: SetField,
-        keyboard: UIKeyboardType,
-        isBold: Bool
-    ) -> some View {
-        let isFocused = focusedField == field
-        let isGhost = !touched.contains(field) && !isFocused
-        return TextField("", text: text)
-            .keyboardType(keyboard)
+    private func binding(for metric: SetMetric) -> Binding<String> {
+        Binding(
+            get: { texts[metric] ?? "" },
+            set: { newValue in
+                texts[metric] = newValue
+                guard focusedField == metric else { return }
+                touched.insert(metric)
+                var updated = set
+                metric.apply(newValue, to: &updated, unit: unit)
+                activeWorkout.updateSet(entryId: entryId, set: updated)
+            }
+        )
+    }
+
+    private func editableCell(_ metric: SetMetric) -> some View {
+        let isFocused = focusedField == metric
+        let isGhost = !touched.contains(metric) && !isFocused
+        return TextField(metric.placeholder, text: binding(for: metric))
+            .keyboardType(metric.keyboard)
             .multilineTextAlignment(.center)
-            .font(Theme.font(14, isBold ? .bold : .regular))
+            .font(Theme.font(14, .bold))
             .foregroundStyle(isGhost ? Theme.muted : Theme.ink)
-            .focused($focusedField, equals: field)
+            .focused($focusedField, equals: metric)
             .frame(maxWidth: .infinity)
             .frame(height: 38)
             .background(Theme.fieldFill, in: RoundedRectangle(cornerRadius: Theme.tileRadius, style: .continuous))
@@ -277,7 +258,7 @@ struct ActiveWorkoutSetRow: View {
                         lineWidth: isFocused ? 1.5 : 1
                     )
             )
-            .accessibilityLabel(field == .weight ? "Weight, \(positionLabel)" : "Reps, \(positionLabel)")
+            .accessibilityLabel("\(metric.accessibilityName), \(positionLabel)")
     }
 
     private func completedCell(_ value: String, isBold: Bool) -> some View {
@@ -294,9 +275,10 @@ struct ActiveWorkoutSetRow: View {
     }
 
     private func toggleCompleted() {
-        if !set.isCompleted, (set.reps ?? 0) <= 0 {
+        let completionMetric = loggingType.completionMetric
+        if !set.isCompleted, !set.isFilled(completionMetric) {
             Haptics.warning()
-            focusedField = .reps
+            focusedField = completionMetric
             return
         }
         focusedField = nil
@@ -313,8 +295,64 @@ struct ActiveWorkoutSetRow: View {
             onFocus(focusEntryId)
         }
     }
+}
 
-    private func parseNumber(_ text: String) -> Double? {
+extension SetMetric {
+    func header(unit: WeightUnit) -> String {
+        switch self {
+        case .weight: return unit.label
+        case .reps: return "REPS"
+        case .distance: return Formatting.distanceUnitLabel(unit)
+        case .duration: return "TIME"
+        case .stairs: return "STAIRS"
+        }
+    }
+
+    var accessibilityName: String {
+        switch self {
+        case .weight: return "Weight"
+        case .reps: return "Reps"
+        case .distance: return "Distance"
+        case .duration: return "Time"
+        case .stairs: return "Stairs"
+        }
+    }
+
+    var placeholder: String {
+        self == .duration ? "0:00" : ""
+    }
+
+    var keyboard: UIKeyboardType {
+        switch self {
+        case .weight, .distance: return .decimalPad
+        case .reps, .stairs: return .numberPad
+        case .duration: return .numbersAndPunctuation
+        }
+    }
+
+    func text(for set: LocalSet, unit: WeightUnit) -> String {
+        switch self {
+        case .weight: return set.weightKg.map { Formatting.weightNumber($0, unit: unit) } ?? ""
+        case .reps, .stairs: return set.reps.map(String.init) ?? ""
+        case .distance: return set.distanceM.map { Formatting.distanceNumber($0, unit: unit) } ?? ""
+        case .duration: return set.durationSeconds.map { Formatting.elapsed(TimeInterval($0)) } ?? ""
+        }
+    }
+
+    func apply(_ text: String, to set: inout LocalSet, unit: WeightUnit) {
+        switch self {
+        case .weight:
+            set.weightKg = SetMetric.parseDecimal(text).map { unit == .pounds ? $0 * Formatting.kilogramsPerPound : $0 }
+        case .reps, .stairs:
+            set.reps = Int(text.trimmingCharacters(in: .whitespaces))
+        case .distance:
+            set.distanceM = Formatting.parseDistanceMeters(text, unit: unit)
+        case .duration:
+            set.durationSeconds = Formatting.parseDurationSeconds(text)
+        }
+    }
+
+    private static func parseDecimal(_ text: String) -> Double? {
         let normalized = text
             .trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: ",", with: ".")

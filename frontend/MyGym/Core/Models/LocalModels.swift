@@ -142,6 +142,19 @@ extension LocalWorkoutExercise {
 }
 
 extension LocalSet {
+    func value(for metric: SetMetric) -> Double? {
+        switch metric {
+        case .weight: return weightKg
+        case .reps, .stairs: return reps.map(Double.init)
+        case .distance: return distanceM
+        case .duration: return durationSeconds.map(Double.init)
+        }
+    }
+
+    func isFilled(_ metric: SetMetric) -> Bool {
+        (value(for: metric) ?? 0) > 0
+    }
+
     var estimated1RM: Double? {
         guard let weightKg, let reps, reps > 0 else { return nil }
         return weightKg * (1 + Double(reps) / 30)

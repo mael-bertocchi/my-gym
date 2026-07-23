@@ -34,7 +34,8 @@ struct RootView: View {
                         activeWorkout: activeWorkout,
                         supersetGo: CommandLine.arguments.contains("-demo-superset-go"),
                         singleArm: CommandLine.arguments.contains("-demo-single-arm"),
-                        bodyweight: CommandLine.arguments.contains("-demo-bodyweight")
+                        bodyweight: CommandLine.arguments.contains("-demo-bodyweight"),
+                        cardio: CommandLine.arguments.contains("-demo-cardio")
                     )
                     if CommandLine.arguments.contains("-demo-paused") {
                         activeWorkout.pause()

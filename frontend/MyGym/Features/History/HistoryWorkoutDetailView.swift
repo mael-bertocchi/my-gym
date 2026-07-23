@@ -364,15 +364,28 @@ private struct WorkoutDetailExerciseRow: View {
     }
 
     private func setLog(_ sets: [LocalSet]) -> String {
-        let weighted = store.exercise(id: entry.exerciseId)?.isWeighted ?? true
-        return sets.map { set in
-            let side = set.side.map { "\($0.short) " } ?? ""
-            guard weighted else {
-                return "\(side)×\(set.reps ?? 0)"
-            }
+        let loggingType = store.exercise(id: entry.exerciseId)?.loggingType ?? .weightReps
+        return sets.map { set in setSummary(set, loggingType: loggingType) }
+            .joined(separator: " · ")
+    }
+
+    private func setSummary(_ set: LocalSet, loggingType: ExerciseLoggingType) -> String {
+        let side = set.side.map { "\($0.short) " } ?? ""
+        switch loggingType {
+        case .weightReps:
             let weight = Formatting.weightNumber(set.weightKg ?? 0, unit: unit)
             return "\(side)\(weight)×\(set.reps ?? 0)"
+        case .bodyweightReps:
+            return "\(side)×\(set.reps ?? 0)"
+        case .distanceDuration:
+            let distance = set.distanceM.map { Formatting.distance($0, unit: unit) } ?? "—"
+            let time = set.durationSeconds.map { Formatting.elapsed(TimeInterval($0)) } ?? "—"
+            return "\(distance) \(time)"
+        case .stairsDuration:
+            let time = set.durationSeconds.map { Formatting.elapsed(TimeInterval($0)) } ?? "—"
+            return "\(set.reps ?? 0) fl \(time)"
+        case .duration:
+            return set.durationSeconds.map { Formatting.elapsed(TimeInterval($0)) } ?? "—"
         }
-        .joined(separator: " · ")
     }
 }

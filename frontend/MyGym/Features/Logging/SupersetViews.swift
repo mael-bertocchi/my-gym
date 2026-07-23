@@ -162,12 +162,10 @@ struct SupersetUnifiedCard: View {
                 headerCell("RIGHT · \(twinColumnLabel)", color: Theme.muted)
                     .frame(maxWidth: .infinity)
             } else {
-                if isWeighted(activeMember) {
-                    headerCell(session.weightUnit.label, color: Theme.muted2)
+                ForEach(loggingType(activeMember).metrics, id: \.self) { metric in
+                    headerCell(metric.header(unit: session.weightUnit), color: Theme.muted2)
                         .frame(maxWidth: .infinity)
                 }
-                headerCell("REPS", color: Theme.muted2)
-                    .frame(maxWidth: .infinity)
                 Color.clear.frame(width: 30, height: 1)
             }
         }
@@ -192,7 +190,7 @@ struct SupersetUnifiedCard: View {
                         entryId: activeMember.id,
                         set: set,
                         unit: session.weightUnit,
-                        showsWeight: isWeighted(activeMember),
+                        loggingType: loggingType(activeMember),
                         onFocus: onFocusEntry
                     )
                 }
@@ -324,6 +322,10 @@ struct SupersetUnifiedCard: View {
 
     private func isWeighted(_ member: LocalWorkoutExercise) -> Bool {
         store.exercise(id: member.exerciseId)?.isWeighted ?? true
+    }
+
+    private func loggingType(_ member: LocalWorkoutExercise) -> ExerciseLoggingType {
+        store.exercise(id: member.exerciseId)?.loggingType ?? .weightReps
     }
 }
 

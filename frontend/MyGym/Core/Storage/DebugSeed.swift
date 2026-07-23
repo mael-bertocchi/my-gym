@@ -30,7 +30,8 @@ enum DebugSeed {
         activeWorkout: ActiveWorkoutStore,
         supersetGo: Bool = false,
         singleArm: Bool = false,
-        bodyweight: Bool = false
+        bodyweight: Bool = false,
+        cardio: Bool = false
     ) {
         guard let gym = store.gyms.first(where: { $0.name == "Iron Temple" }),
               let chest = store.exercises.first(where: { $0.name == "Chest Press" }),
@@ -42,6 +43,11 @@ enum DebugSeed {
 
         activeWorkout.discard()
         activeWorkout.start(gymId: gym.id, name: "Push day")
+
+        if cardio {
+            seedCardioEntries(store: store, activeWorkout: activeWorkout)
+            return
+        }
 
         if let chestEntry = activeWorkout.addExercise(chest, brandId: hammerStrength?.id) {
             for set in chestEntry.sets {
@@ -103,6 +109,36 @@ enum DebugSeed {
         completeRound(activeWorkout, entryId: oneArmEntry.id, round: 1)
         activeWorkout.skipRest()
         completeRound(activeWorkout, entryId: inclineEntry.id, round: 2)
+    }
+
+    @MainActor
+    private static func seedCardioEntries(store: LocalStore, activeWorkout: ActiveWorkoutStore) {
+        activeWorkout.debugBackdateStart(minutes: 28)
+        if let treadmill = store.exercises.first(where: { $0.name == "Treadmill Run" }),
+           let entry = activeWorkout.addExercise(treadmill),
+           let set = activeWorkout.workout?.exercises.first(where: { $0.id == entry.id })?.sets.first {
+            var updated = set
+            updated.distanceM = 5000
+            updated.durationSeconds = 25 * 60 + 30
+            activeWorkout.updateSet(entryId: entry.id, set: updated)
+            activeWorkout.setCompleted(entryId: entry.id, setId: set.id, completed: true, restSeconds: 60)
+            activeWorkout.skipRest()
+        }
+        if let stairs = store.exercises.first(where: { $0.name == "Stair Climber" }),
+           let entry = activeWorkout.addExercise(stairs),
+           let set = activeWorkout.workout?.exercises.first(where: { $0.id == entry.id })?.sets.first {
+            var updated = set
+            updated.reps = 120
+            updated.durationSeconds = 12 * 60
+            activeWorkout.updateSet(entryId: entry.id, set: updated)
+        }
+        if let plank = store.exercises.first(where: { $0.name == "Plank" }),
+           let entry = activeWorkout.addExercise(plank),
+           let set = activeWorkout.workout?.exercises.first(where: { $0.id == entry.id })?.sets.first {
+            var updated = set
+            updated.durationSeconds = 60
+            activeWorkout.updateSet(entryId: entry.id, set: updated)
+        }
     }
 
     @MainActor
@@ -205,7 +241,19 @@ enum DebugSeed {
         )
         let hangingLegRaise = mkExercise(
             "Hanging Leg Raise", .abs, secondary: [.obliques],
-            equipment: .bodyweight, weighted: false
+            equipment: .bodyweight, logging: .bodyweightReps
+        )
+        let treadmillRun = mkExercise(
+            "Treadmill Run", nil,
+            equipment: .cardio, logging: .distanceDuration
+        )
+        let stairClimber = mkExercise(
+            "Stair Climber", nil,
+            equipment: .cardio, logging: .stairsDuration
+        )
+        let plank = mkExercise(
+            "Plank", .abs, secondary: [.obliques],
+            equipment: .bodyweight, logging: .duration
         )
 
         store.applyCatalog(SyncPull.Catalog(
@@ -213,7 +261,7 @@ enum DebugSeed {
             exercises: [
                 chestPress, chestPressTechnogym, benchPress, inclineDumbbellPress,
                 cableFly, legPress, legCurl, latPulldown, seatedRow, oneArmRow, squat, shoulderPress,
-                hangingLegRaise,
+                hangingLegRaise, treadmillRun, stairClimber, plank,
             ],
             gyms: [ironTemple, downtown, hotelLisbon]
         ))
@@ -554,14 +602,14 @@ enum DebugSeed {
 
     private static func mkExercise(
         _ name: String,
-        _ primary: MuscleGroup,
+        _ primary: MuscleGroup?,
         secondary: [MuscleGroup] = [],
         equipment: EquipmentType,
+        logging: ExerciseLoggingType = .weightReps,
         brandMode: ExerciseBrandMode = .none,
         brandId: String? = nil,
         favorite: Bool = false,
-        unilateral: Bool = false,
-        weighted: Bool = true
+        unilateral: Bool = false
     ) -> Exercise {
         Exercise(
             id: newId(),
@@ -569,12 +617,12 @@ enum DebugSeed {
             primaryMuscle: primary,
             secondaryMuscles: secondary,
             equipment: equipment,
+            loggingType: logging,
             brandMode: brandMode,
             brandId: brandId,
             isFavorite: favorite,
             isArchived: false,
             isUnilateral: unilateral,
-            isWeighted: weighted,
             createdAt: catalogBirth,
             updatedAt: catalogBirth
         )

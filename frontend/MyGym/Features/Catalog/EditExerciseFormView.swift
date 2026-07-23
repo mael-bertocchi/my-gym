@@ -13,10 +13,10 @@ struct EditExerciseFormView: View {
     @State private var brandId: String?
     @State private var showsNewBrandAlert = false
     @State private var newBrandName = ""
-    @State private var primaryMuscle: MuscleGroup
+    @State private var primaryMuscle: MuscleGroup?
     @State private var secondaryMuscles: Set<MuscleGroup>
     @State private var isUnilateral: Bool
-    @State private var isWeighted: Bool
+    @State private var loggingType: ExerciseLoggingType
 
     @State private var isSaving = false
     @State private var alert: ManageAlert?
@@ -30,7 +30,7 @@ struct EditExerciseFormView: View {
         _primaryMuscle = State(initialValue: exercise.primaryMuscle)
         _secondaryMuscles = State(initialValue: Set(exercise.secondaryMuscles))
         _isUnilateral = State(initialValue: exercise.isUnilateral)
-        _isWeighted = State(initialValue: exercise.isWeighted)
+        _loggingType = State(initialValue: exercise.loggingType)
     }
 
     var body: some View {
@@ -40,10 +40,12 @@ struct EditExerciseFormView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     nameField
                     equipmentField
-                    brandField
-                    muscleField
-                    secondaryMuscleField
                     setLoggingField
+                    brandField
+                    if loggingType.showsMuscle {
+                        muscleField
+                        secondaryMuscleField
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -131,7 +133,7 @@ struct EditExerciseFormView: View {
     private var muscleField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("PRIMARY MUSCLE")
-            ManageDropdownField(text: primaryMuscle.label, isPlaceholder: false) {
+            ManageDropdownField(text: primaryMuscle?.label ?? "Select muscle", isPlaceholder: primaryMuscle == nil) {
                 ForEach(MuscleGroup.allCases) { muscle in
                     Button(muscle.label) {
                         primaryMuscle = muscle
@@ -162,16 +164,33 @@ struct EditExerciseFormView: View {
     private var setLoggingField: some View {
         VStack(alignment: .leading, spacing: 8) {
             EyebrowText("SET LOGGING")
-            ManageToggleRow(
-                title: "Weighted",
-                subtitle: "Log a weight for each set. Turn off for bodyweight-only exercises.",
-                isOn: $isWeighted
-            )
-            ManageToggleRow(
-                title: "Iso-Lateral",
-                subtitle: "Log each set for the left and right side.",
-                isOn: $isUnilateral
-            )
+            ManageDropdownField(text: loggingType.label, isPlaceholder: false) {
+                ForEach(ExerciseLoggingType.allCases) { type in
+                    Button(type.label) { selectLoggingType(type) }
+                }
+            }
+            Text(loggingType.caption)
+                .font(Theme.font(12))
+                .foregroundStyle(Theme.muted2)
+            if loggingType.supportsUnilateral {
+                ManageToggleRow(
+                    title: "Iso-Lateral",
+                    subtitle: "Log each set for the left and right side.",
+                    isOn: $isUnilateral
+                )
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    private func selectLoggingType(_ type: ExerciseLoggingType) {
+        loggingType = type
+        if !type.showsMuscle {
+            primaryMuscle = nil
+            secondaryMuscles = []
+        }
+        if !type.supportsUnilateral {
+            isUnilateral = false
         }
     }
 
@@ -179,7 +198,7 @@ struct EditExerciseFormView: View {
         PrimaryButton(
             title: "Save changes",
             isLoading: isSaving,
-            isDisabled: trimmedName.isEmpty || !hasEdits || (brandMode == .single && brandId == nil)
+            isDisabled: trimmedName.isEmpty || !hasEdits || (loggingType.requiresMuscle && primaryMuscle == nil) || (brandMode == .single && brandId == nil)
         ) {
             save()
         }
@@ -200,7 +219,7 @@ struct EditExerciseFormView: View {
             || primaryMuscle != exercise.primaryMuscle
             || secondaryMuscles != Set(exercise.secondaryMuscles)
             || isUnilateral != exercise.isUnilateral
-            || isWeighted != exercise.isWeighted
+            || loggingType != exercise.loggingType
     }
 
     private func save() {
@@ -220,13 +239,13 @@ struct EditExerciseFormView: View {
             do {
                 let updated = try await API.editExercise(id: exercise.id, .init(
                     name: name,
-                    primaryMuscle: primaryMuscle,
-                    secondaryMuscles: Array(secondaryMuscles),
+                    primaryMuscle: loggingType.showsMuscle ? primaryMuscle : nil,
+                    secondaryMuscles: loggingType.showsMuscle ? Array(secondaryMuscles) : [],
                     equipment: equipment,
+                    loggingType: loggingType,
                     brandMode: brandMode,
                     brandId: brandMode == .single ? brandId : nil,
-                    isUnilateral: isUnilateral,
-                    isWeighted: isWeighted
+                    isUnilateral: isUnilateral
                 ))
                 store.insert(exercise: updated)
                 isSaving = false

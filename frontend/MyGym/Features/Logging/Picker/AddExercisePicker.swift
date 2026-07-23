@@ -157,7 +157,7 @@ struct AddExercisePicker: View {
     }
 
     private var occurringMuscles: [MuscleGroup] {
-        let present = Set(activeExercises.map(\.primaryMuscle))
+        let present = Set(activeExercises.compactMap(\.primaryMuscle))
         return MuscleGroup.allCases.filter { present.contains($0) }
     }
 

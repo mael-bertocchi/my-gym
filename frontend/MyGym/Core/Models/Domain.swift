@@ -139,25 +139,90 @@ enum ExerciseBrandMode: String, Codable, CaseIterable {
     case multiple = "MULTIPLE"
 }
 
+enum SetMetric: String, Codable, Hashable {
+    case weight
+    case reps
+    case distance
+    case duration
+    case stairs
+}
+
+enum ExerciseLoggingType: String, Codable, CaseIterable, Identifiable {
+    case weightReps = "WEIGHT_REPS"
+    case bodyweightReps = "BODYWEIGHT_REPS"
+    case distanceDuration = "DISTANCE_DURATION"
+    case stairsDuration = "STAIRS_DURATION"
+    case duration = "DURATION"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .weightReps: return "Weight & Reps"
+        case .bodyweightReps: return "Bodyweight"
+        case .distanceDuration: return "Distance & Time"
+        case .stairsDuration: return "Stairs & Time"
+        case .duration: return "Time"
+        }
+    }
+
+    var caption: String {
+        switch self {
+        case .weightReps: return "A weight and reps for every set."
+        case .bodyweightReps: return "Reps only, no added weight."
+        case .distanceDuration: return "Distance and time — running, rowing, cycling."
+        case .stairsDuration: return "Floors and time — stair climber."
+        case .duration: return "Time only — planks, holds, intervals."
+        }
+    }
+
+    var metrics: [SetMetric] {
+        switch self {
+        case .weightReps: return [.weight, .reps]
+        case .bodyweightReps: return [.reps]
+        case .distanceDuration: return [.distance, .duration]
+        case .stairsDuration: return [.stairs, .duration]
+        case .duration: return [.duration]
+        }
+    }
+
+    var completionMetric: SetMetric {
+        switch self {
+        case .weightReps, .bodyweightReps: return .reps
+        case .distanceDuration, .stairsDuration, .duration: return .duration
+        }
+    }
+
+    var tracksWeight: Bool { self == .weightReps }
+    var tracksReps: Bool { self == .weightReps || self == .bodyweightReps }
+    var supportsUnilateral: Bool { self == .weightReps || self == .bodyweightReps }
+
+    var showsMuscle: Bool { self != .distanceDuration && self != .stairsDuration }
+    var requiresMuscle: Bool { self == .weightReps || self == .bodyweightReps }
+    var isCardio: Bool { self == .distanceDuration || self == .stairsDuration }
+}
+
 struct Exercise: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var name: String
-    var primaryMuscle: MuscleGroup
+    var primaryMuscle: MuscleGroup?
     var secondaryMuscles: [MuscleGroup]
     var equipment: EquipmentType
+    var loggingType: ExerciseLoggingType
     var brandMode: ExerciseBrandMode
     var brandId: String?
     var isFavorite: Bool
     var isArchived: Bool
     var isUnilateral: Bool
-    var isWeighted: Bool
     var createdAt: Date
     var updatedAt: Date
+
+    var isWeighted: Bool { loggingType.tracksWeight }
 }
 
 extension Exercise {
     private enum CodingKeys: String, CodingKey {
-        case id, name, primaryMuscle, secondaryMuscles, equipment
+        case id, name, primaryMuscle, secondaryMuscles, equipment, loggingType
         case brandMode, brandId, isFavorite, isArchived, isUnilateral, isWeighted, createdAt, updatedAt
     }
 
@@ -165,17 +230,39 @@ extension Exercise {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
-        primaryMuscle = try container.decode(MuscleGroup.self, forKey: .primaryMuscle)
+        primaryMuscle = try container.decodeIfPresent(MuscleGroup.self, forKey: .primaryMuscle)
         secondaryMuscles = try container.decode([MuscleGroup].self, forKey: .secondaryMuscles)
         equipment = try container.decode(EquipmentType.self, forKey: .equipment)
+        if let type = try container.decodeIfPresent(ExerciseLoggingType.self, forKey: .loggingType) {
+            loggingType = type
+        } else {
+            let weighted = try container.decodeIfPresent(Bool.self, forKey: .isWeighted) ?? true
+            loggingType = weighted ? .weightReps : .bodyweightReps
+        }
         brandMode = try container.decodeIfPresent(ExerciseBrandMode.self, forKey: .brandMode) ?? ExerciseBrandMode.none
         brandId = try container.decodeIfPresent(String.self, forKey: .brandId)
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         isUnilateral = try container.decodeIfPresent(Bool.self, forKey: .isUnilateral) ?? false
-        isWeighted = try container.decodeIfPresent(Bool.self, forKey: .isWeighted) ?? true
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(primaryMuscle, forKey: .primaryMuscle)
+        try container.encode(secondaryMuscles, forKey: .secondaryMuscles)
+        try container.encode(equipment, forKey: .equipment)
+        try container.encode(loggingType, forKey: .loggingType)
+        try container.encode(brandMode, forKey: .brandMode)
+        try container.encodeIfPresent(brandId, forKey: .brandId)
+        try container.encode(isFavorite, forKey: .isFavorite)
+        try container.encode(isArchived, forKey: .isArchived)
+        try container.encode(isUnilateral, forKey: .isUnilateral)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
     }
 }
 
@@ -219,7 +306,7 @@ struct WorkoutSet: Codable, Identifiable, Equatable, Hashable {
 struct WorkoutEntryExercise: Codable, Equatable, Hashable {
     var id: String
     var name: String
-    var primaryMuscle: MuscleGroup
+    var primaryMuscle: MuscleGroup?
     var equipment: EquipmentType
 }
 
