@@ -55,6 +55,14 @@ enum MuscleGroup {
   FULL_BODY
 }
 
+enum ExerciseLoggingType {
+  WEIGHT_REPS
+  BODYWEIGHT_REPS
+  DISTANCE_DURATION
+  STAIRS_DURATION
+  DURATION
+}
+
 enum SetType {
   WARMUP
   NORMAL
@@ -144,9 +152,10 @@ model Exercise {
   userId           String            @map("user_id")
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   name             String
-  primaryMuscle    MuscleGroup       @map("primary_muscle")
+  primaryMuscle    MuscleGroup?      @map("primary_muscle")
   secondaryMuscles MuscleGroup[]     @map("secondary_muscles")
   equipment        EquipmentType     @default(OTHER)
+  loggingType      ExerciseLoggingType @default(WEIGHT_REPS) @map("logging_type")
   isFavorite       Boolean           @default(false) @map("is_favorite")
   isArchived       Boolean           @default(false) @map("is_archived")
   isUnilateral     Boolean           @default(false) @map("is_unilateral")

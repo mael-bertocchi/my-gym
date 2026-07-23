@@ -13,7 +13,7 @@ export const SECONDARY_MUSCLE_WEIGHT = 0.5;
  * @description One performed exercise: the movement's muscles plus its working sets.
  */
 export interface MuscleRawEntry {
-    primaryMuscle: MuscleGroup; /*!< The movement's primary muscle */
+    primaryMuscle: MuscleGroup | null; /*!< The movement's primary muscle, or null for cardio */
     secondaryMuscles: MuscleGroup[]; /*!< The movement's secondary muscles */
     sets: RawSet[]; /*!< The WORKING sets logged for it */
 }
@@ -51,7 +51,9 @@ export function computeMuscleBreakdown(entries: MuscleRawEntry[]): MuscleVolume[
     for (const entry of entries) {
         for (const set of entry.sets) {
             const volume = (set.weightKg ?? 0) * (set.reps ?? 0);
-            credit(entry.primaryMuscle, 1, volume);
+            if (entry.primaryMuscle !== null) {
+                credit(entry.primaryMuscle, 1, volume);
+            }
             for (const secondary of entry.secondaryMuscles) {
                 credit(secondary, SECONDARY_MUSCLE_WEIGHT, SECONDARY_MUSCLE_WEIGHT * volume);
             }

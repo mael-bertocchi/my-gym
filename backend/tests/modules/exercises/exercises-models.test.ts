@@ -33,17 +33,30 @@ describe('CreateExerciseSchema', () => {
         }
     });
 
-    it('defaults isWeighted to true and accepts an override', () => {
+    it('defaults loggingType to WEIGHT_REPS and accepts an override', () => {
         const omitted = CreateExerciseSchema.safeParse({ name: 'Crunch', primaryMuscle: 'ABS', equipment: 'BODYWEIGHT' });
         expect(omitted.success).toBe(true);
         if (omitted.success) {
-            expect(omitted.data.isWeighted).toBe(true);
+            expect(omitted.data.loggingType).toBe('WEIGHT_REPS');
         }
-        const set = CreateExerciseSchema.safeParse({ name: 'Crunch', primaryMuscle: 'ABS', equipment: 'BODYWEIGHT', isWeighted: false });
+        const set = CreateExerciseSchema.safeParse({ name: 'Crunch', primaryMuscle: 'ABS', equipment: 'BODYWEIGHT', loggingType: 'BODYWEIGHT_REPS' });
         expect(set.success).toBe(true);
         if (set.success) {
-            expect(set.data.isWeighted).toBe(false);
+            expect(set.data.loggingType).toBe('BODYWEIGHT_REPS');
         }
+    });
+
+    it('accepts a cardio exercise with no muscle', () => {
+        const run = CreateExerciseSchema.safeParse({ name: 'Treadmill Run', equipment: 'CARDIO', loggingType: 'DISTANCE_DURATION' });
+        expect(run.success).toBe(true);
+        if (run.success) {
+            expect(run.data.primaryMuscle ?? null).toBeNull();
+        }
+        expect(CreateExerciseSchema.safeParse({ name: 'Stair Climber', equipment: 'CARDIO', loggingType: 'STAIRS_DURATION', primaryMuscle: null }).success).toBe(true);
+    });
+
+    it('rejects an unknown logging type', () => {
+        expect(CreateExerciseSchema.safeParse({ name: 'Row', primaryMuscle: 'LATS', equipment: 'MACHINE', loggingType: 'TIME_ONLY' }).success).toBe(false);
     });
 
     it('defaults brandMode to NONE', () => {
@@ -91,8 +104,12 @@ describe('UpdateExerciseSchema', () => {
         expect(UpdateExerciseSchema.safeParse({ isUnilateral: true }).success).toBe(true);
     });
 
-    it('accepts toggling isWeighted', () => {
-        expect(UpdateExerciseSchema.safeParse({ isWeighted: false }).success).toBe(true);
+    it('accepts changing loggingType', () => {
+        expect(UpdateExerciseSchema.safeParse({ loggingType: 'DISTANCE_DURATION' }).success).toBe(true);
+    });
+
+    it('accepts clearing primaryMuscle', () => {
+        expect(UpdateExerciseSchema.safeParse({ primaryMuscle: null }).success).toBe(true);
     });
 
     it('accepts brand mode changes', () => {

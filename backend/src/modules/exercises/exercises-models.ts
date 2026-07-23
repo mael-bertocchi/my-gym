@@ -1,5 +1,5 @@
 import type { RequestGenericInterface } from 'fastify';
-import { EquipmentType, ExerciseBrandMode, MuscleGroup } from 'prisma/generated/prisma/client';
+import { EquipmentType, ExerciseBrandMode, ExerciseLoggingType, MuscleGroup } from 'prisma/generated/prisma/client';
 import { CursorQuerySchema } from 'src/shared/schemas';
 import { z } from 'zod';
 
@@ -8,6 +8,12 @@ import { z } from 'zod';
  * @description Zod schema validating a value against the Prisma MuscleGroup enum.
  */
 export const MuscleGroupSchema = z.enum(MuscleGroup);
+
+/**
+ * @constant ExerciseLoggingTypeSchema
+ * @description Zod schema validating a value against the Prisma ExerciseLoggingType enum.
+ */
+export const ExerciseLoggingTypeSchema = z.enum(ExerciseLoggingType);
 
 /**
  * @constant EquipmentTypeSchema
@@ -37,11 +43,11 @@ export const ListExercisesQuerySchema = CursorQuerySchema.extend({
  */
 export const CreateExerciseSchema = z.object({
     name: z.string().min(1).max(120),
-    primaryMuscle: MuscleGroupSchema,
+    primaryMuscle: MuscleGroupSchema.nullable().optional(),
     secondaryMuscles: z.array(MuscleGroupSchema).optional().default([]),
     equipment: EquipmentTypeSchema,
+    loggingType: ExerciseLoggingTypeSchema.optional().default('WEIGHT_REPS'),
     isUnilateral: z.boolean().optional().default(false),
-    isWeighted: z.boolean().optional().default(true),
     brandMode: ExerciseBrandModeSchema.optional().default('NONE'),
     brandId: z.uuid().nullable().optional()
 }).refine((value) => (value.brandMode === 'SINGLE') === (value.brandId !== undefined && value.brandId !== null), {
@@ -60,13 +66,13 @@ export type CreateExerciseBody = z.infer<typeof CreateExerciseSchema>;
  */
 export const UpdateExerciseSchema = z.object({
     name: z.string().min(1).max(120).optional(),
-    primaryMuscle: MuscleGroupSchema.optional(),
+    primaryMuscle: MuscleGroupSchema.nullable().optional(),
     secondaryMuscles: z.array(MuscleGroupSchema).optional(),
     equipment: EquipmentTypeSchema.optional(),
+    loggingType: ExerciseLoggingTypeSchema.optional(),
     isFavorite: z.boolean().optional(),
     isArchived: z.boolean().optional(),
     isUnilateral: z.boolean().optional(),
-    isWeighted: z.boolean().optional(),
     brandMode: ExerciseBrandModeSchema.optional(),
     brandId: z.uuid().nullable().optional()
 }).refine((value) => Object.keys(value).length > 0, {

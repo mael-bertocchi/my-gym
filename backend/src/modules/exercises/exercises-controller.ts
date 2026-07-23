@@ -55,6 +55,7 @@ async function listExercises(request: FastifyRequest<ListExercisesRequest>, repl
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
+            loggingType: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -88,6 +89,7 @@ async function getExercise(request: FastifyRequest<ExerciseParamsRequest>, reply
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
+            loggingType: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -131,11 +133,12 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
         data: {
             userId: request.user.id,
             name: request.body.name,
-            primaryMuscle: request.body.primaryMuscle,
+            primaryMuscle: request.body.primaryMuscle ?? null,
             secondaryMuscles: request.body.secondaryMuscles,
             equipment: request.body.equipment,
+            loggingType: request.body.loggingType,
             isUnilateral: request.body.isUnilateral,
-            isWeighted: request.body.isWeighted,
+            isWeighted: request.body.loggingType === 'WEIGHT_REPS',
             brandMode: request.body.brandMode,
             brandId: request.body.brandId ?? null
         },
@@ -145,6 +148,7 @@ async function createExercise(request: FastifyRequest<CreateExerciseRequest>, re
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
+            loggingType: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
@@ -196,6 +200,10 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     if (request.body.equipment !== undefined) {
         data.equipment = request.body.equipment;
     }
+    if (request.body.loggingType !== undefined) {
+        data.loggingType = request.body.loggingType;
+        data.isWeighted = request.body.loggingType === 'WEIGHT_REPS';
+    }
     if (request.body.isFavorite !== undefined) {
         data.isFavorite = request.body.isFavorite;
     }
@@ -204,9 +212,6 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
     }
     if (request.body.isUnilateral !== undefined) {
         data.isUnilateral = request.body.isUnilateral;
-    }
-    if (request.body.isWeighted !== undefined) {
-        data.isWeighted = request.body.isWeighted;
     }
 
     const brandMode = request.body.brandMode ?? existing.brandMode;
@@ -246,6 +251,7 @@ async function updateExercise(request: FastifyRequest<UpdateExerciseRequest>, re
             primaryMuscle: true,
             secondaryMuscles: true,
             equipment: true,
+            loggingType: true,
             isFavorite: true,
             isArchived: true,
             isUnilateral: true,
